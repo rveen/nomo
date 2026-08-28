@@ -1,0 +1,188 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  # Any difference between two machines' results is a bug, not noise. Fail loudly.
+  RUSTFLAGS: -D warnings
+
+# The `actions/*` versions are the current majors. v4 ran on Node 20, which the
+# runner deprecated and was already force-upgrading to Node 24 with a warning on
+# every job. `checkout@v7`'s breaking change is that it refuses to check out a
+# fork's head for `pull_request_target` and `workflow_run`; this workflow uses
+# neither trigger, so it does not apply. `node-version` below is a separate
+# thing — the engine the determinism scripts run under, pinned deliberately.
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # rust-toolchain.toml pins the version; this action honours it.
+      - name: Install toolchain
+        run: rustup show
+
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace
+
+      # The regression gate. Rendered output is compared byte for byte with no
+      # tolerance: this engine is meant to give the same answer on every machine,
+      # so a last-digit difference is a bug rather than noise to absorb. A change
+      # that alters output cannot merge until the snapshots are regenerated,
+      # which puts the behavioural change in the same diff as its cause.
+      - name: Golden-file suite
+        run: cargo run -p nomo-cli -- test
+
+      # Determinism is a property of the build, not just of the source, so it
+      # gets its own gate rather than relying on review to catch a stray
+      # `f64::sin` or a fused multiply-add.
+      - name: No host math, no I/O in the engine
+        run: ./scripts/check-no-host-math.sh
+
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install toolchain
+        run: rustup show
+
+      # nomo-core must keep compiling to WebAssembly unchanged. Breaking this is
+      # how a crate accidentally acquires a filesystem or clock dependency.
+      - name: Build core for wasm32
+        run: cargo build -p nomo-core --target wasm32-unknown-unknown
+
+      # Node is the WebAssembly engine, nothing more: no package is installed and
+      # the scripts under scripts/ have no dependencies. They are part of the
+      # evidence for the determinism claim, so they stay readable in one sitting.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # The verification the whole numeric model exists for. Builds the engine
+      # for wasm32, asserts the artifact imports nothing and enables no SIMD,
+      # then requires the corpus to render byte-identically natively and under
+      # WebAssembly. See docs/design-note.md §3.
+      - name: Native and WebAssembly agree byte for byte
+        run: ./scripts/compare-targets.sh
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install toolchain
+        run: rustup show
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # Builds the engine and the front end, then loads the result in headless
+      # Chrome, which the runner already has. Checks that the worksheet
+      # evaluates, that highlighting lands on the right characters — an offset
+      # bug once shifted every token and no unit test could see it — and that
+      # printing gives the worksheet without the editor.
+      - name: Build and check the browser front end
+        run: ./scripts/build-web.sh
+
+  # The same gates on a second CPU architecture. compare-targets.sh proves that
+  # two compilations agree, but runs both on one machine; until this job existed,
+  # agreement across architectures rested on the specification argument in design
+  # note §3 rather than on evidence.
+  #
+  # The snapshots under tests/golden/ are committed, so there is nothing to
+  # configure: a byte-exact match here means x86-64 and aarch64 produced
+  # identical output, and a mismatch is the reproducibility claim failing.
+  #
+  # scripts/compare-arch.sh is the local version of this job for developers on
+  # x86-64. It emulates; this runs on silicon, so this is the stronger evidence.
+  arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install toolchain
+        run: rustup show
+
+      - name: Test
+        run: cargo test --workspace
+
+      # The load-bearing step: aarch64 rendering the corpus into the same bytes
+      # x86-64 committed.
+      - name: Golden-file suite on aarch64
+        run: cargo run -p nomo-cli -- test
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # And the WebAssembly comparison again on this architecture, which puts a
+      # second V8 backend under the same corpus.
+      - name: Native and WebAssembly agree on aarch64
+        run: ./scripts/compare-targets.sh
+
+  # The SMath corpora as a regression gate. The worksheets are third-party and
+  # live outside this repository; this job fetches them and verifies them by
+  # hash before measuring anything.
+  #
+  # This is not a second golden suite. `tests/corpus/*.txt` records, per
+  # worksheet, how many stored answers agreed, how many did not, how many lines
+  # never evaluated, how many constructs were reported — and a digest of the
+  # computed values *and* of the emitted source. So it fails on any change that
+  # moves a result or rewrites a line, whether or not the move is an
+  # improvement, and the fix is to regenerate the baseline in the same commit as
+  # the code. See scripts/check-corpus.sh.
+  #
+  # It is also the widest determinism evidence in this repository. The golden
+  # suite compares the worksheets written here; this compares the values
+  # computed from 114 worksheets written by other people over fifteen years,
+  # against a digest produced on a different machine.
+  corpus:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install toolchain
+        run: rustup show
+
+      # The worksheets are third-party and are not in this repository. Fetching
+      # verifies every file against scripts/corpora/files.sha256, so what this
+      # job measures is provably the corpus the baselines were recorded against.
+      # NOMO_CORPORA_MIRROR points at a mirror of the same archives when one is
+      # configured; without it the upstream sites are used directly.
+      - name: Fetch the corpora
+        env:
+          NOMO_CORPORA_MIRROR: ${{ secrets.NOMO_CORPORA_MIRROR }}
+        run: ./scripts/fetch-corpora.sh
+
+      # `check-corpus.sh` skips a corpus it cannot find, which is right on a
+      # machine that does not have the worksheets and wrong here: their absence
+      # would turn this job green while it guarded nothing.
+      - name: The corpora are present
+        run: |
+          test -d "corpora/nomo-corpus/sm"
+          test -d "corpora/technical-mechanics-samples"
+
+      - name: SMath corpus baselines
+        run: ./scripts/check-corpus.sh
+
+      # A report rather than a gate: every number it prints is work still to do,
+      # so it exits zero however bad the news is. It is here because the ranking
+      # is what decides the importer's next phase, and having it per push means
+      # nobody has to run it to find out where the work moved.
+      - name: Coverage report
+        run: |
+          cargo run -q -p nomo-smath --bin smath-coverage -- corpora/nomo-corpus/sm
+          cargo run -q -p nomo-smath --bin smath-coverage -- corpora/technical-mechanics-samples

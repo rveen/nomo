@@ -1,0 +1,126 @@
+# Every file the corpus gate reads, by SHA-256, relative to CORPUS_ROOT.
+#
+# This is the whole reason the worksheets themselves need not be committed: a
+# corpus fetched by scripts/fetch-corpora.sh is provably the one the baselines
+# in tests/corpus/ were recorded against, and a corpus that drifted upstream
+# says so rather than quietly moving the numbers.
+#
+# Regenerate after a deliberate corpus change:
+#   (cd corpora && find nomo-corpus/sm technical-mechanics-samples -type f \
+#      | LC_ALL=C sort | tr '\n' '\0' | xargs -0 sha256sum)
+1d8ae9497325a572ae8cdec7cc7e29282f98e59246f5811024f826b370218c6e  nomo-corpus/sm/Batchreactor.sm
+ebe5eba8d0febe3bc2a7d030ae3ce8d0fb468764c47db7a7dac5d61f2b16fffa  nomo-corpus/sm/BilinearInterpolation.sm
+c93d55d4b1d4daf7765590dfce727cda4a0127a383cf81b03d796d60ebb571f9  nomo-corpus/sm/Broyden-method.sm
+132ef562f58b9bda31f6faa9c6eb1c0432f97ffef49faec2193cebd0c9d9b510  nomo-corpus/sm/CEE2500Test02Problem[1].sm
+ece3471a9e596ce150573ad03ca041bb6c86efac0f815ff70ef493d341440cde  nomo-corpus/sm/CEE2500Test02Problem[2].sm
+09d17ec1f18fcb3d28c9b3742766fe75d0582172c21c824469b2a57003cb6120  nomo-corpus/sm/CEE2500Test02Problem[3].sm
+ce6b1c449719dd10519ed2f4d04e5308fda2d7e199d7882e784048fd3998826e  nomo-corpus/sm/CEE2500Test02Problem[4].sm
+afd8f3a1f6bc8b9a73c23be109b683fbd46aff1be708c3c7073a51446cb89b99  nomo-corpus/sm/CEE3030Fall2009SolutionTest2.sm
+e8c7811a3275574199822a30988f66ec7e86e537b27d22ab2d29894f2fc6a69c  nomo-corpus/sm/CEE3500Fall2009Test03Problem[1].sm
+ae30e003019dc3498c9384ad13bdf14134e641eaa1da52fbcc566fbd2d95a65a  nomo-corpus/sm/CEE3500Fall2009Test03Problem[2].sm
+f6cb2d4e8d710e3c8a1fa575816d6a0cf62721620f54e76c9f098213bedd393b  nomo-corpus/sm/CEE3500Fall2009Test03Problem[3].sm
+6700f47bc2f90b8abc3043c013fdf51bb096b2613aff4cf69c346999674db641  nomo-corpus/sm/CEE3500Fall2009Test03Problem[4].sm
+4c9168d0bd192dd97f734e906fb0343fa3054a0e5843b8ae7558bba45a08c8ee  nomo-corpus/sm/CEE3500Test01Problem01.sm
+464de0e058e3110a352f6ac7769652b6967e4b635813891167a9a10b7f046ba9  nomo-corpus/sm/CEE3500Test01Problem02.sm
+3cb78467af64b049881bfaf01421990f770f9a8a04c19f60ea192fa0622e4b6c  nomo-corpus/sm/CEE3500Test01Problem03.sm
+0e67e05ce0031c9b125dc71c8ef5c1f4bee0a0d46b34c37d352d131c4da76c95  nomo-corpus/sm/Calc Area Properties of Composite Rectangular Areas.sm
+366e9cda041f1ca4f06644c13d0eeb7b9e72b231dc1b7507bd915a82ed53db8b  nomo-corpus/sm/DesignReinforcedConcreteSlabACI318.sm
+8a79f1f42de66306ced48a73aa9b98b55c6ed75a901f0abf23e37dc4480dbdef  nomo-corpus/sm/ElecEngExample.sm
+295bf2c64b51b65a9c250dfe0d2b3beb2072283a9a015e7c6c02484ac61fc6e8  nomo-corpus/sm/EndPlateConnectionKrishnamurthy1978.sm
+5fba25506c081a5d35bc22796ff42a8ca36cd108f84750277ef2300067de9afa  nomo-corpus/sm/Engine Heat Rejection Calcs.sm
+17d55bc3c54ec3959a211c7724953964232f5ca0cd187882144426cd3f28fe64  nomo-corpus/sm/Engineering Calculations - Column Design.sm
+c97f58fd289fdb6b36e20cb326b1283f11c18c17305daed4c654e8e7f5e9db85  nomo-corpus/sm/Engineering Calculations - Ramp Design.sm
+335564fb0bb9d51e760ed1b7cb7a5e8c5954825ecb9db54d1dfe37f431e5833b  nomo-corpus/sm/Finite differences.sm
+92a403797f2572dee798c8827b5016a6a543869c9cd43c50bd4fad91fefcae7d  nomo-corpus/sm/HL-93.sm
+054e4d02afa3a593fee0e305dc19c5aa897637e3838ac26d334c5c92a524f25d  nomo-corpus/sm/Hydraulic Geometry of Rivers 120704.sm
+be91fc836341a5d1ddf94ee4f9ab286feb25d82012ee732058453ab1baefbf07  nomo-corpus/sm/ImplicitFunctionGrapher.sm
+34b59182223429b4e951d1a9ac7b085af7a07f5b857c631dbdc5a7167ba53eae  nomo-corpus/sm/NASA_atmosphere.sm
+5f36ad9bab42e51497e30a5a4d9bb5eaada25b93a013dc199a90ded07a38ea63  nomo-corpus/sm/NewtonRaphsonApplications.sm
+4ea1b1b1ad56075e946fed5e96d0706d5cba7effcf6ff0a0442fc2cdeb668662  nomo-corpus/sm/Newtoninterp.sm
+af9a3594bc6ecfda90b12c8464dafbba6aed93e3ce5909481772431d4b28a5ad  nomo-corpus/sm/Newtoninterpb.sm
+4e61a461d1ba5d7a3721b7e6b31820d674b18affbd652da5cdd9deeeb1ad74bd  nomo-corpus/sm/PolyProperties_2013.02.01.sm
+4b74e0ed4478a25e0e686038f10f1541443a3830ad6cc983001ce0e3e641d9e9  nomo-corpus/sm/RCBeamDesignNZS3101.sm
+8f62e258cfcafbcb1602062712569933944b4fd8f2045917dd30ace867586f2a  nomo-corpus/sm/RK4-2ndOrderODE.sm
+43f46f7a6ae0a989d3ee4c32ba3b3bf920a8a133d989eed429b30a7d0a7ea02b  nomo-corpus/sm/RK4SingleEquation.sm
+abf0f577d07de06ec6cf136ce4e32777091f14536b1e112756817693b76c539b  nomo-corpus/sm/RK4SystemEquations.sm
+0ed6a211775ec46488795660c52a2d07608868cd44eacb01b8a20298f19b1094  nomo-corpus/sm/SimplySupportedTimberBeam_Eurocode5_v1.0.sm
+b9ea7c79dfcf28b80981dfc86a53ded6d76c9be7aa8980916df6a0d75c937e2f  nomo-corpus/sm/Swamee-Jain friction factor for pipe flow 121231.sm
+9c279a2f8ee1c3f1bfba8da50b2b06d0b0d88dec1b9bc1b0532bc32264d23a8c  nomo-corpus/sm/Vertical Velocity Distribution in a Hydraulically Smooth OCF 120704.sm
+4c68dc5bd38149964e0dcb8fc1f5a68d5da5173bfee0039b098662ea84f63d0f  nomo-corpus/sm/Weir Flow using the Rehbock Equation 120704.sm
+46461eb319f8c3db44ee0848db515634b7a15044bd5f436967e7d978664a1e9a  nomo-corpus/sm/aircraft_performance.sm
+aa318273ad7aeafd8d9a9a5dad0a86f4e2ee00d602c79f2ebf62a4286443adb1  nomo-corpus/sm/chisquareddist.sm
+ac7f0327093d0a33bab0bbbc24325cdb40d35e1a59c219966eb4838fb852f66f  nomo-corpus/sm/fdist.sm
+1756fae642cc00daf14701c74911af79b308b8b91ea8184f762c3bee130ff5e6  nomo-corpus/sm/financial.sm
+a2ecd30784fe241c8c29856558b325ecaff7e2d40244e8e862cbc40fca939160  nomo-corpus/sm/finger4.sm
+5b75ca33191966cf9d1daa1c67d940b12b59341c01c2e20f6f001efa05db2304  nomo-corpus/sm/gauss-legendre.sm
+9e75a06b5868edac1522e610d766854a6e158806095c493fa7fba17df4067171  nomo-corpus/sm/importDataCSV.sm
+800e29d40b7b16f503f6ef1b42f3a8cf963d4d556edb1f5a3ddc5d5ff79855c3  nomo-corpus/sm/lagrange.sm
+ba618461f7f6aaf0cc9d4311844f05ecb26f6695fb6893976f4fb46f63038e5e  nomo-corpus/sm/linfit.sm
+9fdcd206d80fabe6d2a510e87b9fe56bed9a7d5d57ee18dccff5f31a7997d015  nomo-corpus/sm/linfit_multiple.sm
+1986d5fbbd00e92f59efe29ad6055fefd732e46574dfd3ac23c5e554cd9cf859  nomo-corpus/sm/ling.sm
+dc013015f4a72b5487a2896e2bb7a1330ecb084f26e937aa35adff0c6e463fb8  nomo-corpus/sm/myDataFile.csv
+6143da6d6c05b99d9fb78539ed812b465d97ffaa396aa94d5691b5868e0f6191  nomo-corpus/sm/normaldist.sm
+4e3880249e216d0beccb131d172f891a0293b9a280667c2dc5f289f2b38f2a32  nomo-corpus/sm/pacejka.sm
+5616c8ea37d952494b8039d0d7922fcc9886ff3efe38c70a91d9e5fba37ae29b  nomo-corpus/sm/simpsonrichardson.sm
+c92f90046adb8db8a1112286df87deb907bd466563676ccad61f6a4bb29f4fa3  nomo-corpus/sm/studentdist.sm
+ff5398c75dd5d10158578bf5f4f5f1cf21e2088f7ff1425317446db853f236a0  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/10.1_AS.sm
+b802d4a1efb75e09f685d6bad9fe14be14b8135aead0fa8a8dead28add32d1bb  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/10.1_RK.sm
+65fd7eb6045441d1705495a92f405ee98fd3751852c7bc06a3b899f899c4dc8c  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/10.1_ZI.sm
+7b6864e99635e47c4f35e030b7abb826456ab672be5b2112722118eb1497b2ce  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/10.2.sm
+f2ffe75e9a6dda9aa1496d797a74c5ccec827f38661c40e1589100e51ed91262  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/10.3_F.sm
+58494f99291226a2f3648c5729f36c0b58cd136a6eeed8607b21c6346cf19837  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/10.3_V.sm
+59c6b80f8070b0b17e0c2d12d799ca673afaff32e2f5701670ac8b0303c06991  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/10.4.sm
+3ec5a18a2cb81c25ba76d56e8fda44159e21f58f48f4ca28d8447abc1fa20ac2  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/10.5.sm
+677bb33b4265f7f94ccde50d92a2e980e8aa1bef6039c5359decfe45c9903725  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/4.1.sm
+473f2a7b7012e74f106cba81ab95a4ff714341999432b6cdf8df96a1e12e5b7b  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/4.2.sm
+48303114d386bd3c077f3dc6c5017d4aefe137895f44b684139e30f2da73c3e9  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/4.3.sm
+de3d720c8640e2bdd21fa2f35d1eeeb793d25734933ad8d2b291cb03f1fff989  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/5.1.sm
+4f5398fbc1885cd7b2daef87d563db920060b579fd32dff5eeeeea162f065636  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/5.2-4.sm
+b245f304499f3b048e9305713a96289bf85706217068eec58bd7fd3c4164dbcb  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/5.6.sm
+b21121c8634d0073b1cd7828a96cd96a8c3731a01baa1583b3c0df5028d110e1  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/5.7.sm
+9cc44e8dc94c16cbd3d3cee55eb11a906d7d2bdb62d1cc1ade699a1d3b56382e  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/6.1.sm
+a6c0ae14f5d435751bca3ef218736005e3ea1787103c0838267752a42ea62131  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/6.2.sm
+f12a8544bd6b2a741ce2f6d278f8efda47b35c84761a256336c5022dd9c6d1aa  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/6.3.sm
+169c6f71459ab8e34b77e4ef17efde39c74b6b25caafcc4bd4093d06e1f79572  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/7.1.sm
+6c399000341ebcf189318e63a1d7d404be0998731529e0863b35cc536767b196  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/7.2.sm
+b746e480ca909a1002fef8b2506d594a3c9b23f2073b636a07a0a1efe45caed0  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/7.3.sm
+b6a48eb0c82ef13d02c5137d0a2908770844c5f61ef6ffdeb49ee15f2e3d15f7  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/7.4.sm
+77bd4e1ba69ba6d63569c85f625f21ec9679f655be41845a656ebe9e3e5161c1  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/8.1.sm
+28aeb43f0eb14e0421e3d1463ec51218b15c6a5395b2b3834b413fa0df71cc8f  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/8.2.sm
+8ffb03bf793f31d84256e26738d4a5f75c4ee2c28c71c54ac0425da6b33f6f2a  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/8.3.sm
+fc56c14f60928ec1c96431f485acfe0dbd4a301af1ebfe100db4b365d6d5f61d  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/8.4.sm
+e4d93806913a70164e24d224d8ac28483965cd2d2f2fac47031b1bbc222d18f6  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/9.1.sm
+3136e400421a0d3c145f496afda52e622c7decc85c40158349a52fb41681e19d  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/9.2.sm
+813570fc5eb920aaff0cf40503cbec72bffa713593d7fec8bb967b9e23cb0d30  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/9.3.sm
+20748120abd335a66fda560cf5d3fb3aeaeea8b1f3540cc3ea08aa123af55bab  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/10.1_AS.sm
+3b30bb6e88bddae3af372861438b44b64d1eba44c179ccea9f6f19003f95c6bf  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/10.1_RK.sm
+145f798927bf0b4ce9b19e0c311d826cb470dd8ec70840af4fe1538c98d160b1  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/10.1_ZI.sm
+1e2e86d8bc3ebb6cffd4fca20b43d0df49947762856304b54b50c8445021a660  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/10.2.sm
+68bb0d7fb524994761552ffc2febb7ce119bafc29ac36a1c5a7798c4e8370c4e  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/10.3_F.sm
+cbafa1911b130587469e3a00e0094f390786911e2ed2ab5ba15f4c6fcc6d9af6  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/10.3_V.sm
+31ab61444e5a2fe6f09c909395c521090e5d728f6873f19f070424d1f186bffa  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/10.4.sm
+f2474470145de5507f1425d53e40eb6b51428dfaed09b2be6857ab2617acd1bd  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/10.5.sm
+624ec5c823158686363c7ae34e422f629876f5ea519cc9779202277804fea2d5  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/4.1.sm
+6466235ee5ed3284a89ef0685b713dde23501e4f5266bc59f91c17c19be6ad82  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/4.2.sm
+00da9a59ad87b3ef0408ae390bd3ef177c860aa993f4367a9d8b3314c89fec9a  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/4.3.sm
+6ae0b29153e98361dd845878b4493a49bb47fce03766abc7c5f187c083eb1532  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/5.1.sm
+391256bb4308919b8ce4aef140af39d7807dfa3b732205a18cdbbc266b3d9166  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/5.2-4.sm
+9d95baa9cccf482101b583176702437d15bd339ee0420eaa7be3c64a2074d9e7  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/5.5.sm
+e5368b315dbb4d7153d0e393aa10e2081326e2a05afb8eb504fd72c89135b84c  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/5.6.sm
+23489cd3facb102484ce87c46157a361b0bf3099a7d90df8becd5340ad4612ba  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/5.7.sm
+15cafda45c08da41ed6d542dbad984afcb6a7ffa13417794a0bd8dffc1d50e5c  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/6.1.sm
+ddfe05c9947e36c8ccfa1cd54e5375515be2e7dc20bea404c627d406d187cacc  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/6.2.sm
+2b96d62d503b53ff45a658ee646770ebe616289da2768c1d945b17e70197739c  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/6.3.sm
+b023440caae9b91ea84d42d8b71f665c89be45fe133e3fc3e4097f94e0e6845a  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/7.1.sm
+d0c5e2f5329cab651f6d664f18fc0c7d46d06d895370de8500048c004ad89286  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/7.2.sm
+5f0100549bdb4e4fa1561701a0d20ddaf4cd5a5f0c457596222df7675eba0fdd  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/7.3.sm
+09c800e981c7bd017971461c29bc341c53a8596ddec91220c242f6d9ef18b38f  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/7.4.sm
+16ab5085a30d2c3b82a47d1f1bef166d283f521814c6191949153d02d9ad81f7  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/8.1.sm
+017be64dbf32253fad6ee84bb7ccf3814373132843818d13934a52367f22e84c  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/8.2.sm
+21d97a85b501d61d602ae2e612672c06ef912d3c98cff7469ab7162341301bf7  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/8.3.sm
+30c36b3293dc653ebb3aaee688866eccccfc14e1d263c6a1c692cca6fe582d86  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/8.4.sm
+c7ad9aca3a202394deec33353fd79e7f0865481b66957198c6173e437a516fb0  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/9.1.sm
+50e28d546258c33386963edbf3660a055c872fbff73e3e7b764abecef75fa88f  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/9.2.sm
+4880f339bf256dad782917de8c07383dd04bee7b4e39f9bd7399b04aaef1a6b4  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/9.3.sm
+76e7b630c5e38e24d689edf446b30566c94340e70ae04789cefb2b16c7b5a482  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/Auflage 1/Schwinger.sm
+71d0521a8d0e21ca087d199ac1a74d8104960b14f9dc2604a73099bd590cdff5  technical-mechanics-samples/Technische-Mechanik-mit-SMath-main/README.md

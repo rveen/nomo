@@ -1,0 +1,44 @@
+[package]
+name = "nomo-core"
+description = "Nomo engine: parse, dimensional analysis, evaluation to a trace. No I/O."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+libm.workspace = true
+
+[lints.rust]
+# nomo-core compiles to WASM unchanged. It must not reach for the filesystem,
+# the network, the clock, or threads — see docs/design-note.md §2.
+unsafe_code = "forbid"
+
+[lints.clippy]
+float_cmp = "warn"
+
+# NOT enabled, deliberately: `clippy::suboptimal_flops` and
+# `clippy::imprecise_flops`.
+#
+# `suboptimal_flops` rewrites `a * b + c` into `a.mul_add(b, c)` — a *fused*
+# multiply-add, which rounds once instead of twice. That is faster and locally
+# more accurate, and it is exactly what this engine must never do: whether a
+# fused instruction is available differs between targets, so the result would
+# differ between machines. WebAssembly's relaxed-SIMD `relaxed_madd` is
+# nondeterministic for precisely this reason — single rounding on hardware with
+# FMA, double rounding without it.
+#
+# `imprecise_flops` similarly steers toward `exp_m1`/`ln_1p`, which are host libm
+# entry points. All transcendentals go through `crate::math` instead, which
+# compiles a pure-Rust implementation into the artifact.
+#
+# Reproducibility beats both speed and last-bit accuracy here. See
+# `docs/design-note.md` §3 and the module docs in `src/math.rs`.
+
+# Arithmetic on Ratio, Dimension and Quantity is spelled with named methods
+# rather than operator traits. Quantity's arithmetic is fallible — dimensions may
+# disagree, and offset temperature scales reject most operations — so it cannot
+# implement `std::ops` at all. Having Ratio and Dimension use operators while
+# Quantity did not would be worse for a reader than uniform naming.
+should_implement_trait = "allow"

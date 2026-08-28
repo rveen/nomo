@@ -1,0 +1,154 @@
+# nomo snapshot v1
+# worksheet: numerics
+
+=== text ===
+Numerical methods
+==================
+Two things a worksheet reaches for that have no closed form: where a function
+crosses zero, and the area under it. Both take the *name* of a function, the
+way `map` and `iterate` do, and both do a fixed amount of work rather than
+testing a tolerance — so both give the same bits on every machine.
+A root, by bisection. It needs a bracket and says so if it does not have one.
+fn f defined
+r = root(f, 1, 2) = 1.41421
+check = sqrt(2) = 1.41421
+Dimensions travel through: a root of a length equation is a length.
+fn overhang defined
+a = root(overhang, 0 m, 10 m) = 3 m
+`root` needs a bracket. `roots` needs only a window: it samples a fixed 200
+intervals across it and bisects every sign change it finds. That is the
+question a worksheet usually has — where does this cross zero between here and
+here — when the answer may be one place, two, or none.
+q_0 = 2 kN/m
+span = 2 m
+fn V defined
+where = roots(V, 0 m, span) = roots(V, 0 m, 2 m) = 1.08167 m
+A wider window holds both zeros of the same parabola, and they come back in
+increasing order.
+both = roots(V, -2·span, 2·span) = roots(V, -2·(2 m), 2·(2 m)) = [-3.08167 m, 1.08167 m]
+The slope of a function at a point, exactly: no step size, because every value
+carries how fast it is changing and every operation carries the chain rule.
+fn area defined
+dA = derivative(area, 2 m) = 12.5664 m
+The second derivative is where a curve turns, and it divides the dimension
+twice: a distance by a time twice over is an acceleration.
+fn fall defined
+a = derivative(fall, 3 s, 2) = 9.81 m/s²
+Which is what makes a peak findable: it is where the slope crosses zero, so
+the two numerical methods compose.
+fn gain defined
+fn slope defined
+at_peak = roots(slope, 1, 5000) = 1000
+peak = gain(at_peak) = gain(1000) = 500
+A definite integral, by Simpson's rule over a fixed number of panels. Exact up
+to a cubic, which covers the load shapes a beam calculation actually uses.
+fn q defined
+area = integral(q, 0, 2) = 4
+The resultant of a triangular distributed load, which is where this earns its
+place: the dimension falls out of f(x)·dx with no rule about integration.
+w_max = 10 kN/m
+L = 3 m
+fn w defined
+R = integral(w, 0 m, L) = integral(w, 0 m, 3 m) = 15 kN
+Its line of action, from the first moment of the same load.
+fn wx defined
+x_bar = integral(wx, 0 m, L)/R = integral(wx, 0 m, 3 m)/(15 kN) = 2 m
+A system of equations linear in its unknowns, which is what statics is: the
+reactions of a body under load. `f` is a residual — what is left over when the
+unknowns are substituted — and the second argument names them by dimension.
+weight = 10 kg·9.81 m/s² = 98.1 N
+fn balance defined
+reactions = solve_linear(balance, [0 N, 0 N, 0 N]) = [-39.05 N, 98.1 N, 59.05 N]
+The Euclidean norm, and the unit vector that comes of dividing by it.
+s = [3, 4] MPa
+mag = norm(s) = norm([3000000 Pa, 4000000 Pa]) = 5 MPa
+direction = s/mag = [3000000 Pa, 4000000 Pa]/(5 MPa) = [0.6, 0.8]
+
+=== html ===
+<p class="prose">Numerical methods</p>
+<p class="prose">==================</p>
+<p class="prose">Two things a worksheet reaches for that have no closed form: where a function</p>
+<p class="prose">crosses zero, and the area under it. Both take the *name* of a function, the</p>
+<p class="prose">way `map` and `iterate` do, and both do a fixed amount of work rather than</p>
+<p class="prose">testing a tolerance — so both give the same bits on every machine.</p>
+<p class="prose">A root, by bisection. It needs a bracket and says so if it does not have one.</p>
+<div class="step note">fn f defined</div>
+<div class="step"><span class="name">r</span><span class="eq">=</span>root(f, 1, 2)<span class="eq">=</span><span class="result">1.41421</span></div>
+<div class="step"><span class="name">check</span><span class="eq">=</span>sqrt(2)<span class="eq">=</span><span class="result">1.41421</span></div>
+<p class="prose">Dimensions travel through: a root of a length equation is a length.</p>
+<div class="step note">fn overhang defined</div>
+<div class="step"><span class="name">a</span><span class="eq">=</span>root(overhang, 0 m, 10 m)<span class="eq">=</span><span class="result">3 m</span></div>
+<p class="prose">`root` needs a bracket. `roots` needs only a window: it samples a fixed 200</p>
+<p class="prose">intervals across it and bisects every sign change it finds. That is the</p>
+<p class="prose">question a worksheet usually has — where does this cross zero between here and</p>
+<p class="prose">here — when the answer may be one place, two, or none.</p>
+<div class="step"><span class="name">q_0</span><span class="eq">=</span>2 kN/m</div>
+<div class="step"><span class="name">span</span><span class="eq">=</span>2 m</div>
+<div class="step note">fn V defined</div>
+<div class="step"><span class="name">where</span><span class="eq">=</span>roots(V, 0 m, span)<span class="eq">=</span><span class="subst">roots(V, 0 m, 2 m)</span><span class="eq">=</span><span class="result">1.08167 m</span></div>
+<p class="prose">A wider window holds both zeros of the same parabola, and they come back in</p>
+<p class="prose">increasing order.</p>
+<div class="step"><span class="name">both</span><span class="eq">=</span>roots(V, -2·span, 2·span)<span class="eq">=</span><span class="subst">roots(V, -2·(2 m), 2·(2 m))</span><span class="eq">=</span><span class="result">[-3.08167 m, 1.08167 m]</span></div>
+<p class="prose">The slope of a function at a point, exactly: no step size, because every value</p>
+<p class="prose">carries how fast it is changing and every operation carries the chain rule.</p>
+<div class="step note">fn area defined</div>
+<div class="step"><span class="name">dA</span><span class="eq">=</span>derivative(area, 2 m)<span class="eq">=</span><span class="result">12.5664 m</span></div>
+<p class="prose">The second derivative is where a curve turns, and it divides the dimension</p>
+<p class="prose">twice: a distance by a time twice over is an acceleration.</p>
+<div class="step note">fn fall defined</div>
+<div class="step"><span class="name">a</span><span class="eq">=</span>derivative(fall, 3 s, 2)<span class="eq">=</span><span class="result">9.81 m/s²</span></div>
+<p class="prose">Which is what makes a peak findable: it is where the slope crosses zero, so</p>
+<p class="prose">the two numerical methods compose.</p>
+<div class="step note">fn gain defined</div>
+<div class="step note">fn slope defined</div>
+<div class="step"><span class="name">at_peak</span><span class="eq">=</span>roots(slope, 1, 5000)<span class="eq">=</span><span class="result">1000</span></div>
+<div class="step"><span class="name">peak</span><span class="eq">=</span>gain(at_peak)<span class="eq">=</span><span class="subst">gain(1000)</span><span class="eq">=</span><span class="result">500</span></div>
+<p class="prose">A definite integral, by Simpson's rule over a fixed number of panels. Exact up</p>
+<p class="prose">to a cubic, which covers the load shapes a beam calculation actually uses.</p>
+<div class="step note">fn q defined</div>
+<div class="step"><span class="name">area</span><span class="eq">=</span>integral(q, 0, 2)<span class="eq">=</span><span class="result">4</span></div>
+<p class="prose">The resultant of a triangular distributed load, which is where this earns its</p>
+<p class="prose">place: the dimension falls out of f(x)·dx with no rule about integration.</p>
+<div class="step"><span class="name">w_max</span><span class="eq">=</span>10 kN/m</div>
+<div class="step"><span class="name">L</span><span class="eq">=</span>3 m</div>
+<div class="step note">fn w defined</div>
+<div class="step"><span class="name">R</span><span class="eq">=</span>integral(w, 0 m, L)<span class="eq">=</span><span class="subst">integral(w, 0 m, 3 m)</span><span class="eq">=</span><span class="result">15 kN</span></div>
+<p class="prose">Its line of action, from the first moment of the same load.</p>
+<div class="step note">fn wx defined</div>
+<div class="step"><span class="name">x_bar</span><span class="eq">=</span>integral(wx, 0 m, L)/R<span class="eq">=</span><span class="subst">integral(wx, 0 m, 3 m)/(15 kN)</span><span class="eq">=</span><span class="result">2 m</span></div>
+<p class="prose">A system of equations linear in its unknowns, which is what statics is: the</p>
+<p class="prose">reactions of a body under load. `f` is a residual — what is left over when the</p>
+<p class="prose">unknowns are substituted — and the second argument names them by dimension.</p>
+<div class="step"><span class="name">weight</span><span class="eq">=</span>10 kg·9.81 m/s²<span class="eq">=</span><span class="result">98.1 N</span></div>
+<div class="step note">fn balance defined</div>
+<div class="step"><span class="name">reactions</span><span class="eq">=</span>solve_linear(balance, [0 N, 0 N, 0 N])<span class="eq">=</span><span class="result">[-39.05 N, 98.1 N, 59.05 N]</span></div>
+<p class="prose">The Euclidean norm, and the unit vector that comes of dividing by it.</p>
+<div class="step"><span class="name">s</span><span class="eq">=</span>[3, 4] MPa</div>
+<div class="step"><span class="name">mag</span><span class="eq">=</span>norm(s)<span class="eq">=</span><span class="subst">norm([3000000 Pa, 4000000 Pa])</span><span class="eq">=</span><span class="result">5 MPa</span></div>
+<div class="step"><span class="name">direction</span><span class="eq">=</span>s/mag<span class="eq">=</span><span class="subst">[3000000 Pa, 4000000 Pa]/(5 MPa)</span><span class="eq">=</span><span class="result">[0.6, 0.8]</span></div>
+
+=== values ===
+r = 1.414213562373095 dimensionless
+check = 1.4142135623730951 dimensionless
+a = 3.0 m
+q_0 = 2000.0 kg·s^-2
+span = 2.0 m
+where = 1.0816659994661326 m
+both = [-3.081665999466133 m, 1.0816659994661326 m]
+dA = 12.566370614359172 m
+a = 9.81 m·s^-2
+at_peak = 1000.0 dimensionless
+peak = 500.0 dimensionless
+area = 4.0 dimensionless
+w_max = 10000.0 kg·s^-2
+L = 3.0 m
+R = 15000.0 m·kg·s^-2
+x_bar = 2.0 m
+weight = 98.10000000000001 m·kg·s^-2
+reactions = [-39.050000000000004 m·kg·s^-2, 98.10000000000001 m·kg·s^-2, 59.050000000000004 m·kg·s^-2]
+s = [3000000.0 m^-1·kg·s^-2, 4000000.0 m^-1·kg·s^-2]
+mag = 5000000.0 m^-1·kg·s^-2
+direction = [0.6 dimensionless, 0.8 dimensionless]
+
+=== diagnostics ===
+warning[SH202] 33:1: `dA` is also a unit; this binding hides it for the rest of the worksheet

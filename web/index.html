@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nomo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Nomo</h1>
+  <nav aria-label="Worksheet">
+    <button type="button" id="new">New</button>
+    <button type="button" id="open">Open</button>
+    <button type="button" id="save">Save</button>
+    <button type="button" id="save-as">Save as</button>
+  </nav>
+  <p id="file-name">untitled.nomo</p>
+  <p id="status">loading…</p>
+</header>
+
+<main>
+  <section id="pane-editor" aria-label="Worksheet source">
+    <div id="editor"></div>
+  </section>
+  <section id="pane-output" aria-label="Results">
+    <div id="output"></div>
+  </section>
+</main>
+
+<footer>
+  <p>
+    Everything runs in this tab. The engine is WebAssembly, nothing is sent
+    anywhere, your work is kept in this browser, and it all works offline.
+  </p>
+</footer>
+
+<script type="module" src="bundle.js"></script>
+</body>
+</html>

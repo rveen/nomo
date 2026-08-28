@@ -1,0 +1,37 @@
+' Temperature, and the affine rules
+' °C and °F are offset scales, so not every operation on them is meaningful.
+'
+' A reading on an offset scale is a point; every other quantity is an interval, a
+' displacement. Each rule below falls out of that distinction rather than being
+' special-cased, and each is pinned here because getting one wrong produces a
+' plausible-looking number that is silently wrong.
+
+ambient = 20 °C
+rise = 5 K
+
+' A point displaced by an interval is a point.
+operating = ambient + rise
+
+' The difference of two points is an interval, not a point.
+setpoint = 15 °C
+margin = ambient - setpoint
+
+' Conversion is always allowed, in either direction.
+ambient -> K
+freezing = 32 °F
+freezing -> °C
+
+' K and °R are absolute, so they are ordinary linear quantities and carry none of
+' the restrictions above.
+absolute = 293.15 K
+doubled = 2*absolute
+
+' Intervals on an offset scale still combine freely: it is points that are
+' restricted, not the degree itself.
+span = 40 K - 10 K
+
+' A thermal calculation, to show the rules are not merely academic.
+c_steel = 486 J/(kg*K)
+mass = 12 kg
+heat = mass*c_steel*margin
+heat -> kJ

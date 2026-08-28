@@ -1,0 +1,44 @@
+' Diagnostics
+' A worksheet of deliberate mistakes, one per line.
+'
+' Error messages are output too, and output that nothing checks is output that
+' drifts. This file pins what the engine says when a worksheet is wrong: the
+' message, the code, and the position it points at. It is expected to fail
+' `nomo check` — that is what it is for.
+
+good = 2 m
+
+' Dimensions that do not agree cannot be added.
+mismatch = 1 m + 1 s
+
+' Two points on an offset scale do not add, and a point cannot be scaled.
+' The brackets are needed: juxtaposition binds at `*`'s precedence, so
+' `2*20 °C` is `(2*20) °C`, which is the ordinary reading 40 °C and no error.
+sum_of_points = 20 °C + 5 °C
+scaled_point = 2*(20 °C)
+
+' A name that was never bound.
+undefined = missing + 1
+
+' A function that does not exist, and one called with the wrong arity.
+nofunc = frobnicate(2)
+arity = sin(1, 2)
+
+' A unit that does not exist.
+badunit = 5 flurbles
+
+' Trigonometry needs a dimensionless argument.
+dimensional = sin(2 m)
+
+' A binding that fails takes the name over anyway. `PF` is peta-farads to the
+' unit table, and answering 1e15 F here rather than saying what went wrong is
+' the worst thing this engine could do.
+PF = missing
+PF
+
+' A cycle. Neither statement can be evaluated, and neither line is itself wrong.
+global loop_a = loop_b + 1
+global loop_b = loop_a + 1
+
+' Statements outside the cycle still evaluate normally.
+fine = good*3

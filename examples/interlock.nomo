@@ -1,0 +1,174 @@
+' nomo 1
+
+' Interlock line monitor — sense chain and its four states
+'
+' A safety interlock is a loop of wire threaded through every connector that has
+' to be mated before a high-voltage bus may energise. Unplug one and the loop
+' opens. The monitor has to tell four conditions apart — loop closed, loop open,
+' loop shorted to ground, loop shorted to the supply — and one measurement
+' cannot do it: a difference amplifier across the loop reads nearly zero for
+' closed, for a short to ground and for a short to the supply alike, because in
+' all three the two ends sit at the same potential.
+'
+' So the chain measures twice. The difference across the loop says whether
+' current is flowing, and the common-mode level says which rail the loop is
+' sitting on. Neither alone separates the four states; together they do, and
+' the worksheet exists to show that they do with margin.
+'
+' It is here for its shape as much as its circuit: a page of prose around short
+' arithmetic, the same names redefined once per scenario, divider ratios, and a
+' table of computed points plotted against each other.
+
+' The rails and the converter this feeds.
+V_supply = 5 V
+V_adc_max = 3.0 V
+adc_bits = 12
+
+' The loop is driven from the supply through a series resistor and returns
+' through a shunt to ground, so the two ends can be probed either side of the
+' wire that leaves the box.
+' image divider 300x220
+R_series = 160 ohm
+R_shunt = 910 ohm
+R_loop = 12 ohm
+
+' Healthy loop: one series circuit, and the drop across the wire itself is what
+' the differential channel is there to see.
+I_loop = V_supply/(R_series + R_loop + R_shunt) -> mA
+V_drop = I_loop*R_loop -> mV
+P_series = I_loop^2*R_series -> mW
+
+' The differential channel. Gain below unity on purpose: an open loop puts the
+' whole supply across the amplifier's inputs, and the converter takes 3 V.
+R_in_n = 20 kohm
+R_fb = 10 kohm
+R_in_p = 20 kohm
+R_gnd = 10 kohm
+A_diff = R_fb/R_in_n
+balanced = R_fb/R_in_n == R_gnd/R_in_p
+fn ch_diff(V_a, V_b) = A_diff*(V_a - V_b)
+
+' The common-mode channel: the average of the two ends, divided to fit.
+R_cm_top = 2.2 kohm
+R_cm_bot = 2.2 kohm
+k_cm = R_cm_bot/(R_cm_top + R_cm_bot)
+fn ch_cm(V_a, V_b) = k_cm*(V_a + V_b)/2
+
+' An RC on each channel ahead of the converter. The corner sits far above the
+' rate the loop is polled at and far below the switching noise it rejects.
+' image filter 300x160
+R_filter = 10 kohm
+C_filter = 1 nF
+f_corner = 1/(2*π*R_filter*C_filter) -> kHz
+tau = R_filter*C_filter -> µs
+
+' The four states. Each redefines the same two node voltages and reads both
+' channels through, which is what makes them comparable — the names mean the
+' same thing every time and only the conditions above them change. Nothing
+' mutates: each block is read by the lines below it and by nothing else.
+' image states 360x150
+
+' 1. Loop closed. Current flows; both ends sit high, a wire's drop apart.
+V_a = V_supply - I_loop*R_series
+V_b = I_loop*R_shunt
+closed_diff = ch_diff(V_a, V_b)
+closed_cm = ch_cm(V_a, V_b)
+
+' 2. Loop open. No current: the near end is pulled to the supply through the
+' series resistor and the far end to ground through the shunt.
+V_a = V_supply
+V_b = 0 V
+open_diff = ch_diff(V_a, V_b)
+open_cm = ch_cm(V_a, V_b)
+
+' 3. Short to ground. Both ends are held down, and the series resistor takes the
+' whole supply — which is the dissipation that sizes it.
+V_a = 0 V
+V_b = 0 V
+gnd_diff = ch_diff(V_a, V_b)
+gnd_cm = ch_cm(V_a, V_b)
+I_short = V_supply/R_series -> mA
+P_short = V_supply^2/R_series -> mW
+
+' 4. Short to the supply. Both ends are held up, so the differential channel
+' reads what state 1 and state 3 read and only the common mode tells them apart.
+V_a = V_supply
+V_b = V_supply
+sup_diff = ch_diff(V_a, V_b)
+sup_cm = ch_cm(V_a, V_b)
+
+' The four readings as a table, differential against common mode. A state is a
+' point on this plane, and the design works exactly when no two points are
+' closer together than the converter can resolve.
+states = [[closed_diff, closed_cm], [open_diff, open_cm], [gnd_diff, gnd_cm], [sup_diff, sup_cm]]
+plot(states)
+
+' Nothing may leave the converter's range at either end.
+diffs = [closed_diff, open_diff, gnd_diff, sup_diff]
+cms = [closed_cm, open_cm, gnd_cm, sup_cm]
+highest = max([max(diffs), max(cms)])
+lowest = min([min(diffs), min(cms)])
+within_range = highest < V_adc_max and lowest >= 0 V
+headroom = V_adc_max - highest
+
+' The differential channel separates the open loop from everything else; the
+' common-mode channel separates the other three from each other. The tightest
+' of those four gaps is what the design is judged on.
+lsb = V_adc_max/2^adc_bits -> mV
+gap_open = abs(open_diff - closed_diff)
+gap_gnd = abs(closed_cm - gnd_cm)
+gap_sup = abs(sup_cm - closed_cm)
+tightest = min([gap_open, gap_gnd, gap_sup])
+counts = tightest/lsb
+
+' A hundred converter steps between neighbouring states leaves room for the
+' resistor tolerances and the amplifier's offset, neither of which this
+' worksheet has sized yet.
+margin_needed = 100
+resolved = counts > margin_needed
+verdict = if within_range and resolved then "four states resolved" else "sense chain needs rework"
+
+' --- resources ---
+' The three diagrams above, drawn by scripts/make-example-figures.py.
+' image divider png 699
+'   iVBORw0KGgoAAAANSUhEUgAAASwAAADcCAIAAABF+guPAAACgklEQVR42u3csY2EMBRFUZeCCBBl
+'   UCURIbXQFsTE2NjfPkcvnWR3ruRkfrqBqpI/AYgQRAiIEEQIiBBECIgQRAiIEEQIiBBECIgQRAiI
+'   EEQIiBBECIgQRAiIEEQIiBBECIgQRAiIEEQIiBBECIgQRAiIEEQIiBBECIgQRAgEinCaF7MqE6EI
+'   TYSeo4xKhCBCESJCEYIIRYgIRQgiFCEiFCGIUISIUIQgQhEiQhGCCP1jEKEIQYQgQhGCCEGEIgQR
+'   QvTAIt6/ECEiFCE089QUIYgQRChCECGIUIQgQhChCEGEIEIRgghBhCIEEYIIRQgiBBGKEEQIIhQh
+'   iBBEKEIQIYhQhCBCEKEIQYQgQhGCCEGEIgQRgghFCCIEEYoQEYoQRChCRChCEKEIEaEIQYQiZNwI
+'   s6yfCPfj/DLfKkQoQjxZu4jwzw+CCEWICEUIIhQhIhQhiFCEiFCEIEIRIkIRwtu1rRUnQhChCPEc
+'   FSEiFKEIEaEIEaEIRYgIRYgIRShCROiX9YhQhCLEjRnX1hChCMHdUREiQhGCCEGEIgQRgghFCCIE
+'   EYoQRAgiFCGIEEQoQhAhiFCEIEIQoQhBhCBCEYIIQYQiBBGCCEUIIgQRihBECCIUIYgQRChCECGI
+'   UIQgQhChCEGEIEIRgghBhCIEEUITEWaZCEGE4MkqQhAhiFCEIEIQoQhBhCBCEYIIQYQiBBGCCEUI
+'   IgQRihBECCIUIYgQRChCECGIMHqEGS+CmLV8QkaEZiIERAgiBEQIIgRECCIERAgiBEQIIgRECCIE
+'   RAgiBEQIIgQRAiIEEQIiBBECIgQRAiIEEQIiBBECIgQRAiIEEQIiBBECIgQRAiIEEQIlPFEPqo8Y
+'   hZhLAAAAAElFTkSuQmCC
+' image filter png 578
+'   iVBORw0KGgoAAAANSUhEUgAAASwAAACgCAIAAAA5GsY1AAACCUlEQVR42u3dyw3DIBREUUpBXtB/
+'   h89NID7DOXIBo5greZE4rYCtmo8ARAgiBEQIIgRECCIERAgiBEQIIgRECCIERAgiBEQIIgRECCIE
+'   RAgiBEQIIgRECCIERAgiBEQIIgRECCIERAgiBES4TP/GjZcbJ0IRihARTo3QYEToTItQhCI0GBE6
+'   0yIUoQgNRoTOtAhFKEKDEaEzLUIRitBgROhMi1CEIjQYETrTIhShCA1GhM60CEUY8cOfpF8Gpd6C
+'   sLsvQhG6ciP0OGqw52QRilCEIhShwSIUoQgNE6EIDRahCEVomAhFaLAIRShCw0QoQoNFKEIRGiZC
+'   ERosQhGK0DARitBgEYrQvzKJUIQiFKEIRYgIRYgIESEiFCEiRISIUISIUIQgQhEiQhGCCEWICEUI
+'   IhQhIhQhiFCEIEJAhCBCQIQgQkCEIEJAhCBCQIQgQkCE1GuvKhchiFCEIEJAhCBCQIQgQkCEIEJA
+'   hCBCQISUr62JEEQoQrwGX4QgQhEiQhGCCEWICEUIIhQhIhQhiFCEiFCEIEIRIkIRgghFiAhFCCIU
+'   ISIUIYhQhIhQhCBCESJCEYIIRYgIRQgiFCEiFCGIUITetOs6933EIhShS4TgcRQQIYgQECGIEBAh
+'   iBAQIYgQECGIEBAhiBAQIYgQECGIEBAhiBAQIYgQECGIEBAhiBAQIYgQmOQHf1uq9zn7cxkAAAAA
+'   SUVORK5CYII=
+' image states png 804
+'   iVBORw0KGgoAAAANSUhEUgAAAWgAAACWCAIAAAB8aIVfAAAC60lEQVR42u3UwQ2EIBRFUUoxLohl
+'   UKUrltRCW1iDmJBPPDc08Gb8Jw1JelnyE0gChyRwSAKHJHBIAockgUMSOKTQ9XLFeeCQwAEOCRzg
+'   kAQOSeAAhwQOcEjgAIcEDnBI4ACHJHCAQwIHOCRwgEMCBzgkcIBDEjjAIYEDHBI4wCGBAxwSOMAh
+'   CRySwAEOCRzgkMABDgkc4JAEDkngAMfyjjPHef4OcIADHOAABzjAAQ5wgEPgAAc4BA6BAxzgEDjA
+'   AQ5wgAMc4AAHOMABDnCAAxwCh8ABDnAIHOAABzjAAQ5wgAMc4AAHOMABDoFD4BA4BA5wgAMc4AAH
+'   OMABDnCAAxzgAIfAIXAIHAIHOMAhcIADHOAABzjAAQ5wgEPgAAc4BA6BAxzgEDjAAQ5wgAMc4AAH
+'   OMABDnCAAxwCh8ABDnAIHOAABzjAAQ5wgAMc4AAHOMABDoFD4BA4bAcHOMABDnCAAxzgAAc4wAEO
+'   cIBDjsd2cMjx2A4OcDge28EBDnCAAxzgAAc4wAEOgQMc4JDjsR0c4HA8toMDHOAABzjAAQ5wgAMc
+'   4AAHOMAhx2M7OMDheGwHBzjAAQ5wgAMc4AAHOMABDnCAQ47HdnDI8dgODnCAAxzgAAc4wAEOcIAD
+'   HOAAhxwPOMAhx2M7OMDheGwHBzjAAQ5wgAMc4AAHOMABDnCAQ47HdnAsgcPx2A4OcPiAbLcdHOBw
+'   PLaDAxyOx3ZwgMPx2A4OcDge28EBDh+Q7baDwwdku+3gAIfjsR0c4HA8toMDHI7HdnCAwwdku+3g
+'   8AHZbjs4wOF4bAcHOByP7eAAh+OxHRzg8AHZDg5w+IBstx0c4HA8toMDHI7HdnCAw/HYDg5wOB7b
+'   wQEOH5DttoMDHLbbDg5wOB7bwQEOx2M7OMDheGwHBzh8QLbbDo6Z7to8z9v6gcPzvB3gkPTPwCEJ
+'   HJLAIQkcksAhCRySBA5J4JAEDkngkAQOSQKHJHBIAockcEgChySBQ9KHHhs/0nCwxuWbAAAAAElF
+'   TkSuQmCC

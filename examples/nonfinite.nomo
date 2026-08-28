@@ -1,0 +1,39 @@
+' Non-finite results
+' NaN, the infinities, and signed zero.
+'
+' These are in the corpus for the cross-target comparison rather than for the
+' reader. NaN is the one value WebAssembly does not fully pin: the payload bits,
+' and the sign of a NaN produced from non-NaN operands, are both left to the
+' implementation. So a NaN computed here and a NaN computed in a browser may
+' differ in bits while being equally correct, and if those bits ever reached a
+' snapshot the golden suite would fail for a reason that is not a bug.
+'
+' Every route to a NaN the language offers is therefore exercised, so that the
+' native and WebAssembly snapshots have to agree on all of them.
+
+' Undefined quotients and products.
+zero_over_zero = 0/0
+zero_times_infinity = 0*inf
+
+' Out of domain. Nomo has no complex numbers, so these are NaN and not errors.
+root_of_negative = sqrt(0 - 1)
+log_of_negative = ln(0 - 1)
+arcsine_out_of_range = asin(2)
+
+' The indeterminate difference.
+infinity_less_infinity = inf - inf
+
+' The infinities themselves are exactly representable and carry units.
+positive = 1/0
+negative = 0 - 1/0
+with_units = 1 m/0
+
+' Signed zero is a real IEEE 754 distinction and a deterministic one, unlike a
+' NaN payload, so it is pinned rather than normalised away. Note that `0 - 0.0`
+' is *positive* zero: only unary negation reaches the other one.
+negative_zero = -0.0
+positive_zero = 0 - 0.0
+sum_of_zeros = 0.0 + negative_zero
+
+' The difference is observable, which is why it is worth pinning.
+reciprocal_of_negative_zero = 1/negative_zero

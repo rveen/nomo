@@ -1,0 +1,112 @@
+# nomo snapshot v1
+# worksheet: functions
+
+=== text ===
+Built-in functions
+Every transcendental the language offers, in one place.
+
+This worksheet exists for the golden-file suite more than for the reader. The
+claim the whole design rests on is that transcendentals come from a libm
+compiled into the artifact rather than the host's, so that two machines agree
+to the last bit. Nothing else under examples/ calls one, so without this file
+the native-versus-WASM comparison in phase 7 would pass without testing the
+thing it exists to test.
+x = 0.7
+n = 3.25
+Trigonometric. Arguments are dimensionless; rad, ° and % all qualify.
+s = sin(x) = sin(0.7) = 0.644218
+c = cos(x) = cos(0.7) = 0.764842
+t = tan(x) = tan(0.7) = 0.842288
+half = sin(30 °) = 0.5
+Inverses, including the two-argument form.
+arcsine = asin(0.5) = 0.523599
+arccosine = acos(0.5) = 1.0472
+arctangent = atan(1) = 0.785398
+quadrant = atan2(1, 2) = 0.463648
+Hyperbolic.
+sh = sinh(x) = sinh(0.7) = 0.758584
+ch = cosh(x) = cosh(0.7) = 1.25517
+th = tanh(x) = tanh(0.7) = 0.604368
+Exponential and logarithmic.
+ex = exp(x) = exp(0.7) = 2.01375
+l = ln(n) = ln(3.25) = 1.17865
+l10 = log10(n) = log10(3.25) = 0.511883
+l2 = log2(n) = log2(3.25) = 1.70044
+Numeric. sqrt halves the dimension, so it is exercised on a real area.
+area = 16 m²
+side = sqrt(area) = sqrt(16 m²) = 4 m
+a = abs(-n) = abs(-3.25) = 3.25
+r = round(n) = round(3.25) = 3
+f = floor(n) = floor(3.25) = 3
+ce = ceil(n) = ceil(3.25) = 4
+The identity that would catch a mismatched pair.
+pythagoras = sin(x)² + cos(x)² = sin(0.7)² + cos(0.7)² = 1
+
+=== html ===
+<p class="prose">Built-in functions</p>
+<p class="prose">Every transcendental the language offers, in one place.</p>
+<p class="prose">This worksheet exists for the golden-file suite more than for the reader. The</p>
+<p class="prose">claim the whole design rests on is that transcendentals come from a libm</p>
+<p class="prose">compiled into the artifact rather than the host's, so that two machines agree</p>
+<p class="prose">to the last bit. Nothing else under examples/ calls one, so without this file</p>
+<p class="prose">the native-versus-WASM comparison in phase 7 would pass without testing the</p>
+<p class="prose">thing it exists to test.</p>
+<div class="step"><span class="name">x</span><span class="eq">=</span>0.7</div>
+<div class="step"><span class="name">n</span><span class="eq">=</span>3.25</div>
+<p class="prose">Trigonometric. Arguments are dimensionless; rad, ° and % all qualify.</p>
+<div class="step"><span class="name">s</span><span class="eq">=</span>sin(x)<span class="eq">=</span><span class="subst">sin(0.7)</span><span class="eq">=</span><span class="result">0.644218</span></div>
+<div class="step"><span class="name">c</span><span class="eq">=</span>cos(x)<span class="eq">=</span><span class="subst">cos(0.7)</span><span class="eq">=</span><span class="result">0.764842</span></div>
+<div class="step"><span class="name">t</span><span class="eq">=</span>tan(x)<span class="eq">=</span><span class="subst">tan(0.7)</span><span class="eq">=</span><span class="result">0.842288</span></div>
+<div class="step"><span class="name">half</span><span class="eq">=</span>sin(30 °)<span class="eq">=</span><span class="result">0.5</span></div>
+<p class="prose">Inverses, including the two-argument form.</p>
+<div class="step"><span class="name">arcsine</span><span class="eq">=</span>asin(0.5)<span class="eq">=</span><span class="result">0.523599</span></div>
+<div class="step"><span class="name">arccosine</span><span class="eq">=</span>acos(0.5)<span class="eq">=</span><span class="result">1.0472</span></div>
+<div class="step"><span class="name">arctangent</span><span class="eq">=</span>atan(1)<span class="eq">=</span><span class="result">0.785398</span></div>
+<div class="step"><span class="name">quadrant</span><span class="eq">=</span>atan2(1, 2)<span class="eq">=</span><span class="result">0.463648</span></div>
+<p class="prose">Hyperbolic.</p>
+<div class="step"><span class="name">sh</span><span class="eq">=</span>sinh(x)<span class="eq">=</span><span class="subst">sinh(0.7)</span><span class="eq">=</span><span class="result">0.758584</span></div>
+<div class="step"><span class="name">ch</span><span class="eq">=</span>cosh(x)<span class="eq">=</span><span class="subst">cosh(0.7)</span><span class="eq">=</span><span class="result">1.25517</span></div>
+<div class="step"><span class="name">th</span><span class="eq">=</span>tanh(x)<span class="eq">=</span><span class="subst">tanh(0.7)</span><span class="eq">=</span><span class="result">0.604368</span></div>
+<p class="prose">Exponential and logarithmic.</p>
+<div class="step"><span class="name">ex</span><span class="eq">=</span>exp(x)<span class="eq">=</span><span class="subst">exp(0.7)</span><span class="eq">=</span><span class="result">2.01375</span></div>
+<div class="step"><span class="name">l</span><span class="eq">=</span>ln(n)<span class="eq">=</span><span class="subst">ln(3.25)</span><span class="eq">=</span><span class="result">1.17865</span></div>
+<div class="step"><span class="name">l10</span><span class="eq">=</span>log10(n)<span class="eq">=</span><span class="subst">log10(3.25)</span><span class="eq">=</span><span class="result">0.511883</span></div>
+<div class="step"><span class="name">l2</span><span class="eq">=</span>log2(n)<span class="eq">=</span><span class="subst">log2(3.25)</span><span class="eq">=</span><span class="result">1.70044</span></div>
+<p class="prose">Numeric. sqrt halves the dimension, so it is exercised on a real area.</p>
+<div class="step"><span class="name">area</span><span class="eq">=</span>16 m²</div>
+<div class="step"><span class="name">side</span><span class="eq">=</span>sqrt(area)<span class="eq">=</span><span class="subst">sqrt(16 m²)</span><span class="eq">=</span><span class="result">4 m</span></div>
+<div class="step"><span class="name">a</span><span class="eq">=</span>abs(-n)<span class="eq">=</span><span class="subst">abs(-3.25)</span><span class="eq">=</span><span class="result">3.25</span></div>
+<div class="step"><span class="name">r</span><span class="eq">=</span>round(n)<span class="eq">=</span><span class="subst">round(3.25)</span><span class="eq">=</span><span class="result">3</span></div>
+<div class="step"><span class="name">f</span><span class="eq">=</span>floor(n)<span class="eq">=</span><span class="subst">floor(3.25)</span><span class="eq">=</span><span class="result">3</span></div>
+<div class="step"><span class="name">ce</span><span class="eq">=</span>ceil(n)<span class="eq">=</span><span class="subst">ceil(3.25)</span><span class="eq">=</span><span class="result">4</span></div>
+<p class="prose">The identity that would catch a mismatched pair.</p>
+<div class="step"><span class="name">pythagoras</span><span class="eq">=</span>sin(x)² + cos(x)²<span class="eq">=</span><span class="subst">sin(0.7)² + cos(0.7)²</span><span class="eq">=</span><span class="result">1</span></div>
+
+=== values ===
+x = 0.7 dimensionless
+n = 3.25 dimensionless
+s = 0.644217687237691 dimensionless
+c = 0.7648421872844885 dimensionless
+t = 0.8422883804630794 dimensionless
+half = 0.49999999999999994 dimensionless
+arcsine = 0.5235987755982989 dimensionless
+arccosine = 1.0471975511965979 dimensionless
+arctangent = 0.7853981633974483 dimensionless
+quadrant = 0.4636476090008061 dimensionless
+sh = 0.7585837018395334 dimensionless
+ch = 1.255169005630943 dimensionless
+th = 0.6043677771171634 dimensionless
+ex = 2.0137527074704766 dimensionless
+l = 1.1786549963416462 dimensionless
+l10 = 0.5118833609788743 dimensionless
+l2 = 1.7004397181410922 dimensionless
+area = 16.0 m^2
+side = 4.0 m
+a = 3.25 dimensionless
+r = 3.0 dimensionless
+f = 3.0 dimensionless
+ce = 4.0 dimensionless
+pythagoras = 1.0 dimensionless
+
+=== diagnostics ===
+none

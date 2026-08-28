@@ -1,0 +1,25 @@
+/target
+**/*.rs.bk
+*.pdb
+/pkg
+node_modules/
+.DS_Store
+
+# `nomo html` writes its output beside the worksheet it rendered. Scoped to the
+# example worksheets rather than `*.html`, which also swallowed web/index.html.
+/examples/*.html
+
+# Browser front end
+web/node_modules/
+web/dist/
+
+# Third-party, and neither is redistributable from here. `corpora/` is fetched
+# on demand by scripts/fetch-corpora.sh and verified against the hashes in
+# scripts/corpora/; `reference/` is two codebases to learn from, over a gigabyte
+# between them. See THIRD-PARTY.md.
+/corpora/
+/reference/
+
+# Python bytecode from scripts/
+__pycache__/
+*.pyc

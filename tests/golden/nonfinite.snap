@@ -1,0 +1,88 @@
+# nomo snapshot v1
+# worksheet: nonfinite
+
+=== text ===
+Non-finite results
+NaN, the infinities, and signed zero.
+
+These are in the corpus for the cross-target comparison rather than for the
+reader. NaN is the one value WebAssembly does not fully pin: the payload bits,
+and the sign of a NaN produced from non-NaN operands, are both left to the
+implementation. So a NaN computed here and a NaN computed in a browser may
+differ in bits while being equally correct, and if those bits ever reached a
+snapshot the golden suite would fail for a reason that is not a bug.
+
+Every route to a NaN the language offers is therefore exercised, so that the
+native and WebAssembly snapshots have to agree on all of them.
+Undefined quotients and products.
+zero_over_zero = 0/0 = NaN
+zero_times_infinity = 0·∞ = NaN
+Out of domain. Nomo has no complex numbers, so these are NaN and not errors.
+root_of_negative = sqrt(0 - 1) = NaN
+log_of_negative = ln(0 - 1) = NaN
+arcsine_out_of_range = asin(2) = NaN
+The indeterminate difference.
+infinity_less_infinity = ∞ - ∞ = NaN
+The infinities themselves are exactly representable and carry units.
+positive = 1/0 = ∞
+negative = 0 - 1/0 = -∞
+with_units = 1 m/0 = ∞ m
+Signed zero is a real IEEE 754 distinction and a deterministic one, unlike a
+NaN payload, so it is pinned rather than normalised away. Note that `0 - 0.0`
+is *positive* zero: only unary negation reaches the other one.
+negative_zero = -0
+positive_zero = 0 - 0 = 0
+sum_of_zeros = 0 + negative_zero = 0 + 0 = 0
+The difference is observable, which is why it is worth pinning.
+reciprocal_of_negative_zero = 1/negative_zero = 1/0 = -∞
+
+=== html ===
+<p class="prose">Non-finite results</p>
+<p class="prose">NaN, the infinities, and signed zero.</p>
+<p class="prose">These are in the corpus for the cross-target comparison rather than for the</p>
+<p class="prose">reader. NaN is the one value WebAssembly does not fully pin: the payload bits,</p>
+<p class="prose">and the sign of a NaN produced from non-NaN operands, are both left to the</p>
+<p class="prose">implementation. So a NaN computed here and a NaN computed in a browser may</p>
+<p class="prose">differ in bits while being equally correct, and if those bits ever reached a</p>
+<p class="prose">snapshot the golden suite would fail for a reason that is not a bug.</p>
+<p class="prose">Every route to a NaN the language offers is therefore exercised, so that the</p>
+<p class="prose">native and WebAssembly snapshots have to agree on all of them.</p>
+<p class="prose">Undefined quotients and products.</p>
+<div class="step"><span class="name">zero_over_zero</span><span class="eq">=</span>0/0<span class="eq">=</span><span class="result">NaN</span></div>
+<div class="step"><span class="name">zero_times_infinity</span><span class="eq">=</span>0·∞<span class="eq">=</span><span class="result">NaN</span></div>
+<p class="prose">Out of domain. Nomo has no complex numbers, so these are NaN and not errors.</p>
+<div class="step"><span class="name">root_of_negative</span><span class="eq">=</span>sqrt(0 - 1)<span class="eq">=</span><span class="result">NaN</span></div>
+<div class="step"><span class="name">log_of_negative</span><span class="eq">=</span>ln(0 - 1)<span class="eq">=</span><span class="result">NaN</span></div>
+<div class="step"><span class="name">arcsine_out_of_range</span><span class="eq">=</span>asin(2)<span class="eq">=</span><span class="result">NaN</span></div>
+<p class="prose">The indeterminate difference.</p>
+<div class="step"><span class="name">infinity_less_infinity</span><span class="eq">=</span>∞ - ∞<span class="eq">=</span><span class="result">NaN</span></div>
+<p class="prose">The infinities themselves are exactly representable and carry units.</p>
+<div class="step"><span class="name">positive</span><span class="eq">=</span>1/0<span class="eq">=</span><span class="result">∞</span></div>
+<div class="step"><span class="name">negative</span><span class="eq">=</span>0 - 1/0<span class="eq">=</span><span class="result">-∞</span></div>
+<div class="step"><span class="name">with_units</span><span class="eq">=</span>1 m/0<span class="eq">=</span><span class="result">∞ m</span></div>
+<p class="prose">Signed zero is a real IEEE 754 distinction and a deterministic one, unlike a</p>
+<p class="prose">NaN payload, so it is pinned rather than normalised away. Note that `0 - 0.0`</p>
+<p class="prose">is *positive* zero: only unary negation reaches the other one.</p>
+<div class="step"><span class="name">negative_zero</span><span class="eq">=</span>-0</div>
+<div class="step"><span class="name">positive_zero</span><span class="eq">=</span>0 - 0<span class="eq">=</span><span class="result">0</span></div>
+<div class="step"><span class="name">sum_of_zeros</span><span class="eq">=</span>0 + negative_zero<span class="eq">=</span><span class="subst">0 + 0</span><span class="eq">=</span><span class="result">0</span></div>
+<p class="prose">The difference is observable, which is why it is worth pinning.</p>
+<div class="step"><span class="name">reciprocal_of_negative_zero</span><span class="eq">=</span>1/negative_zero<span class="eq">=</span><span class="subst">1/0</span><span class="eq">=</span><span class="result">-∞</span></div>
+
+=== values ===
+zero_over_zero = NaN dimensionless
+zero_times_infinity = NaN dimensionless
+root_of_negative = NaN dimensionless
+log_of_negative = NaN dimensionless
+arcsine_out_of_range = NaN dimensionless
+infinity_less_infinity = NaN dimensionless
+positive = inf dimensionless
+negative = -inf dimensionless
+with_units = inf m
+negative_zero = -0.0 dimensionless
+positive_zero = 0.0 dimensionless
+sum_of_zeros = 0.0 dimensionless
+reciprocal_of_negative_zero = -inf dimensionless
+
+=== diagnostics ===
+none

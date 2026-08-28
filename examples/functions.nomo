@@ -1,0 +1,46 @@
+' Built-in functions
+' Every transcendental the language offers, in one place.
+'
+' This worksheet exists for the golden-file suite more than for the reader. The
+' claim the whole design rests on is that transcendentals come from a libm
+' compiled into the artifact rather than the host's, so that two machines agree
+' to the last bit. Nothing else under examples/ calls one, so without this file
+' the native-versus-WASM comparison in phase 7 would pass without testing the
+' thing it exists to test.
+
+x = 0.7
+n = 3.25
+
+' Trigonometric. Arguments are dimensionless; rad, ° and % all qualify.
+s = sin(x)
+c = cos(x)
+t = tan(x)
+half = sin(30 °)
+
+' Inverses, including the two-argument form.
+arcsine = asin(0.5)
+arccosine = acos(0.5)
+arctangent = atan(1)
+quadrant = atan2(1, 2)
+
+' Hyperbolic.
+sh = sinh(x)
+ch = cosh(x)
+th = tanh(x)
+
+' Exponential and logarithmic.
+ex = exp(x)
+l = ln(n)
+l10 = log10(n)
+l2 = log2(n)
+
+' Numeric. sqrt halves the dimension, so it is exercised on a real area.
+area = 16 m^2
+side = sqrt(area)
+a = abs(-n)
+r = round(n)
+f = floor(n)
+ce = ceil(n)
+
+' The identity that would catch a mismatched pair.
+pythagoras = sin(x)^2 + cos(x)^2

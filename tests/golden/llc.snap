@@ -1,0 +1,337 @@
+# nomo snapshot v1
+# worksheet: llc
+
+=== text ===
+nomo 1
+LLC resonant converter — first-harmonic design
+
+A worked design for a half-bridge LLC stage, carried out the way the
+textbooks do it: replace the square wave by its first harmonic, replace the
+rectifier and its load by the equivalent resistance they present at that
+frequency, and what is left is a linear network that can be written down.
+Steigerwald's 1988 comparison of resonant topologies is where the method comes
+from, and every converter application note since repeats it.
+
+It is here because it is the shape a real engineering worksheet has: a page of
+stated inputs, a chain of definitions that never mutates anything, a complex
+impedance, three gain curves that have to be compared against each other, and
+a verdict at the end that says whether the design meets the specification.
+[image tank: png, 1535 bytes, 520x260]
+The specification.
+V_bus = 400 V
+V_out = 48 V
+P_out = 1000 W
+f_sw_min = 60 kHz
+f_sw_max = 200 kHz
+The bridge drives a square wave between 0 and V_bus. Only its first harmonic
+is kept: peak 4/π of the half-swing, and the network sees the rms of that.
+V_sq_pk = 4/π·(V_bus/2) = 4/π·(400 V/2) = 254.648 V
+V_sq_rms = V_sq_pk/sqrt(2) = 254.648 V/sqrt(2) = 180.063 V
+The rectifier and the output load together look resistive to that harmonic.
+The 8/π² is the same 4/π twice over — once for the voltage the bridge applies
+and once for the current the rectifier draws.
+R_load = V_out²/P_out = (48 V)²/(1000 W) = 2.304 Ω
+I_out = P_out/V_out = 1000 W/(48 V) = 20.8333 A
+n = V_bus/V_out = 400 V/(48 V) = 8.33333
+R_ac = 8/π²·n²·R_load = 8/π²·8.33333²·(2.304 Ω) = 129.691 Ω
+The tank is chosen from three numbers: where it resonates, how heavily it is
+damped at full load, and how much magnetising inductance sits across it.
+f0 = 100 kHz
+Q_nom = 0.45
+Ln = 4
+Everything else follows. Z0 is the characteristic impedance the chosen Q asks
+for at this load; the resonant frequency then fixes the two components.
+Z0 = Q_nom·R_ac = 0.45·(129.691 Ω) = 58.361 Ω
+T0 = 1/(2·π·f0) = 1/(2·π·(100 kHz)) = 1.59155e-6 s
+Lr = Z0·T0 = 58.361 Ω·(1.59155e-6 s) = 92.8844 µH
+Cr = T0/Z0 = 1.59155e-6 s/(58.361 Ω) = 27.2708 nF
+Lm = Ln·Lr = 4·(92.8844 µH) = 371.538 µH
+Worth checking that the parts that came out reproduce the numbers they were
+derived from, since a slip in the algebra above would not show up anywhere
+else on the page.
+f0_check = 1/(2·π·sqrt(Lr·Cr)) = 1/(2·π·sqrt(92.8844 µH·(27.2708 nF))) = 100 kHz
+Q_check = sqrt(Lr/Cr)/R_ac = sqrt(92.8844 µH/(27.2708 nF))/(129.691 Ω) = 0.45
+The second resonance, with the magnetising inductance in series. The converter
+cannot be operated below it, so it is the floor on the sweep.
+f_min_res = 1/(2·π·sqrt(Cr·(Lr + Lm))) = 1/(2·π·sqrt(27.2708 nF·(92.8844 µH + 371.538 µH))) = 44.7214 kHz
+The tank impedance seen by the bridge: Lr and Cr in series with Lm in
+parallel with the reflected load. Complex, because the phase is the whole
+point — the bridge has to see an inductive load to switch softly.
+fn X_Lr defined
+fn X_Lm defined
+fn X_Cr defined
+fn Z_par defined
+fn Z_in defined
+Taken apart the three ways a worksheet asks for.
+Z_at_f0 = Z_in(f0) = Z_in(100 kHz) = (99.1036 + 55.0575i) ohm
+R_in = Re(Z_at_f0) = Re((99.1036 + 55.0575i) Ω) = 99.1036 Ω
+X_in = Im(Z_at_f0) = Im((99.1036 + 55.0575i) Ω) = 55.0575 Ω
+mag = abs(Z_at_f0) = abs((99.1036 + 55.0575i) Ω) = 113.37 ohm
+phase = arg(Z_at_f0)·180/π = arg((99.1036 + 55.0575i) Ω)·180/π = 29.0546
+Positive is inductive, which is the half of the plane the bridge must stay in.
+fn phase_deg defined
+soft_switching = phase_deg(f_sw_min) > 0 = phase_deg(60 kHz) > 0 = 1
+The gain, normalised to the resonant frequency. This is the expression the
+whole first-harmonic method exists to produce.
+fn gain defined
+A family of curves is written by naming its members, so the load each one
+stands for has a name on the page rather than a number in a call.
+fn light defined
+fn nominal defined
+fn heavy defined
+plot(light, nominal, heavy, f_sw_min, f_sw_max) = plot(light, nominal, heavy, 60 kHz, 200 kHz) = [plot light, nominal, heavy: 60000 to 200000 Hz, 257 points, 0.560057 to 2.05372]
+[image gain: png, 1686 bytes, 480x240]
+Unity at resonance, whatever the load — the property that makes f0 the design
+point. Below it the converter boosts, above it it bucks.
+nominal(f0) = nominal(100 kHz) = 1
+light(f0) = light(100 kHz) = 1
+heavy(f0) = heavy(100 kHz) = 1
+Where the nominal curve peaks, and how much gain is there. The slope is exact
+rather than a difference quotient, so the peak is found by asking where the
+slope crosses zero.
+fn slope defined
+f_peak = roots(slope, f_min_res, f0) = roots(slope, 44.7214 kHz, 100 kHz) = 56.0867 kHz
+M_peak = nominal(f_peak) = nominal(56.0867 kHz) = 1.62792
+The gain the specification actually demands, at both ends of the input range.
+V_bus_min = 340 V
+V_bus_max = 420 V
+M_needed_max = n·V_out/V_bus_min = 8.33333·(48 V)/(340 V) = 1.17647
+M_needed_min = n·V_out/V_bus_max = 8.33333·(48 V)/(420 V) = 0.952381
+margin = M_peak - M_needed_max = 1.62792 - 1.17647 = 0.451451
+verdict = if margin > 0 then "gain margin available" else "redesign: peak gain too low" = if 0.451451 > 0 then "gain margin available" else "redesign: peak gain too low" = "gain margin available"
+The impedance curve, drawn as a magnitude in ohms so the axis is a number.
+fn Z_mag defined
+fn Z_ohm defined
+plot(Z_ohm, f_sw_min, f_sw_max) = plot(Z_ohm, 60 kHz, 200 kHz) = [plot Z_ohm: 60000 to 200000 Hz, 257 points, 69.8676 to 170.687]
+The lowest impedance across the operating range bounds the tank current, and
+`min` over a sampled vector is how a worksheet asks that without a loop.
+sweep = range(f_sw_min, f_sw_max, 10 kHz) = range(60 kHz, 200 kHz, 10 kHz) = [60000 Hz, 70000 Hz, 80000 Hz, 90000 Hz, 100000 Hz, 110000 Hz, 120000 Hz, 130000 Hz, 140000 Hz, 150000 Hz, 160000 Hz, 170000 Hz, 180000 Hz, 190000 Hz, 200000 Hz]
+Z_sweep = map(Z_ohm, sweep) = map(Z_ohm, [60000 Hz, 70000 Hz, 80000 Hz, 90000 Hz, 100000 Hz, 110000 Hz, 120000 Hz, 130000 Hz, 140000 Hz, 150000 Hz, 160000 Hz, 170000 Hz, 180000 Hz, 190000 Hz, 200000 Hz]) = [69.8676, 82.2021, 94.0515, 104.415, 113.37, 121.196, 128.16, 134.482, 140.327, 145.824, 151.067, 156.128, 161.059, 165.902, 170.687]
+Z_low = min(Z_sweep) = min([69.8676, 82.2021, 94.0515, 104.415, 113.37, 121.196, 128.16, 134.482, 140.327, 145.824, 151.067, 156.128, 161.059, 165.902, 170.687]) = 69.8676
+I_tank_max = V_sq_rms/(Z_low ohm) = 180.063 V/(69.8676 ohm) = 2.57721 A
+Currents and stresses, which is what the design is finally judged on.
+I_pri = P_out/V_sq_rms = 1000 W/(180.063 V) = 5.5536 A
+V_Cr_pk = I_pri·sqrt(2)·X_Cr(f0) = 5.5536 A·sqrt(2)·X_Cr(100 kHz) = 458.366 V
+E_Lr = 1/2·Lr·(I_pri·sqrt(2))² = 1/2·(92.8844 µH)·(5.5536 A·sqrt(2))² = 2.86479 mJ
+Rated against the specification.
+V_Cr_rating = 630 V
+capacitor_ok = V_Cr_pk < V_Cr_rating = 458.366 V < 630 V = 1
+
+=== html ===
+<p class="prose">nomo 1</p>
+<p class="prose">LLC resonant converter — first-harmonic design</p>
+<p class="prose">A worked design for a half-bridge LLC stage, carried out the way the</p>
+<p class="prose">textbooks do it: replace the square wave by its first harmonic, replace the</p>
+<p class="prose">rectifier and its load by the equivalent resistance they present at that</p>
+<p class="prose">frequency, and what is left is a linear network that can be written down.</p>
+<p class="prose">Steigerwald's 1988 comparison of resonant topologies is where the method comes</p>
+<p class="prose">from, and every converter application note since repeats it.</p>
+<p class="prose">It is here because it is the shape a real engineering worksheet has: a page of</p>
+<p class="prose">stated inputs, a chain of definitions that never mutates anything, a complex</p>
+<p class="prose">impedance, three gain curves that have to be compared against each other, and</p>
+<p class="prose">a verdict at the end that says whether the design meets the specification.</p>
+<figure><img src="data:image/png;base64,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" width="520" height="260" alt="tank"></figure>
+<p class="prose">The specification.</p>
+<div class="step"><span class="name">V_bus</span><span class="eq">=</span>400 V</div>
+<div class="step"><span class="name">V_out</span><span class="eq">=</span>48 V</div>
+<div class="step"><span class="name">P_out</span><span class="eq">=</span>1000 W</div>
+<div class="step"><span class="name">f_sw_min</span><span class="eq">=</span>60 kHz</div>
+<div class="step"><span class="name">f_sw_max</span><span class="eq">=</span>200 kHz</div>
+<p class="prose">The bridge drives a square wave between 0 and V_bus. Only its first harmonic</p>
+<p class="prose">is kept: peak 4/π of the half-swing, and the network sees the rms of that.</p>
+<div class="step"><span class="name">V_sq_pk</span><span class="eq">=</span>4/π·(V_bus/2)<span class="eq">=</span><span class="subst">4/π·(400 V/2)</span><span class="eq">=</span><span class="result">254.648 V</span></div>
+<div class="step"><span class="name">V_sq_rms</span><span class="eq">=</span>V_sq_pk/sqrt(2)<span class="eq">=</span><span class="subst">254.648 V/sqrt(2)</span><span class="eq">=</span><span class="result">180.063 V</span></div>
+<p class="prose">The rectifier and the output load together look resistive to that harmonic.</p>
+<p class="prose">The 8/π² is the same 4/π twice over — once for the voltage the bridge applies</p>
+<p class="prose">and once for the current the rectifier draws.</p>
+<div class="step"><span class="name">R_load</span><span class="eq">=</span>V_out²/P_out<span class="eq">=</span><span class="subst">(48 V)²/(1000 W)</span><span class="eq">=</span><span class="result">2.304 Ω</span></div>
+<div class="step"><span class="name">I_out</span><span class="eq">=</span>P_out/V_out<span class="eq">=</span><span class="subst">1000 W/(48 V)</span><span class="eq">=</span><span class="result">20.8333 A</span></div>
+<div class="step"><span class="name">n</span><span class="eq">=</span>V_bus/V_out<span class="eq">=</span><span class="subst">400 V/(48 V)</span><span class="eq">=</span><span class="result">8.33333</span></div>
+<div class="step"><span class="name">R_ac</span><span class="eq">=</span>8/π²·n²·R_load<span class="eq">=</span><span class="subst">8/π²·8.33333²·(2.304 Ω)</span><span class="eq">=</span><span class="result">129.691 Ω</span></div>
+<p class="prose">The tank is chosen from three numbers: where it resonates, how heavily it is</p>
+<p class="prose">damped at full load, and how much magnetising inductance sits across it.</p>
+<div class="step"><span class="name">f0</span><span class="eq">=</span>100 kHz</div>
+<div class="step"><span class="name">Q_nom</span><span class="eq">=</span>0.45</div>
+<div class="step"><span class="name">Ln</span><span class="eq">=</span>4</div>
+<p class="prose">Everything else follows. Z0 is the characteristic impedance the chosen Q asks</p>
+<p class="prose">for at this load; the resonant frequency then fixes the two components.</p>
+<div class="step"><span class="name">Z0</span><span class="eq">=</span>Q_nom·R_ac<span class="eq">=</span><span class="subst">0.45·(129.691 Ω)</span><span class="eq">=</span><span class="result">58.361 Ω</span></div>
+<div class="step"><span class="name">T0</span><span class="eq">=</span>1/(2·π·f0)<span class="eq">=</span><span class="subst">1/(2·π·(100 kHz))</span><span class="eq">=</span><span class="result">1.59155e-6 s</span></div>
+<div class="step"><span class="name">Lr</span><span class="eq">=</span>Z0·T0<span class="eq">=</span><span class="subst">58.361 Ω·(1.59155e-6 s)</span><span class="eq">=</span><span class="result">92.8844 µH</span></div>
+<div class="step"><span class="name">Cr</span><span class="eq">=</span>T0/Z0<span class="eq">=</span><span class="subst">1.59155e-6 s/(58.361 Ω)</span><span class="eq">=</span><span class="result">27.2708 nF</span></div>
+<div class="step"><span class="name">Lm</span><span class="eq">=</span>Ln·Lr<span class="eq">=</span><span class="subst">4·(92.8844 µH)</span><span class="eq">=</span><span class="result">371.538 µH</span></div>
+<p class="prose">Worth checking that the parts that came out reproduce the numbers they were</p>
+<p class="prose">derived from, since a slip in the algebra above would not show up anywhere</p>
+<p class="prose">else on the page.</p>
+<div class="step"><span class="name">f0_check</span><span class="eq">=</span>1/(2·π·sqrt(Lr·Cr))<span class="eq">=</span><span class="subst">1/(2·π·sqrt(92.8844 µH·(27.2708 nF)))</span><span class="eq">=</span><span class="result">100 kHz</span></div>
+<div class="step"><span class="name">Q_check</span><span class="eq">=</span>sqrt(Lr/Cr)/R_ac<span class="eq">=</span><span class="subst">sqrt(92.8844 µH/(27.2708 nF))/(129.691 Ω)</span><span class="eq">=</span><span class="result">0.45</span></div>
+<p class="prose">The second resonance, with the magnetising inductance in series. The converter</p>
+<p class="prose">cannot be operated below it, so it is the floor on the sweep.</p>
+<div class="step"><span class="name">f_min_res</span><span class="eq">=</span>1/(2·π·sqrt(Cr·(Lr + Lm)))<span class="eq">=</span><span class="subst">1/(2·π·sqrt(27.2708 nF·(92.8844 µH + 371.538 µH)))</span><span class="eq">=</span><span class="result">44.7214 kHz</span></div>
+<p class="prose">The tank impedance seen by the bridge: Lr and Cr in series with Lm in</p>
+<p class="prose">parallel with the reflected load. Complex, because the phase is the whole</p>
+<p class="prose">point — the bridge has to see an inductive load to switch softly.</p>
+<div class="step note">fn X_Lr defined</div>
+<div class="step note">fn X_Lm defined</div>
+<div class="step note">fn X_Cr defined</div>
+<div class="step note">fn Z_par defined</div>
+<div class="step note">fn Z_in defined</div>
+<p class="prose">Taken apart the three ways a worksheet asks for.</p>
+<div class="step"><span class="name">Z_at_f0</span><span class="eq">=</span>Z_in(f0)<span class="eq">=</span><span class="subst">Z_in(100 kHz)</span><span class="eq">=</span><span class="result">(99.1036 + 55.0575i) ohm</span></div>
+<div class="step"><span class="name">R_in</span><span class="eq">=</span>Re(Z_at_f0)<span class="eq">=</span><span class="subst">Re((99.1036 + 55.0575i) Ω)</span><span class="eq">=</span><span class="result">99.1036 Ω</span></div>
+<div class="step"><span class="name">X_in</span><span class="eq">=</span>Im(Z_at_f0)<span class="eq">=</span><span class="subst">Im((99.1036 + 55.0575i) Ω)</span><span class="eq">=</span><span class="result">55.0575 Ω</span></div>
+<div class="step"><span class="name">mag</span><span class="eq">=</span>abs(Z_at_f0)<span class="eq">=</span><span class="subst">abs((99.1036 + 55.0575i) Ω)</span><span class="eq">=</span><span class="result">113.37 ohm</span></div>
+<div class="step"><span class="name">phase</span><span class="eq">=</span>arg(Z_at_f0)·180/π<span class="eq">=</span><span class="subst">arg((99.1036 + 55.0575i) Ω)·180/π</span><span class="eq">=</span><span class="result">29.0546</span></div>
+<p class="prose">Positive is inductive, which is the half of the plane the bridge must stay in.</p>
+<div class="step note">fn phase_deg defined</div>
+<div class="step"><span class="name">soft_switching</span><span class="eq">=</span>phase_deg(f_sw_min) &gt; 0<span class="eq">=</span><span class="subst">phase_deg(60 kHz) &gt; 0</span><span class="eq">=</span><span class="result">1</span></div>
+<p class="prose">The gain, normalised to the resonant frequency. This is the expression the</p>
+<p class="prose">whole first-harmonic method exists to produce.</p>
+<div class="step note">fn gain defined</div>
+<p class="prose">A family of curves is written by naming its members, so the load each one</p>
+<p class="prose">stands for has a name on the page rather than a number in a call.</p>
+<div class="step note">fn light defined</div>
+<div class="step note">fn nominal defined</div>
+<div class="step note">fn heavy defined</div>
+<div class="step">plot(light, nominal, heavy, f_sw_min, f_sw_max)</div>
+<figure class="plot"><svg viewBox="0 0 640 402" role="img" aria-label="plot of light, nominal, heavy">
+<line class="plot-grid" x1="230.57" y1="14.00" x2="230.57" y2="338.00"/>
+<text class="plot-label plot-x" x="230.57" y="356.00">100000</text>
+<line class="plot-grid" x1="426.29" y1="14.00" x2="426.29" y2="338.00"/>
+<text class="plot-label plot-x" x="426.29" y="356.00">150000</text>
+<line class="plot-grid" x1="622.00" y1="14.00" x2="622.00" y2="338.00"/>
+<text class="plot-label plot-end" x="622.00" y="356.00">200000</text>
+<line class="plot-grid" x1="74.00" y1="338.00" x2="622.00" y2="338.00"/>
+<text class="plot-label plot-y" x="66.00" y="342.00">0.5</text>
+<line class="plot-grid" x1="74.00" y1="257.00" x2="622.00" y2="257.00"/>
+<text class="plot-label plot-y" x="66.00" y="261.00">1</text>
+<line class="plot-grid" x1="74.00" y1="176.00" x2="622.00" y2="176.00"/>
+<text class="plot-label plot-y" x="66.00" y="180.00">1.5</text>
+<line class="plot-grid" x1="74.00" y1="95.00" x2="622.00" y2="95.00"/>
+<text class="plot-label plot-y" x="66.00" y="99.00">2</text>
+<line class="plot-grid" x1="74.00" y1="14.00" x2="622.00" y2="14.00"/>
+<text class="plot-label plot-y" x="66.00" y="18.00">2.5</text>
+<line class="plot-axis" x1="74.00" y1="338.00" x2="622.00" y2="338.00"/>
+<line class="plot-axis" x1="74.00" y1="14.00" x2="74.00" y2="338.00"/>
+<text class="plot-unit plot-end" x="622.00" y="374.00">Hz</text>
+<polyline class="plot-curve plot-curve-1" points="74.00,86.30 76.14,93.84 78.28,101.05 80.42,107.93 82.56,114.48 84.70,120.71 86.84,126.64 88.98,132.28 91.13,137.65 93.27,142.76 95.41,147.62 97.55,152.24 99.69,156.65 101.83,160.85 103.97,164.85 106.11,168.67 108.25,172.32 110.39,175.80 112.53,179.13 114.67,182.32 116.81,185.37 118.95,188.28 121.09,191.08 123.23,193.76 125.38,196.34 127.52,198.81 129.66,201.18 131.80,203.47 133.94,205.66 136.08,207.78 138.22,209.81 140.36,211.77 142.50,213.66 144.64,215.49 146.78,217.25 148.92,218.94 151.06,220.59 153.20,222.17 155.34,223.71 157.48,225.19 159.63,226.63 161.77,228.02 163.91,229.37 166.05,230.67 168.19,231.94 170.33,233.17 172.47,234.36 174.61,235.52 176.75,236.64 178.89,237.73 181.03,238.79 183.17,239.82 185.31,240.83 187.45,241.80 189.59,242.75 191.73,243.68 193.88,244.58 196.02,245.45 198.16,246.31 200.30,247.14 202.44,247.95 204.58,248.75 206.72,249.52 208.86,250.27 211.00,251.01 213.14,251.73 215.28,252.43 217.42,253.11 219.56,253.78 221.70,254.44 223.84,255.08 225.98,255.70 228.13,256.32 230.27,256.92 232.41,257.50 234.55,258.08 236.69,258.64 238.83,259.19 240.97,259.73 243.11,260.25 245.25,260.77 247.39,261.28 249.53,261.77 251.67,262.26 253.81,262.74 255.95,263.21 258.09,263.67 260.23,264.12 262.38,264.56 264.52,264.99 266.66,265.42 268.80,265.84 270.94,266.25 273.08,266.65 275.22,267.05 277.36,267.44 279.50,267.82 281.64,268.20 283.78,268.57 285.92,268.93 288.06,269.29 290.20,269.64 292.34,269.99 294.48,270.33 296.63,270.66 298.77,270.99 300.91,271.32 303.05,271.64 305.19,271.95 307.33,272.26 309.47,272.57 311.61,272.87 313.75,273.16 315.89,273.46 318.03,273.74 320.17,274.03 322.31,274.31 324.45,274.58 326.59,274.85 328.73,275.12 330.88,275.38 333.02,275.64 335.16,275.90 337.30,276.15 339.44,276.40 341.58,276.65 343.72,276.89 345.86,277.13 348.00,277.37 350.14,277.60 352.28,277.83 354.42,278.06 356.56,278.29 358.70,278.51 360.84,278.73 362.98,278.95 365.13,279.16 367.27,279.37 369.41,279.58 371.55,279.79 373.69,279.99 375.83,280.19 377.97,280.39 380.11,280.59 382.25,280.79 384.39,280.98 386.53,281.17 388.67,281.36 390.81,281.55 392.95,281.73 395.09,281.91 397.23,282.09 399.38,282.27 401.52,282.45 403.66,282.63 405.80,282.80 407.94,282.97 410.08,283.14 412.22,283.31 414.36,283.48 416.50,283.64 418.64,283.81 420.78,283.97 422.92,284.13 425.06,284.29 427.20,284.44 429.34,284.60 431.48,284.75 433.63,284.91 435.77,285.06 437.91,285.21 440.05,285.36 442.19,285.51 444.33,285.65 446.47,285.80 448.61,285.94 450.75,286.08 452.89,286.23 455.03,286.37 457.17,286.51 459.31,286.64 461.45,286.78 463.59,286.92 465.73,287.05 467.88,287.18 470.02,287.32 472.16,287.45 474.30,287.58 476.44,287.71 478.58,287.84 480.72,287.97 482.86,288.09 485.00,288.22 487.14,288.34 489.28,288.47 491.42,288.59 493.56,288.71 495.70,288.83 497.84,288.95 499.98,289.07 502.13,289.19 504.27,289.31 506.41,289.43 508.55,289.54 510.69,289.66 512.83,289.78 514.97,289.89 517.11,290.00 519.25,290.12 521.39,290.23 523.53,290.34 525.67,290.45 527.81,290.56 529.95,290.67 532.09,290.78 534.23,290.89 536.38,290.99 538.52,291.10 540.66,291.21 542.80,291.31 544.94,291.42 547.08,291.52 549.22,291.63 551.36,291.73 553.50,291.83 555.64,291.93 557.78,292.04 559.92,292.14 562.06,292.24 564.20,292.34 566.34,292.44 568.48,292.54 570.63,292.63 572.77,292.73 574.91,292.83 577.05,292.93 579.19,293.02 581.33,293.12 583.47,293.22 585.61,293.31 587.75,293.41 589.89,293.50 592.03,293.59 594.17,293.69 596.31,293.78 598.45,293.87 600.59,293.96 602.73,294.06 604.88,294.15 607.02,294.24 609.16,294.33 611.30,294.42 613.44,294.51 615.58,294.60 617.72,294.69 619.86,294.78 622.00,294.87"/>
+<polyline class="plot-curve plot-curve-2" points="74.00,161.69 76.14,163.32 78.28,165.05 80.42,166.88 82.56,168.78 84.70,170.73 86.84,172.73 88.98,174.75 91.13,176.80 93.27,178.86 95.41,180.91 97.55,182.97 99.69,185.01 101.83,187.03 103.97,189.03 106.11,191.01 108.25,192.96 110.39,194.88 112.53,196.77 114.67,198.63 116.81,200.45 118.95,202.24 121.09,203.99 123.23,205.70 125.38,207.38 127.52,209.02 129.66,210.63 131.80,212.20 133.94,213.73 136.08,215.23 138.22,216.70 140.36,218.13 142.50,219.53 144.64,220.90 146.78,222.24 148.92,223.54 151.06,224.82 153.20,226.06 155.34,227.28 157.48,228.47 159.63,229.63 161.77,230.77 163.91,231.88 166.05,232.97 168.19,234.03 170.33,235.07 172.47,236.08 174.61,237.08 176.75,238.05 178.89,239.00 181.03,239.93 183.17,240.84 185.31,241.74 187.45,242.61 189.59,243.47 191.73,244.30 193.88,245.12 196.02,245.93 198.16,246.72 200.30,247.49 202.44,248.25 204.58,248.99 206.72,249.72 208.86,250.44 211.00,251.14 213.14,251.83 215.28,252.51 217.42,253.17 219.56,253.82 221.70,254.46 223.84,255.09 225.98,255.71 228.13,256.32 230.27,256.92 232.41,257.50 234.55,258.08 236.69,258.65 238.83,259.21 240.97,259.76 243.11,260.30 245.25,260.83 247.39,261.35 249.53,261.87 251.67,262.37 253.81,262.87 255.95,263.37 258.09,263.85 260.23,264.33 262.38,264.80 264.52,265.26 266.66,265.72 268.80,266.17 270.94,266.62 273.08,267.05 275.22,267.49 277.36,267.91 279.50,268.33 281.64,268.75 283.78,269.16 285.92,269.56 288.06,269.96 290.20,270.36 292.34,270.75 294.48,271.13 296.63,271.51 298.77,271.89 300.91,272.26 303.05,272.62 305.19,272.99 307.33,273.34 309.47,273.70 311.61,274.05 313.75,274.39 315.89,274.73 318.03,275.07 320.17,275.41 322.31,275.74 324.45,276.07 326.59,276.39 328.73,276.71 330.88,277.03 333.02,277.34 335.16,277.65 337.30,277.96 339.44,278.27 341.58,278.57 343.72,278.87 345.86,279.16 348.00,279.46 350.14,279.75 352.28,280.04 354.42,280.32 356.56,280.60 358.70,280.88 360.84,281.16 362.98,281.44 365.13,281.71 367.27,281.98 369.41,282.25 371.55,282.52 373.69,282.78 375.83,283.04 377.97,283.30 380.11,283.56 382.25,283.82 384.39,284.07 386.53,284.32 388.67,284.57 390.81,284.82 392.95,285.06 395.09,285.31 397.23,285.55 399.38,285.79 401.52,286.03 403.66,286.27 405.80,286.50 407.94,286.74 410.08,286.97 412.22,287.20 414.36,287.43 416.50,287.66 418.64,287.88 420.78,288.11 422.92,288.33 425.06,288.55 427.20,288.77 429.34,288.99 431.48,289.21 433.63,289.43 435.77,289.64 437.91,289.86 440.05,290.07 442.19,290.28 444.33,290.49 446.47,290.70 448.61,290.91 450.75,291.11 452.89,291.32 455.03,291.52 457.17,291.73 459.31,291.93 461.45,292.13 463.59,292.33 465.73,292.53 467.88,292.73 470.02,292.92 472.16,293.12 474.30,293.31 476.44,293.51 478.58,293.70 480.72,293.89 482.86,294.08 485.00,294.27 487.14,294.46 489.28,294.65 491.42,294.84 493.56,295.02 495.70,295.21 497.84,295.39 499.98,295.58 502.13,295.76 504.27,295.94 506.41,296.12 508.55,296.30 510.69,296.48 512.83,296.66 514.97,296.84 517.11,297.02 519.25,297.20 521.39,297.37 523.53,297.55 525.67,297.72 527.81,297.90 529.95,298.07 532.09,298.24 534.23,298.41 536.38,298.59 538.52,298.76 540.66,298.93 542.80,299.10 544.94,299.26 547.08,299.43 549.22,299.60 551.36,299.77 553.50,299.93 555.64,300.10 557.78,300.26 559.92,300.43 562.06,300.59 564.20,300.75 566.34,300.92 568.48,301.08 570.63,301.24 572.77,301.40 574.91,301.56 577.05,301.72 579.19,301.88 581.33,302.04 583.47,302.20 585.61,302.36 587.75,302.51 589.89,302.67 592.03,302.83 594.17,302.98 596.31,303.14 598.45,303.29 600.59,303.45 602.73,303.60 604.88,303.75 607.02,303.91 609.16,304.06 611.30,304.21 613.44,304.36 615.58,304.51 617.72,304.66 619.86,304.81 622.00,304.96"/>
+<polyline class="plot-curve plot-curve-3" points="74.00,256.02 76.14,254.56 78.28,253.16 80.42,251.82 82.56,250.55 84.70,249.34 86.84,248.19 88.98,247.10 91.13,246.08 93.27,245.12 95.41,244.22 97.55,243.38 99.69,242.60 101.83,241.88 103.97,241.21 106.11,240.61 108.25,240.06 110.39,239.56 112.53,239.12 114.67,238.73 116.81,238.38 118.95,238.09 121.09,237.84 123.23,237.64 125.38,237.49 127.52,237.37 129.66,237.30 131.80,237.26 133.94,237.26 136.08,237.30 138.22,237.38 140.36,237.48 142.50,237.62 144.64,237.79 146.78,237.98 148.92,238.20 151.06,238.45 153.20,238.73 155.34,239.02 157.48,239.34 159.63,239.68 161.77,240.04 163.91,240.42 166.05,240.81 168.19,241.22 170.33,241.65 172.47,242.09 174.61,242.55 176.75,243.01 178.89,243.49 181.03,243.98 183.17,244.48 185.31,244.99 187.45,245.51 189.59,246.04 191.73,246.57 193.88,247.12 196.02,247.66 198.16,248.22 200.30,248.78 202.44,249.34 204.58,249.91 206.72,250.48 208.86,251.05 211.00,251.63 213.14,252.21 215.28,252.80 217.42,253.38 219.56,253.97 221.70,254.56 223.84,255.14 225.98,255.73 228.13,256.33 230.27,256.92 232.41,257.51 234.55,258.10 236.69,258.69 238.83,259.28 240.97,259.86 243.11,260.45 245.25,261.04 247.39,261.63 249.53,262.21 251.67,262.79 253.81,263.37 255.95,263.95 258.09,264.53 260.23,265.11 262.38,265.68 264.52,266.25 266.66,266.82 268.80,267.39 270.94,267.95 273.08,268.51 275.22,269.07 277.36,269.63 279.50,270.19 281.64,270.74 283.78,271.29 285.92,271.84 288.06,272.38 290.20,272.92 292.34,273.46 294.48,274.00 296.63,274.53 298.77,275.06 300.91,275.59 303.05,276.12 305.19,276.64 307.33,277.16 309.47,277.67 311.61,278.19 313.75,278.70 315.89,279.20 318.03,279.71 320.17,280.21 322.31,280.71 324.45,281.21 326.59,281.70 328.73,282.19 330.88,282.68 333.02,283.16 335.16,283.64 337.30,284.12 339.44,284.60 341.58,285.07 343.72,285.54 345.86,286.01 348.00,286.47 350.14,286.94 352.28,287.39 354.42,287.85 356.56,288.30 358.70,288.76 360.84,289.20 362.98,289.65 365.13,290.09 367.27,290.53 369.41,290.97 371.55,291.40 373.69,291.84 375.83,292.26 377.97,292.69 380.11,293.12 382.25,293.54 384.39,293.96 386.53,294.37 388.67,294.79 390.81,295.20 392.95,295.61 395.09,296.01 397.23,296.42 399.38,296.82 401.52,297.22 403.66,297.62 405.80,298.01 407.94,298.40 410.08,298.79 412.22,299.18 414.36,299.57 416.50,299.95 418.64,300.33 420.78,300.71 422.92,301.08 425.06,301.46 427.20,301.83 429.34,302.20 431.48,302.57 433.63,302.93 435.77,303.29 437.91,303.66 440.05,304.01 442.19,304.37 444.33,304.73 446.47,305.08 448.61,305.43 450.75,305.78 452.89,306.12 455.03,306.47 457.17,306.81 459.31,307.15 461.45,307.49 463.59,307.83 465.73,308.16 467.88,308.49 470.02,308.82 472.16,309.15 474.30,309.48 476.44,309.80 478.58,310.13 480.72,310.45 482.86,310.77 485.00,311.09 487.14,311.40 489.28,311.72 491.42,312.03 493.56,312.34 495.70,312.65 497.84,312.96 499.98,313.26 502.13,313.57 504.27,313.87 506.41,314.17 508.55,314.47 510.69,314.77 512.83,315.06 514.97,315.36 517.11,315.65 519.25,315.94 521.39,316.23 523.53,316.52 525.67,316.81 527.81,317.09 529.95,317.38 532.09,317.66 534.23,317.94 536.38,318.22 538.52,318.49 540.66,318.77 542.80,319.04 544.94,319.32 547.08,319.59 549.22,319.86 551.36,320.13 553.50,320.40 555.64,320.66 557.78,320.93 559.92,321.19 562.06,321.45 564.20,321.71 566.34,321.97 568.48,322.23 570.63,322.49 572.77,322.74 574.91,322.99 577.05,323.25 579.19,323.50 581.33,323.75 583.47,324.00 585.61,324.25 587.75,324.49 589.89,324.74 592.03,324.98 594.17,325.22 596.31,325.46 598.45,325.70 600.59,325.94 602.73,326.18 604.88,326.42 607.02,326.65 609.16,326.89 611.30,327.12 613.44,327.35 615.58,327.58 617.72,327.81 619.86,328.04 622.00,328.27"/>
+<line class="plot-curve plot-curve-1" x1="74.00" y1="391.00" x2="92.00" y2="391.00"/>
+<text class="plot-label plot-legend" x="97.00" y="395.00">light</text>
+<line class="plot-curve plot-curve-2" x1="147.00" y1="391.00" x2="165.00" y2="391.00"/>
+<text class="plot-label plot-legend" x="170.00" y="395.00">nominal</text>
+<line class="plot-curve plot-curve-3" x1="232.80" y1="391.00" x2="250.80" y2="391.00"/>
+<text class="plot-label plot-legend" x="255.80" y="395.00">heavy</text>
+</svg></figure>
+<figure><img src="data:image/png;base64,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" width="480" height="240" alt="gain"></figure>
+<p class="prose">Unity at resonance, whatever the load — the property that makes f0 the design</p>
+<p class="prose">point. Below it the converter boosts, above it it bucks.</p>
+<div class="step">nominal(f0)<span class="eq">=</span><span class="subst">nominal(100 kHz)</span><span class="eq">=</span><span class="result">1</span></div>
+<div class="step">light(f0)<span class="eq">=</span><span class="subst">light(100 kHz)</span><span class="eq">=</span><span class="result">1</span></div>
+<div class="step">heavy(f0)<span class="eq">=</span><span class="subst">heavy(100 kHz)</span><span class="eq">=</span><span class="result">1</span></div>
+<p class="prose">Where the nominal curve peaks, and how much gain is there. The slope is exact</p>
+<p class="prose">rather than a difference quotient, so the peak is found by asking where the</p>
+<p class="prose">slope crosses zero.</p>
+<div class="step note">fn slope defined</div>
+<div class="step"><span class="name">f_peak</span><span class="eq">=</span>roots(slope, f_min_res, f0)<span class="eq">=</span><span class="subst">roots(slope, 44.7214 kHz, 100 kHz)</span><span class="eq">=</span><span class="result">56.0867 kHz</span></div>
+<div class="step"><span class="name">M_peak</span><span class="eq">=</span>nominal(f_peak)<span class="eq">=</span><span class="subst">nominal(56.0867 kHz)</span><span class="eq">=</span><span class="result">1.62792</span></div>
+<p class="prose">The gain the specification actually demands, at both ends of the input range.</p>
+<div class="step"><span class="name">V_bus_min</span><span class="eq">=</span>340 V</div>
+<div class="step"><span class="name">V_bus_max</span><span class="eq">=</span>420 V</div>
+<div class="step"><span class="name">M_needed_max</span><span class="eq">=</span>n·V_out/V_bus_min<span class="eq">=</span><span class="subst">8.33333·(48 V)/(340 V)</span><span class="eq">=</span><span class="result">1.17647</span></div>
+<div class="step"><span class="name">M_needed_min</span><span class="eq">=</span>n·V_out/V_bus_max<span class="eq">=</span><span class="subst">8.33333·(48 V)/(420 V)</span><span class="eq">=</span><span class="result">0.952381</span></div>
+<div class="step"><span class="name">margin</span><span class="eq">=</span>M_peak - M_needed_max<span class="eq">=</span><span class="subst">1.62792 - 1.17647</span><span class="eq">=</span><span class="result">0.451451</span></div>
+<div class="step"><span class="name">verdict</span><span class="eq">=</span>if margin &gt; 0 then &quot;gain margin available&quot; else &quot;redesign: peak gain too low&quot;<span class="eq">=</span><span class="subst">if 0.451451 &gt; 0 then &quot;gain margin available&quot; else &quot;redesign: peak gain too low&quot;</span><span class="eq">=</span><span class="result">&quot;gain margin available&quot;</span></div>
+<p class="prose">The impedance curve, drawn as a magnitude in ohms so the axis is a number.</p>
+<div class="step note">fn Z_mag defined</div>
+<div class="step note">fn Z_ohm defined</div>
+<div class="step">plot(Z_ohm, f_sw_min, f_sw_max)</div>
+<figure class="plot"><svg viewBox="0 0 640 380" role="img" aria-label="plot of Z_ohm">
+<line class="plot-grid" x1="230.57" y1="14.00" x2="230.57" y2="338.00"/>
+<text class="plot-label plot-x" x="230.57" y="356.00">100000</text>
+<line class="plot-grid" x1="426.29" y1="14.00" x2="426.29" y2="338.00"/>
+<text class="plot-label plot-x" x="426.29" y="356.00">150000</text>
+<line class="plot-grid" x1="622.00" y1="14.00" x2="622.00" y2="338.00"/>
+<text class="plot-label plot-end" x="622.00" y="356.00">200000</text>
+<line class="plot-grid" x1="74.00" y1="338.00" x2="622.00" y2="338.00"/>
+<text class="plot-label plot-y" x="66.00" y="342.00">50</text>
+<line class="plot-grid" x1="74.00" y1="230.00" x2="622.00" y2="230.00"/>
+<text class="plot-label plot-y" x="66.00" y="234.00">100</text>
+<line class="plot-grid" x1="74.00" y1="122.00" x2="622.00" y2="122.00"/>
+<text class="plot-label plot-y" x="66.00" y="126.00">150</text>
+<line class="plot-grid" x1="74.00" y1="14.00" x2="622.00" y2="14.00"/>
+<text class="plot-label plot-y" x="66.00" y="18.00">200</text>
+<line class="plot-axis" x1="74.00" y1="338.00" x2="622.00" y2="338.00"/>
+<line class="plot-axis" x1="74.00" y1="14.00" x2="74.00" y2="338.00"/>
+<text class="plot-unit plot-end" x="622.00" y="374.00">Hz</text>
+<polyline class="plot-curve plot-curve-1" points="74.00,295.09 76.14,293.72 78.28,292.33 80.42,290.92 82.56,289.50 84.70,288.06 86.84,286.61 88.98,285.15 91.13,283.68 93.27,282.20 95.41,280.72 97.55,279.24 99.69,277.75 101.83,276.27 103.97,274.78 106.11,273.30 108.25,271.82 110.39,270.34 112.53,268.86 114.67,267.39 116.81,265.93 118.95,264.47 121.09,263.02 123.23,261.58 125.38,260.14 127.52,258.72 129.66,257.30 131.80,255.88 133.94,254.48 136.08,253.09 138.22,251.70 140.36,250.33 142.50,248.96 144.64,247.61 146.78,246.26 148.92,244.93 151.06,243.60 153.20,242.29 155.34,240.98 157.48,239.68 159.63,238.40 161.77,237.12 163.91,235.86 166.05,234.60 168.19,233.36 170.33,232.12 172.47,230.90 174.61,229.68 176.75,228.47 178.89,227.28 181.03,226.09 183.17,224.91 185.31,223.75 187.45,222.59 189.59,221.44 191.73,220.30 193.88,219.17 196.02,218.05 198.16,216.94 200.30,215.83 202.44,214.74 204.58,213.65 206.72,212.58 208.86,211.51 211.00,210.45 213.14,209.40 215.28,208.35 217.42,207.31 219.56,206.29 221.70,205.27 223.84,204.25 225.98,203.25 228.13,202.25 230.27,201.26 232.41,200.28 234.55,199.30 236.69,198.33 238.83,197.37 240.97,196.42 243.11,195.47 245.25,194.53 247.39,193.59 249.53,192.67 251.67,191.74 253.81,190.83 255.95,189.92 258.09,189.02 260.23,188.12 262.38,187.23 264.52,186.34 266.66,185.46 268.80,184.59 270.94,183.72 273.08,182.86 275.22,182.00 277.36,181.15 279.50,180.30 281.64,179.46 283.78,178.62 285.92,177.79 288.06,176.97 290.20,176.14 292.34,175.33 294.48,174.51 296.63,173.71 298.77,172.90 300.91,172.10 303.05,171.31 305.19,170.52 307.33,169.73 309.47,168.95 311.61,168.17 313.75,167.40 315.89,166.63 318.03,165.86 320.17,165.10 322.31,164.34 324.45,163.59 326.59,162.84 328.73,162.09 330.88,161.35 333.02,160.61 335.16,159.87 337.30,159.14 339.44,158.41 341.58,157.68 343.72,156.96 345.86,156.24 348.00,155.52 350.14,154.81 352.28,154.09 354.42,153.39 356.56,152.68 358.70,151.98 360.84,151.28 362.98,150.58 365.13,149.89 367.27,149.20 369.41,148.51 371.55,147.82 373.69,147.14 375.83,146.45 377.97,145.78 380.11,145.10 382.25,144.43 384.39,143.75 386.53,143.08 388.67,142.42 390.81,141.75 392.95,141.09 395.09,140.43 397.23,139.77 399.38,139.11 401.52,138.46 403.66,137.81 405.80,137.15 407.94,136.51 410.08,135.86 412.22,135.21 414.36,134.57 416.50,133.93 418.64,133.29 420.78,132.65 422.92,132.02 425.06,131.38 427.20,130.75 429.34,130.12 431.48,129.49 433.63,128.86 435.77,128.23 437.91,127.61 440.05,126.98 442.19,126.36 444.33,125.74 446.47,125.12 448.61,124.50 450.75,123.89 452.89,123.27 455.03,122.66 457.17,122.05 459.31,121.43 461.45,120.82 463.59,120.22 465.73,119.61 467.88,119.00 470.02,118.40 472.16,117.79 474.30,117.19 476.44,116.59 478.58,115.98 480.72,115.38 482.86,114.79 485.00,114.19 487.14,113.59 489.28,112.99 491.42,112.40 493.56,111.81 495.70,111.21 497.84,110.62 499.98,110.03 502.13,109.44 504.27,108.85 506.41,108.26 508.55,107.67 510.69,107.08 512.83,106.50 514.97,105.91 517.11,105.33 519.25,104.74 521.39,104.16 523.53,103.58 525.67,102.99 527.81,102.41 529.95,101.83 532.09,101.25 534.23,100.67 536.38,100.09 538.52,99.51 540.66,98.94 542.80,98.36 544.94,97.78 547.08,97.21 549.22,96.63 551.36,96.06 553.50,95.48 555.64,94.91 557.78,94.33 559.92,93.76 562.06,93.19 564.20,92.62 566.34,92.05 568.48,91.47 570.63,90.90 572.77,90.33 574.91,89.76 577.05,89.19 579.19,88.63 581.33,88.06 583.47,87.49 585.61,86.92 587.75,86.35 589.89,85.79 592.03,85.22 594.17,84.65 596.31,84.09 598.45,83.52 600.59,82.96 602.73,82.39 604.88,81.83 607.02,81.26 609.16,80.70 611.30,80.13 613.44,79.57 615.58,79.01 617.72,78.44 619.86,77.88 622.00,77.32"/>
+</svg></figure>
+<p class="prose">The lowest impedance across the operating range bounds the tank current, and</p>
+<p class="prose">`min` over a sampled vector is how a worksheet asks that without a loop.</p>
+<div class="step"><span class="name">sweep</span><span class="eq">=</span>range(f_sw_min, f_sw_max, 10 kHz)<span class="eq">=</span><span class="subst">range(60 kHz, 200 kHz, 10 kHz)</span><span class="eq">=</span><span class="result">[60000 Hz, 70000 Hz, 80000 Hz, 90000 Hz, 100000 Hz, 110000 Hz, 120000 Hz, 130000 Hz, 140000 Hz, 150000 Hz, 160000 Hz, 170000 Hz, 180000 Hz, 190000 Hz, 200000 Hz]</span></div>
+<div class="step"><span class="name">Z_sweep</span><span class="eq">=</span>map(Z_ohm, sweep)<span class="eq">=</span><span class="subst">map(Z_ohm, [60000 Hz, 70000 Hz, 80000 Hz, 90000 Hz, 100000 Hz, 110000 Hz, 120000 Hz, 130000 Hz, 140000 Hz, 150000 Hz, 160000 Hz, 170000 Hz, 180000 Hz, 190000 Hz, 200000 Hz])</span><span class="eq">=</span><span class="result">[69.8676, 82.2021, 94.0515, 104.415, 113.37, 121.196, 128.16, 134.482, 140.327, 145.824, 151.067, 156.128, 161.059, 165.902, 170.687]</span></div>
+<div class="step"><span class="name">Z_low</span><span class="eq">=</span>min(Z_sweep)<span class="eq">=</span><span class="subst">min([69.8676, 82.2021, 94.0515, 104.415, 113.37, 121.196, 128.16, 134.482, 140.327, 145.824, 151.067, 156.128, 161.059, 165.902, 170.687])</span><span class="eq">=</span><span class="result">69.8676</span></div>
+<div class="step"><span class="name">I_tank_max</span><span class="eq">=</span>V_sq_rms/(Z_low ohm)<span class="eq">=</span><span class="subst">180.063 V/(69.8676 ohm)</span><span class="eq">=</span><span class="result">2.57721 A</span></div>
+<p class="prose">Currents and stresses, which is what the design is finally judged on.</p>
+<div class="step"><span class="name">I_pri</span><span class="eq">=</span>P_out/V_sq_rms<span class="eq">=</span><span class="subst">1000 W/(180.063 V)</span><span class="eq">=</span><span class="result">5.5536 A</span></div>
+<div class="step"><span class="name">V_Cr_pk</span><span class="eq">=</span>I_pri·sqrt(2)·X_Cr(f0)<span class="eq">=</span><span class="subst">5.5536 A·sqrt(2)·X_Cr(100 kHz)</span><span class="eq">=</span><span class="result">458.366 V</span></div>
+<div class="step"><span class="name">E_Lr</span><span class="eq">=</span>1/2·Lr·(I_pri·sqrt(2))²<span class="eq">=</span><span class="subst">1/2·(92.8844 µH)·(5.5536 A·sqrt(2))²</span><span class="eq">=</span><span class="result">2.86479 mJ</span></div>
+<p class="prose">Rated against the specification.</p>
+<div class="step"><span class="name">V_Cr_rating</span><span class="eq">=</span>630 V</div>
+<div class="step"><span class="name">capacitor_ok</span><span class="eq">=</span>V_Cr_pk &lt; V_Cr_rating<span class="eq">=</span><span class="subst">458.366 V &lt; 630 V</span><span class="eq">=</span><span class="result">1</span></div>
+
+=== values ===
+V_bus = 400.0 m^2·kg·s^-3·A^-1
+V_out = 48.0 m^2·kg·s^-3·A^-1
+P_out = 1000.0 m^2·kg·s^-3
+f_sw_min = 60000.0 s^-1
+f_sw_max = 200000.0 s^-1
+V_sq_pk = 254.64790894703256 m^2·kg·s^-3·A^-1
+V_sq_rms = 180.06326323142122 m^2·kg·s^-3·A^-1
+R_load = 2.304 m^2·kg·s^-3·A^-2
+I_out = 20.833333333333332 A
+n = 8.333333333333334 dimensionless
+R_ac = 129.69111506219238 m^2·kg·s^-3·A^-2
+f0 = 100000.0 s^-1
+Q_nom = 0.45 dimensionless
+Ln = 4.0 dimensionless
+Z0 = 58.36100177798657 m^2·kg·s^-3·A^-2
+T0 = 1.5915494309189535e-6 s
+Lr = 9.288441916761456e-5 m^2·kg·s^-2·A^-2
+Cr = 2.7270769562411393e-8 m^-2·kg^-1·s^4·A^2
+Lm = 0.00037153767667045824 m^2·kg·s^-2·A^-2
+f0_check = 100000.00000000001 s^-1
+Q_check = 0.45 dimensionless
+f_min_res = 44721.359549995796 s^-1
+Z_at_f0 = 99.10358792488285+55.05754884715713i m^2·kg·s^-3·A^-2
+R_in = 99.10358792488285 m^2·kg·s^-3·A^-2
+X_in = 55.05754884715713 m^2·kg·s^-3·A^-2
+mag = 113.370431879931 m^2·kg·s^-3·A^-2
+phase = 29.054604099077146 dimensionless
+soft_switching = 1.0 dimensionless
+? = plot 60000.0..200000.0 (chosen) s^-1 over dimensionless {light: [2.0537219051039557, 2.0071318956940707, 1.9626313226014493, 1.9201942006945916, 1.8797700434364897, 1.8412917308600005, 1.8046814573109717, 1.7698551716643662, 1.7367258480742884, 1.7052058584022773, 1.6752086604774337, 1.6466499693846157, 1.619448541152811, 1.5935266682346985, 1.568810462681416, 1.5452299846773667, 1.522719260030106, 1.501216219412961, 1.480662583906575, 1.4610037151016473, 1.442188443254523, 1.42416888337616, 1.406900246409768, 1.3903406506024647, 1.3744509366401376, 1.3591944889686958, 1.3445370648748338, 1.3304466322732122, 1.3168932166899794, 1.3038487576030098, 1.2912869740654747, 1.2791832393773308, 1.267514464460689, 1.2562589895260239, 1.2453964835762439, 1.2349078512769016, 1.2247751467172738, 1.2149814935941974, 1.2055110113650533, 1.1963487469356526, 1.1874806114711132, 1.1788933219418072, 1.1705743470410819, 1.16251185713604, 1.154694677936688, 1.1471122475919264, 1.139754576942907, 1.132612212685122, 1.1256762032101522, 1.118938066916247, 1.112389762793873, 1.1060236631080864, 1.099832528014101, 1.0938094819557884, 1.0879479917091808, 1.0822418459443288, 1.0766851361892749, 1.0712722390893878, 1.0659977998640542, 1.0608567168706888, 1.0558441271933452, 1.050955393179902, 1.0461860898579207, 1.0415319931648832, 1.0369890689336403, 1.0325534625786088, 1.0282214894325452, 1.0239896256876708, 1.019854499898524, 1.0158128850072239, 1.011861690854863, 1.007997957145517, 1.004218846831918, 1.0005216398941705, 0.9969037274850464, 0.993362606417354, 0.9898958739707091, 0.9865012229966897, 0.9831764373028953, 0.9799193872978467, 0.9767280258799592, 0.9736003845550244, 0.9705345697677373, 0.9675287594338298, 0.9645811996603043, 0.9616902016421419, 0.9588541387246494, 0.9560714436213607, 0.9533406057780892, 0.9506601688743671, 0.9480287284540868, 0.9454449296777188, 0.9429074651889664, 0.9404150730892052, 0.9379665350134727, 0.9355606743021854, 0.9331963542631361, 0.930872476518665, 0.9285879794332279, 0.9263418366168814, 0.9241330555004895, 0.9219606759787097, 0.9198237691170671, 0.9177214359196436, 0.9156528061541309, 0.9136170372311745, 0.9116133131351426, 0.9096408434036081, 0.9076988621529948, 0.9057866271479974, 0.9039034189125129, 0.9020485398799625, 0.9002213135809957, 0.8984210838666914, 0.896647214165475, 0.8948990867720669, 0.8931761021668803, 0.8914776783643681, 0.8898032502889061, 0.888152269176871, 0.886524202003655, 0.8849185309344189, 0.8833347527974518, 0.8817723785790712, 0.880230932939047, 0.8787099537455916, 0.87720899162901, 0.8757276095531443, 0.8742653824037985, 0.8728218965933724, 0.8713967496809647, 0.869989550007254, 0.8685999163434924, 0.8672274775539877, 0.8658718722714737, 0.8645327485848044, 0.8632097637384352, 0.8619025838431742, 0.8606108835977225, 0.8593343460205362, 0.8580726621915713, 0.8568255310034929, 0.855592658921946, 0.854373759754513, 0.8531685544279902, 0.8519767707736419, 0.8507981433201007, 0.8496324130936036, 0.8484793274252591, 0.8473386397650673, 0.8462101095024136, 0.8450935017927819, 0.8439885873904351, 0.8428951424868286, 0.841812948554529, 0.8407417921964239, 0.8396814650000117, 0.8386317633965819, 0.8375924885250862, 0.8365634461005329, 0.8355444462867179, 0.8345353035731397, 0.8335358366559318, 0.8325458683226652, 0.8315652253408746, 0.8305937383501698, 0.8296312417578002, 0.8286775736375434, 0.8277325756317973, 0.8267960928567594, 0.8258679738105771, 0.8249480702843681, 0.8240362372760008, 0.8231323329065412, 0.8222362183392687, 0.8213477577011691, 0.8204668180068205, 0.819593269084585, 0.8187269835050256, 0.8178678365114744, 0.817015705952675, 0.8161704722174238, 0.8153320181711525, 0.8145002290943735, 0.8136749926229325, 0.8128561986900041, 0.8120437394697743, 0.8112375093227484, 0.8104374047426371, 0.8096433243047617, 0.8088551686159332, 0.8080728402657532, 0.8072962437792927, 0.8065252855711025, 0.8057598739005114, 0.8049999188281738, 0.8042453321738212, 0.8034960274751833, 0.8027519199480411, 0.8020129264473737, 0.8012789654295653, 0.8005499569156408, 0.7998258224554953, 0.7991064850930863, 0.7983918693325629, 0.7976819011052966, 0.7969765077377909, 0.7962756179204418, 0.7955791616771196, 0.794887070335554, 0.7941992764984896, 0.7935157140155966, 0.792836317956109, 0.7921610245821681, 0.7914897713228563, 0.7908224967488922, 0.7901591405479738, 0.7894996435007493, 0.7888439474573948, 0.788191995314783, 0.7875437309942279, 0.7868990994197825, 0.786258046497081, 0.7856205190927038, 0.7849864650140552, 0.784355832989734, 0.7837285726503884, 0.7831046345100374, 0.7824839699478473, 0.7818665311903509, 0.7812522712940946, 0.7806411441287062, 0.7800331043603657, 0.7794281074356726, 0.7788261095658975, 0.7782270677116057, 0.7776309395676456, 0.7770376835484892, 0.7764472587739171, 0.7758596250550374, 0.7752747428806306, 0.7746925734038109, 0.7741130784289951, 0.7735362203991735, 0.772961962383469, 0.7723902680649859, 0.7718211017289299, 0.7712544282510018, 0.7706902130860519, 0.7701284222569897, 0.7695690223439436, 0.7690119804736628, 0.768457264309155, 0.7679048420395549, 0.767354682370217, 0.7668067545130258, 0.7662610281769211]; nominal: [1.5883408206119163, 1.578290651117957, 1.5675713400681894, 1.5563010117447742, 1.5445867104791973, 1.5325246433435316, 1.52020061742678, 1.5076906133892762, 1.4950614466807457, 1.482371477148622, 1.4696713362912601, 1.4570046488824338, 1.4444087320235297, 1.4319152598889249, 1.4195508866040452, 1.407337822954991, 1.3952943651067555, 1.3834353753363118, 1.3717727160901036, 1.3603156395615728, 1.3490711355467429, 1.338044240652326, 1.327238312064869, 1.3166552690918074, 1.3062958055958025, 1.2961595762930895, 1.286245359698035, 1.276551200286942, 1.2670745322369612, 1.2578122868796051, 1.2487609857988915, 1.2399168213055818, 1.231275725833576, 1.2228334316336238, 1.2145855219834016, 1.206527474991576, 1.1986547009461297, 1.1909625740431842, 1.183446459230855, 1.1761017348123424, 1.1689238113724374, 1.1619081475209552, 1.1550502628843071, 1.148345748721622, 1.1417902764936982, 1.1353796046708513, 1.1291095840287317, 1.1229761616488236, 1.1169753838120295, 1.1111033979490177, 1.105356453789406, 1.0997309038330212, 1.094223203250022, 1.088829909302354, 1.083547680366506, 1.0783732746266617, 1.0733035484978637, 1.068335454830563, 1.0634660409407475, 1.0586924465036036, 1.0540119013432363, 1.049421723146262, 1.0449193151229856, 1.0405021636363279, 1.036167835815568, 1.0319139771693149, 1.0277383092097814, 1.023638627098448, 1.0196127973214595, 1.015658755401604, 1.0117745036524373, 1.007958108978994, 1.0042077007285843, 1.000521468594341, 0.9968976605734958, 0.9933345809817484, 0.9898305885245986, 0.9863840944260641, 0.9829935606148543, 0.9796574979677574, 0.9763744646097402, 0.9731430642700565, 0.9699619446934742, 0.9668297961055999, 0.9637453497311577, 0.960707376363994, 0.9577146849875142, 0.954766121444197, 0.9518605671528056, 0.9489969378718905, 0.9461741825081634, 0.9433912819683226, 0.9406472480529144, 0.9379411223908322, 0.9352719754130618, 0.9326389053643148, 0.9300410373512127, 0.9274775224257091, 0.9249475367024785, 0.9224502805090214, 0.9199849775672775, 0.91755087420557, 0.9151472385997418, 0.9127733600423754, 0.9104285482390332, 0.9081121326304777, 0.9058234617398816, 0.9035619025440572, 0.9013268398677844, 0.8991176758003355, 0.8969338291333391, 0.8947747348191527, 0.8926398434489464, 0.8905286207497276, 0.8884405470995715, 0.8863751170603463, 0.8843318389272526, 0.8823102342945196, 0.8803098376366337, 0.8783301959044914, 0.876370868135898, 0.8744314250798588, 0.8725114488341221, 0.8706105324954685, 0.8687282798222499, 0.8668643049087079, 0.8650182318706199, 0.8631896945418348, 0.8613783361812863, 0.8595838091900809, 0.857805774838276, 0.8560439030009834, 0.8542978719034424, 0.8525673678747249, 0.8508520851097465, 0.849151725439272, 0.8474659981076174, 0.8457946195577588, 0.8441373132235741, 0.8424938093289527, 0.840863844693519, 0.8392471625447275, 0.8376435123360916, 0.8360526495713266, 0.8344743356341884, 0.8329083376238005, 0.8313544281952717, 0.8298123854054137, 0.8282819925633734, 0.8267630380860064, 0.8252553153578188, 0.8237586225953202, 0.8222727627156244, 0.820797543209154, 0.8193327760163017, 0.8178782774079093, 0.8164338678694316, 0.8149993719886578, 0.8135746183468647, 0.8121594394132874, 0.8107536714427866, 0.8093571543766109, 0.807969731746142, 0.8065912505795235, 0.805221561311079, 0.8038605176934167, 0.8025079767121415, 0.801163798503075, 0.7998278462719121, 0.7984999862162224, 0.797180087449725, 0.7958680219287603, 0.7945636643808851, 0.7932668922355238, 0.7919775855566067, 0.7906956269771316, 0.7894209016355858, 0.7881532971141707, 0.7868927033787677, 0.7856390127205914, 0.7843921196994788, 0.7831519210887552, 0.7819183158216374, 0.7806912049391154, 0.7794704915392735, 0.7782560807280017, 0.7770478795710565, 0.775845797047427, 0.7746497440039681, 0.7734596331112603, 0.7722753788206587, 0.771096897322495, 0.7699241065053979, 0.7687569259166969, 0.7675952767238768, 0.7664390816770535, 0.7652882650724364, 0.7641427527167507, 0.7630024718925921, 0.7618673513246823, 0.7607373211470022, 0.7596123128707751, 0.7584922593532759, 0.7573770947674413, 0.756266754572258, 0.7551611754839076, 0.7540602954476426, 0.7529640536103778, 0.7518723902939711, 0.750785246969179, 0.7497025662302623, 0.7486242917702295, 0.7475503683566931, 0.746480741808328, 0.7454153589719117, 0.744354167699928, 0.7432971168287242, 0.7422441561572012, 0.7411952364260237, 0.7401503092973365, 0.7391093273349739, 0.7380722439851439, 0.7370390135575808, 0.7360095912071491, 0.7349839329158878, 0.7339619954754827, 0.7329437364701559, 0.7319291142599608, 0.7309180879644721, 0.7299106174468588, 0.7289066632983334, 0.7279061868229627, 0.7269091500228348, 0.7259155155835704, 0.7249252468601708, 0.7239383078631924, 0.7229546632452409, 0.7219742782877748, 0.7209971188882124, 0.7200231515473332, 0.7190523433569657, 0.7180846619879558, 0.7171200756784074, 0.7161585532221881, 0.7152000639576946, 0.7142445777568702, 0.7132920650144677, 0.7123424966375527, 0.7113958440352401, 0.7104520791086598, 0.7095111742411422, 0.7085731022886236, 0.7076378365702595, 0.7067053508592476, 0.7057756193738487, 0.7048486167686059, 0.703924318125754]; heavy: [1.0060416953344375, 1.0150625487298577, 1.0237021116028808, 1.031957075784835, 1.0398252067549953, 1.0473053237212218, 1.0543972727260682, 1.0611018933446756, 1.0674209796045875, 1.0733572358061834, 1.078914227955588, 1.084096331539958, 1.0889086763787679, 1.093357089275059, 1.0974480351690366, 1.1011885574643059, 1.1045862181561894, 1.1076490383436257, 1.1103854396528603, 1.1128041870441796, 1.1149143334138714, 1.1167251663438478, 1.1182461572922497, 1.1194869134609309, 1.1204571325209338, 1.121166560325653, 1.1216249516938843, 1.1218420343017552, 1.1218274756838973, 1.1215908533102144, 1.1211416276752175, 1.1204891183120484, 1.1196424826227538, 1.1186106973999046, 1.117402542901941, 1.1160265893353274, 1.114491185590438, 1.1128044500746181, 1.1109742634848205, 1.1090082633631941, 1.1069138402817342, 1.1046981355062477, 1.1023680399951996, 1.0999301945952182, 1.0973909913019269, 1.0947565754621398, 1.092032848801141, 1.089225473166591, 1.0863398748884758, 1.0833812496622997, 1.0803545678703332, 1.0772645802631413, 1.0741158239306987, 1.0709126284991823, 1.0676591224959584, 1.0643592398313075, 1.0610167263511023, 1.0576351464199136, 1.0542178894988936, 1.0507681766873032, 1.0472890672006598, 1.0437834647622735, 1.0402541238883687, 1.0367036560501104, 1.0331345356986616, 1.029549106141931, 1.0259495852639358, 1.0223380710797207, 1.018716547120576, 1.0150868876458652, 1.0114508626791892, 1.007810142867812, 1.0041663041653452, 1.0005208323386017, 0.9968751273003154, 0.9932305072700907, 0.9895882127665148, 0.9859494104338308, 0.9823151967069566, 0.9786866013189521, 0.9750645906552701, 0.9714500709593298, 0.9678438913940766, 0.9642468469642862, 0.9606596813044285, 0.9570830893369188, 0.9535177198055816, 0.9499641776891116, 0.9464230264992621, 0.9428947904684238, 0.9393799566311574, 0.9358789768041557, 0.93239226946899, 0.9289202215618885, 0.9254631901746597, 0.9220215041707541, 0.9185954657203255, 0.9151853517580122, 0.9117914153670378, 0.9084138870930871, 0.9050529761912813, 0.9017088718094526, 0.8983817441107772, 0.8950717453387091, 0.8917790108270273, 0.8885036599576839, 0.8852457970690365, 0.8820055123169142, 0.8787828824908734, 0.87557797178788, 0.8723908325455547, 0.8692215059370239, 0.8660700226293111, 0.8629364034071217, 0.8598206597637787, 0.8567227944609862, 0.8536428020590108, 0.8505806694187997, 0.8475363761774728, 0.8445098951985599, 0.8415011929982805, 0.838510230149108, 0.8355369616617835, 0.8325813373469021, 0.8296433021571236, 0.8267227965110135, 0.823819756599471, 0.8209341146756421, 0.8180657993291812, 0.8152147357456745, 0.8123808459519949, 0.8095640490483245, 0.8067642614275375, 0.8039813969826032, 0.8012153673026338, 0.7984660818581696, 0.7957334481762646, 0.793017372005903, 0.790317757474254, 0.7876345072342428, 0.7849675226038912, 0.782316703697861, 0.7796819495516029, 0.7770631582385049, 0.7744602269804014, 0.771873052251791, 0.769301529878098, 0.7667455551282818, 0.7642050228020971, 0.7616798273122842, 0.7591698627619511, 0.7566750230174073, 0.7541952017766816, 0.7517302926339563, 0.749280189140127, 0.7468447848596987, 0.7444239734242046, 0.7420176485823361, 0.7396257042469546, 0.7372480345391529, 0.7348845338295169, 0.7325350967767433, 0.7301996183637468, 0.7278779939313937, 0.7255701192099888, 0.7232758903486312, 0.7209952039425572, 0.7187279570585762, 0.7164740472586995, 0.7142333726220634, 0.7120058317652342, 0.7097913238609855, 0.7075897486556264, 0.7054010064849644, 0.7032249982889729, 0.7010616256252341, 0.6989107906812286, 0.6967723962855279, 0.6946463459179567, 0.6925325437187777, 0.690430894496956, 0.6883413037375509, 0.6862636776082875, 0.6841979229653516, 0.6821439473584535, 0.6801016590352008, 0.6780709669448199, 0.6760517807412649, 0.6740440107857475, 0.6720475681487226, 0.6700623646113607, 0.668088312666539, 0.6661253255193771, 0.6641733170873474, 0.6622322019999833, 0.6603018955982132, 0.658382313933338, 0.6564733737656805, 0.6545749925629221, 0.6526870884981498, 0.6508095804476315, 0.6489423879883357, 0.6470854313952153, 0.6452386316382687, 0.6434019103793952, 0.641575189969058, 0.6397583934427684, 0.6379514445174048, 0.6361542675873771, 0.6343667877206512, 0.6325889306546385, 0.6308206227919692, 0.6290617911961506, 0.6273123635871252, 0.6255722683367366, 0.6238414344641081, 0.6221197916309464, 0.6204072701367748, 0.6187038009141034, 0.617009315523544, 0.6153237461488753, 0.6136470255920627, 0.6119790872682414, 0.6103198652006656, 0.6086692940156302, 0.6070273089373676, 0.6053938457829269, 0.6037688409570383, 0.6021522314469644, 0.6005439548173468, 0.5989439492050471, 0.5973521533139884, 0.5957685064099983, 0.5941929483156572, 0.5926254194051569, 0.5910658605991654, 0.5895142133597101, 0.587970419685071, 0.5864344221046947, 0.5849061636741262, 0.5833855879699624, 0.5818726390848267, 0.5803672616223703, 0.5788694006922974, 0.5773790019054182, 0.575896011368731, 0.5744203756805322, 0.5729520419255587, 0.5714909576701609, 0.5700370709575088, 0.5685903303028313, 0.5671506846886902, 0.5657180835602877, 0.5642924768208121, 0.5628738148268166, 0.561462048383637, 0.560057128740846]}
+? = 1.0 dimensionless
+? = 1.0 dimensionless
+? = 1.0 dimensionless
+f_peak = 56086.71217343223 s^-1
+M_peak = 1.6279214690762 dimensionless
+V_bus_min = 340.0 m^2·kg·s^-3·A^-1
+V_bus_max = 420.0 m^2·kg·s^-3·A^-1
+M_needed_max = 1.1764705882352942 dimensionless
+M_needed_min = 0.9523809523809523 dimensionless
+margin = 0.4514508808409059 dimensionless
+verdict = "gain margin available"
+? = plot 60000.0..200000.0 (chosen) s^-1 over dimensionless {Z_ohm: [69.86761988407116, 70.50032874381374, 71.1433138384426, 71.79525772771238, 72.45494112456134, 73.12123706723436, 73.79310523111927, 74.4695864203847, 75.14979726896308, 75.83292517154688, 76.51822345790275, 77.20500681777968, 77.89264697882578, 78.5805686360727, 79.2682456285446, 79.95519735626777, 80.64098542927343, 81.32521053899825, 82.00750954169891, 82.68755274303494, 83.36504137276765, 84.03970523852095, 84.71130054770073, 85.37960788694103, 86.04443034880077, 86.70559179585182, 87.36293525275812, 88.0163214174263, 88.66562728280205, 89.31074486138252, 89.95158000500186, 90.58805131292598, 91.22008912175224, 91.84763457105295, 92.47063873912249, 93.0890618435874, 93.70287250201595, 94.31204704801786, 94.91656889865753, 95.51642796931466, 96.11162013241461, 96.70214671672274, 97.28801404414492, 97.86923300121053, 98.44581864262896, 99.01778982451002, 99.5851688650231, 100.147981230441, 100.7062552446704, 101.2600218205177, 101.80931421107239, 102.35416777971405, 102.89461978736296, 103.43070919569958, 103.96247648517615, 104.48996348673083, 105.01321322620029, 105.53226978049965, 106.04717814471127, 106.55798410928698, 107.06473414662818, 107.56747530636375, 108.06625511869599, 108.56112150523133, 109.05212269675647, 109.53930715745935, 110.02272351513237, 110.50242049692801, 110.97844687026938, 111.45085138854643, 111.91968274125563, 112.3849895082661, 112.84682011791696, 113.30522280867301, 113.76024559408486, 114.21193623081739, 114.66034218952818, 115.10551062839208, 115.54748836908325, 115.98632187503834, 116.42205723183852, 116.85474012955744, 117.28441584693456, 117.711129237242, 118.13492471572299, 118.55584624848798, 118.97393734276264, 119.3892410383888, 119.80179990048724, 120.21165601319616, 120.61885097440636, 121.02342589141844, 121.4254213774536, 121.82487754895301, 122.22183402360669, 122.61632991905522, 123.0084038522126, 123.39809393916242, 123.78543779558089, 124.17047253764562, 124.55323478339078, 124.93376065447178, 125.31208577830564, 125.68824529055527, 126.06227383792812, 126.43420558126161, 126.80407419886954, 127.17191289012614, 127.53775437926453, 127.90163091936994, 128.2635742965476, 128.62361583424754, 128.98178639773002, 129.33811639865522, 129.69263579978372, 130.04537411977304, 130.39636043805945, 130.7456233998116, 131.0931912209467, 131.4390916931982, 131.7833521892264, 132.1259996677628, 132.46706067878083, 132.80656136868487, 133.14452748551145, 133.4809843841357, 133.81595703147747, 134.14947001170208, 134.4815475314098, 134.8122134248107, 135.14149115887943, 135.46940383848744, 135.7959742115073, 136.1212246738881, 136.44517727469668, 136.7678537211239, 137.08927538345233, 137.4094632999835, 137.7284381819227, 138.04622041821963, 138.36283008036287, 138.6782869271272, 138.9926104092722, 139.30581967419087, 139.61793357050755, 139.92897065262406, 140.23894918521347, 140.54788714766048, 140.85580223844855, 141.16271187949226, 141.46863322041602, 141.7735831427774, 142.07757826423577, 142.3806349426657, 142.68276928021584, 142.98399712731168, 143.28433408660436, 143.58379551686374, 143.8823965368171, 144.18015202893332, 144.47707664315246, 144.77318480056175, 145.06849069701752, 145.36300830671416, 145.65675138569978, 145.94973347533963, 146.24196790572725, 146.53346779904413, 146.82424607286808, 147.114315443431, 147.40368842882646, 147.69237735216768, 147.98039434469646, 148.26775134884338, 148.55446012124025, 148.84053223568498, 149.12597908605954, 149.41081188920194, 149.69504168773202, 149.97867935283273, 150.26173558698625, 150.5442209266668, 150.82614574498973, 151.10752025431788, 151.388354508826, 151.6686584070235, 151.94844169423612, 152.2277139650475, 152.50648466570075, 152.78476309646075, 153.06255841393826, 153.33987963337552, 153.61673563089448, 153.89313514570844, 154.16908678229706, 154.44459901254552, 154.71968017784894, 154.99433849118162, 155.2685820391325, 155.54241878390684, 155.815856565295, 156.0889031026088, 156.36156599658545, 156.63385273126053, 156.90577067580983, 157.17732708636052, 157.4485291077726, 157.719383775391, 157.9898980167682, 158.26007865335885, 158.52993240218618, 158.79946587748063, 159.06868559229187, 159.33759796007354, 159.60620929624235, 159.8745258197111, 160.1425536543963, 160.4102988307011, 160.67776728697368, 160.94496487094142, 161.2118973411215, 161.47857036820827, 161.74498953643777, 162.0111603449295, 162.27708820900645, 162.54277846149313, 162.80823635399264, 163.07346705814197, 163.3384756668476, 163.60326719550017, 163.86784658316955, 164.13221869378012, 164.39638831726683, 164.66036017071266, 164.92413889946673, 165.18772907824513, 165.4511352122128, 165.71436173804852, 165.97741302499213, 166.24029337587464, 166.50300702813206, 166.76555815480197, 167.02795086550478, 167.2901892074084, 167.55227716617753, 167.81421866690758, 168.07601757504344, 168.3376776972834, 168.5992027824685, 168.86059652245748, 169.12186255298778, 169.38300445452228, 169.6440257530831, 169.9049299210713, 170.16572037807384, 170.4264004916577, 170.68697357815063]}
+sweep = [60000.0 s^-1, 70000.0 s^-1, 80000.0 s^-1, 90000.0 s^-1, 100000.0 s^-1, 110000.0 s^-1, 120000.0 s^-1, 130000.0 s^-1, 140000.0 s^-1, 150000.0 s^-1, 160000.0 s^-1, 170000.0 s^-1, 180000.0 s^-1, 190000.0 s^-1, 200000.0 s^-1]
+Z_sweep = [69.86761988407116 dimensionless, 82.20205140759923 dimensionless, 94.05154114860379 dimensionless, 104.41486864054629 dimensionless, 113.370431879931 dimensionless, 121.19602316928268 dimensionless, 128.16035732952503 dimensionless, 134.4815475314098 dimensionless, 140.32732257589728 dimensionless, 145.82426204521448 dimensionless, 151.06735720547056 dimensionless, 156.12787825716313 dimensionless, 161.05939663128217 dimensionless, 165.90227314382818 dimensionless, 170.68697357815063 dimensionless]
+Z_low = 69.86761988407116 dimensionless
+I_tank_max = 2.5772062012444925 A
+I_pri = 5.553603672697958 A
+V_Cr_pk = 458.3662361046588 m^2·kg·s^-3·A^-1
+E_Lr = 0.0028647889756541174 m^2·kg·s^-2
+V_Cr_rating = 630.0 m^2·kg·s^-3·A^-1
+capacitor_ok = 1.0 dimensionless
+
+=== diagnostics ===
+none

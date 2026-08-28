@@ -1,0 +1,161 @@
+# nomo snapshot v1
+# worksheet: matrix
+
+=== text ===
+Vectors and matrices
+Element-wise against matrix arithmetic, indexing, and the aggregates.
+v = [3, 4, 12]
+w = [1, 2, 3]
+Between two vectors of equal length, `*` is element-wise: what a tabulated
+calculation wants, column against column.
+elementwise = v·w = [3, 4, 12]·([1, 2, 3]) = [3, 8, 36]
+An inner product is asked for by name, so it is never confused with the above.
+inner = dot(v, w) = dot([3, 4, 12], [1, 2, 3]) = 47
+Scalars broadcast.
+scaled = 2·v = 2·([3, 4, 12]) = [6, 8, 24]
+Aggregates.
+total = sum(v) = sum([3, 4, 12]) = 19
+smallest = min(v) = min([3, 4, 12]) = 3
+largest = max(v) = max([3, 4, 12]) = 12
+n = length(v) = length([3, 4, 12]) = 3
+Indexing is one-based.
+second = v[2] = ([3, 4, 12])[2] = 4
+A vector is the column of n that `rows` and `cols` say it is, so it takes the
+column index as well: these are the same element. Any other column is out of
+bounds, which is what a column of one means.
+also_second = v[2, 1] = ([3, 4, 12])[2, 1] = 4
+Vectors carry units element by element, so a tabulated calculation keeps them.
+f = [5, 10, 15] Hz
+acc = [2.89, 3.04, 3.72] m/s²
+stroke = acc/(2·π·f)² = [2.89 m·s⁻², 3.04 m·s⁻², 3.72 m·s⁻²]/(2·π·([5 Hz, 10 Hz, 15 Hz]))² = [0.00292818 m, 0.000770041 m, 0.000418794 m]
+stroke = [2.92818 mm, 0.770041 mm, 0.418794 mm]
+A matrix is a vector of rows, and is indexed row first.
+K = [[1, 2], [3, 4]]
+k21 = K[2, 1] = ([[1, 2], [3, 4]])[2, 1] = 3
+Between two matrices `*` is the matrix product, not element-wise. `identity(n)`
+writes the n×n one, which is dimensionless so that `S - λ*identity(2)` — the
+characteristic equation of a stress tensor — takes its dimension from λ.
+I = identity(2) = [[1, 0], [0, 1]]
+product = K·I = [[1, 2], [3, 4]]·([[1, 0], [0, 1]]) = [[1, 2], [3, 4]]
+`diag` writes a matrix with a vector down its diagonal — a mass matrix, here.
+The zeros carry the diagonal's dimension so the result is usable in arithmetic.
+mass = diag([3, 4] kg) = [[3 kg, 0 kg], [0 kg, 4 kg]]
+Linear algebra.
+d = det(K) = det([[1, 2], [3, 4]]) = -2
+Kt = transpose(K) = transpose([[1, 2], [3, 4]]) = [[1, 3], [2, 4]]
+Kinv = inv(K) = inv([[1, 2], [3, 4]]) = [[-2, 1], [1.5, -0.5]]
+The check that inv is really an inverse.
+back_to_I = K·Kinv = [[1, 2], [3, 4]]·([[-2, 1], [1.5, -0.5]]) = [[1, -1.11022e-16], [8.88178e-16, 1]]
+The cross product is three-dimensional, and units come out of the products it
+is made of: metres crossed with newtons give newton-metres. `-> N*m` asks for
+the moment to be shown that way rather than in joules, which share the
+dimension but not the meaning.
+r = [1, 0, 0] m
+F = [0, 2, 0] N
+M = cross(r, F) = cross([1 m, 0 m, 0 m], [0 N, 2 N, 0 N]) = [0 N*m, 0 N*m, 2 N*m]
+Parallel vectors cross to zero, which is the check worth writing down.
+parallel = cross(r, r) = cross([1 m, 0 m, 0 m], [1 m, 0 m, 0 m]) = [0 m², 0 m², 0 m²]
+Shape and slicing. A vector answers as the column it is.
+n = rows(K) = rows([[1, 2], [3, 4]]) = 2
+second = col(K, 2) = col([[1, 2], [3, 4]], 2) = [2, 4]
+Joining: side by side, and one above the other.
+side = augment([1, 2] m, [3, 4] m) = [[1 m, 3 m], [2 m, 4 m]]
+piled = stack([1, 2] m, [3, 4] m) = [1 m, 2 m, 3 m, 4 m]
+
+=== html ===
+<p class="prose">Vectors and matrices</p>
+<p class="prose">Element-wise against matrix arithmetic, indexing, and the aggregates.</p>
+<div class="step"><span class="name">v</span><span class="eq">=</span>[3, 4, 12]</div>
+<div class="step"><span class="name">w</span><span class="eq">=</span>[1, 2, 3]</div>
+<p class="prose">Between two vectors of equal length, `*` is element-wise: what a tabulated</p>
+<p class="prose">calculation wants, column against column.</p>
+<div class="step"><span class="name">elementwise</span><span class="eq">=</span>v·w<span class="eq">=</span><span class="subst">[3, 4, 12]·([1, 2, 3])</span><span class="eq">=</span><span class="result">[3, 8, 36]</span></div>
+<p class="prose">An inner product is asked for by name, so it is never confused with the above.</p>
+<div class="step"><span class="name">inner</span><span class="eq">=</span>dot(v, w)<span class="eq">=</span><span class="subst">dot([3, 4, 12], [1, 2, 3])</span><span class="eq">=</span><span class="result">47</span></div>
+<p class="prose">Scalars broadcast.</p>
+<div class="step"><span class="name">scaled</span><span class="eq">=</span>2·v<span class="eq">=</span><span class="subst">2·([3, 4, 12])</span><span class="eq">=</span><span class="result">[6, 8, 24]</span></div>
+<p class="prose">Aggregates.</p>
+<div class="step"><span class="name">total</span><span class="eq">=</span>sum(v)<span class="eq">=</span><span class="subst">sum([3, 4, 12])</span><span class="eq">=</span><span class="result">19</span></div>
+<div class="step"><span class="name">smallest</span><span class="eq">=</span>min(v)<span class="eq">=</span><span class="subst">min([3, 4, 12])</span><span class="eq">=</span><span class="result">3</span></div>
+<div class="step"><span class="name">largest</span><span class="eq">=</span>max(v)<span class="eq">=</span><span class="subst">max([3, 4, 12])</span><span class="eq">=</span><span class="result">12</span></div>
+<div class="step"><span class="name">n</span><span class="eq">=</span>length(v)<span class="eq">=</span><span class="subst">length([3, 4, 12])</span><span class="eq">=</span><span class="result">3</span></div>
+<p class="prose">Indexing is one-based.</p>
+<div class="step"><span class="name">second</span><span class="eq">=</span>v[2]<span class="eq">=</span><span class="subst">([3, 4, 12])[2]</span><span class="eq">=</span><span class="result">4</span></div>
+<p class="prose">A vector is the column of n that `rows` and `cols` say it is, so it takes the</p>
+<p class="prose">column index as well: these are the same element. Any other column is out of</p>
+<p class="prose">bounds, which is what a column of one means.</p>
+<div class="step"><span class="name">also_second</span><span class="eq">=</span>v[2, 1]<span class="eq">=</span><span class="subst">([3, 4, 12])[2, 1]</span><span class="eq">=</span><span class="result">4</span></div>
+<p class="prose">Vectors carry units element by element, so a tabulated calculation keeps them.</p>
+<div class="step"><span class="name">f</span><span class="eq">=</span>[5, 10, 15] Hz</div>
+<div class="step"><span class="name">acc</span><span class="eq">=</span>[2.89, 3.04, 3.72] m/s²</div>
+<div class="step"><span class="name">stroke</span><span class="eq">=</span>acc/(2·π·f)²<span class="eq">=</span><span class="subst">[2.89 m·s⁻², 3.04 m·s⁻², 3.72 m·s⁻²]/(2·π·([5 Hz, 10 Hz, 15 Hz]))²</span><span class="eq">=</span><span class="result">[0.00292818 m, 0.000770041 m, 0.000418794 m]</span></div>
+<div class="step">stroke<span class="eq">=</span><span class="result">[2.92818 mm, 0.770041 mm, 0.418794 mm]</span></div>
+<p class="prose">A matrix is a vector of rows, and is indexed row first.</p>
+<div class="step"><span class="name">K</span><span class="eq">=</span>[[1, 2], [3, 4]]</div>
+<div class="step"><span class="name">k21</span><span class="eq">=</span>K[2, 1]<span class="eq">=</span><span class="subst">([[1, 2], [3, 4]])[2, 1]</span><span class="eq">=</span><span class="result">3</span></div>
+<p class="prose">Between two matrices `*` is the matrix product, not element-wise. `identity(n)`</p>
+<p class="prose">writes the n×n one, which is dimensionless so that `S - λ*identity(2)` — the</p>
+<p class="prose">characteristic equation of a stress tensor — takes its dimension from λ.</p>
+<div class="step"><span class="name">I</span><span class="eq">=</span>identity(2)<span class="eq">=</span><span class="result">[[1, 0], [0, 1]]</span></div>
+<div class="step"><span class="name">product</span><span class="eq">=</span>K·I<span class="eq">=</span><span class="subst">[[1, 2], [3, 4]]·([[1, 0], [0, 1]])</span><span class="eq">=</span><span class="result">[[1, 2], [3, 4]]</span></div>
+<p class="prose">`diag` writes a matrix with a vector down its diagonal — a mass matrix, here.</p>
+<p class="prose">The zeros carry the diagonal's dimension so the result is usable in arithmetic.</p>
+<div class="step"><span class="name">mass</span><span class="eq">=</span>diag([3, 4] kg)<span class="eq">=</span><span class="result">[[3 kg, 0 kg], [0 kg, 4 kg]]</span></div>
+<p class="prose">Linear algebra.</p>
+<div class="step"><span class="name">d</span><span class="eq">=</span>det(K)<span class="eq">=</span><span class="subst">det([[1, 2], [3, 4]])</span><span class="eq">=</span><span class="result">-2</span></div>
+<div class="step"><span class="name">Kt</span><span class="eq">=</span>transpose(K)<span class="eq">=</span><span class="subst">transpose([[1, 2], [3, 4]])</span><span class="eq">=</span><span class="result">[[1, 3], [2, 4]]</span></div>
+<div class="step"><span class="name">Kinv</span><span class="eq">=</span>inv(K)<span class="eq">=</span><span class="subst">inv([[1, 2], [3, 4]])</span><span class="eq">=</span><span class="result">[[-2, 1], [1.5, -0.5]]</span></div>
+<p class="prose">The check that inv is really an inverse.</p>
+<div class="step"><span class="name">back_to_I</span><span class="eq">=</span>K·Kinv<span class="eq">=</span><span class="subst">[[1, 2], [3, 4]]·([[-2, 1], [1.5, -0.5]])</span><span class="eq">=</span><span class="result">[[1, -1.11022e-16], [8.88178e-16, 1]]</span></div>
+<p class="prose">The cross product is three-dimensional, and units come out of the products it</p>
+<p class="prose">is made of: metres crossed with newtons give newton-metres. `-&gt; N*m` asks for</p>
+<p class="prose">the moment to be shown that way rather than in joules, which share the</p>
+<p class="prose">dimension but not the meaning.</p>
+<div class="step"><span class="name">r</span><span class="eq">=</span>[1, 0, 0] m</div>
+<div class="step"><span class="name">F</span><span class="eq">=</span>[0, 2, 0] N</div>
+<div class="step"><span class="name">M</span><span class="eq">=</span>cross(r, F)<span class="eq">=</span><span class="subst">cross([1 m, 0 m, 0 m], [0 N, 2 N, 0 N])</span><span class="eq">=</span><span class="result">[0 N*m, 0 N*m, 2 N*m]</span></div>
+<p class="prose">Parallel vectors cross to zero, which is the check worth writing down.</p>
+<div class="step"><span class="name">parallel</span><span class="eq">=</span>cross(r, r)<span class="eq">=</span><span class="subst">cross([1 m, 0 m, 0 m], [1 m, 0 m, 0 m])</span><span class="eq">=</span><span class="result">[0 m², 0 m², 0 m²]</span></div>
+<p class="prose">Shape and slicing. A vector answers as the column it is.</p>
+<div class="step"><span class="name">n</span><span class="eq">=</span>rows(K)<span class="eq">=</span><span class="subst">rows([[1, 2], [3, 4]])</span><span class="eq">=</span><span class="result">2</span></div>
+<div class="step"><span class="name">second</span><span class="eq">=</span>col(K, 2)<span class="eq">=</span><span class="subst">col([[1, 2], [3, 4]], 2)</span><span class="eq">=</span><span class="result">[2, 4]</span></div>
+<p class="prose">Joining: side by side, and one above the other.</p>
+<div class="step"><span class="name">side</span><span class="eq">=</span>augment([1, 2] m, [3, 4] m)<span class="eq">=</span><span class="result">[[1 m, 3 m], [2 m, 4 m]]</span></div>
+<div class="step"><span class="name">piled</span><span class="eq">=</span>stack([1, 2] m, [3, 4] m)<span class="eq">=</span><span class="result">[1 m, 2 m, 3 m, 4 m]</span></div>
+
+=== values ===
+v = [3.0 dimensionless, 4.0 dimensionless, 12.0 dimensionless]
+w = [1.0 dimensionless, 2.0 dimensionless, 3.0 dimensionless]
+elementwise = [3.0 dimensionless, 8.0 dimensionless, 36.0 dimensionless]
+inner = 47.0 dimensionless
+scaled = [6.0 dimensionless, 8.0 dimensionless, 24.0 dimensionless]
+total = 19.0 dimensionless
+smallest = 3.0 dimensionless
+largest = 12.0 dimensionless
+n = 3.0 dimensionless
+second = 4.0 dimensionless
+also_second = 4.0 dimensionless
+f = [5.0 s^-1, 10.0 s^-1, 15.0 s^-1]
+acc = [2.89 m·s^-2, 3.04 m·s^-2, 3.72 m·s^-2]
+stroke = [0.002928182207263562 m, 0.0007700409956817671 m, 0.00041879422572166293 m]
+? = [0.002928182207263562 m, 0.0007700409956817671 m, 0.00041879422572166293 m]
+K = [[1.0 dimensionless, 2.0 dimensionless], [3.0 dimensionless, 4.0 dimensionless]]
+k21 = 3.0 dimensionless
+I = [[1.0 dimensionless, 0.0 dimensionless], [0.0 dimensionless, 1.0 dimensionless]]
+product = [[1.0 dimensionless, 2.0 dimensionless], [3.0 dimensionless, 4.0 dimensionless]]
+mass = [[3.0 kg, 0.0 kg], [0.0 kg, 4.0 kg]]
+d = -2.0 dimensionless
+Kt = [[1.0 dimensionless, 3.0 dimensionless], [2.0 dimensionless, 4.0 dimensionless]]
+Kinv = [[-1.9999999999999996 dimensionless, 0.9999999999999998 dimensionless], [1.4999999999999998 dimensionless, -0.49999999999999994 dimensionless]]
+back_to_I = [[1.0 dimensionless, -1.1102230246251565e-16 dimensionless], [8.881784197001252e-16 dimensionless, 0.9999999999999993 dimensionless]]
+r = [1.0 m, 0.0 m, 0.0 m]
+F = [0.0 m·kg·s^-2, 2.0 m·kg·s^-2, 0.0 m·kg·s^-2]
+M = [0.0 m^2·kg·s^-2, 0.0 m^2·kg·s^-2, 2.0 m^2·kg·s^-2]
+parallel = [0.0 m^2, 0.0 m^2, 0.0 m^2]
+n = 2.0 dimensionless
+second = [2.0 dimensionless, 4.0 dimensionless]
+side = [[1.0 m, 3.0 m], [2.0 m, 4.0 m]]
+piled = [1.0 m, 2.0 m, 3.0 m, 4.0 m]
+
+=== diagnostics ===
+none

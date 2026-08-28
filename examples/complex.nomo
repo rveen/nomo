@@ -1,0 +1,58 @@
+' nomo 1
+' Complex numbers
+' The imaginary unit is `i`, an ordinary constant. Juxtaposition is already
+' multiplication, so `4i` is `4*i` and needs no special number syntax — the
+' same reading that makes `2e` mean `2*e`.
+
+z = 3 + 4i
+w = 1 - 2i
+
+' Arithmetic. Any operation with a complex operand on either side answers
+' complex, promoting the real one.
+sum = z + w
+difference = z - w
+product = z*w
+quotient = z/w
+scaled = 2*z
+negated = 0 - z
+
+' `i` squared is where the whole thing comes from.
+i^2
+
+' Taking a value apart. `Re` and `Im` give real numbers; `Im` is the
+' coefficient of `i`, so `Re(z) + Im(z)*i` rebuilds `z`.
+Re(z)
+Im(z)
+conj(z)
+abs(z)
+arg(z)
+
+' Whole powers only, by repeated multiplication. A fractional power of a
+' complex number needs a branch cut, which this language does not choose.
+z^2
+z^3
+z^0
+z^(0 - 1)
+
+' A complex value stays complex. Nothing demotes when the imaginary part
+' happens to be zero, so a result's type never depends on its value.
+real_again = z - 4i
+
+' Units. Both parts share one dimension, because they are components of one
+' measurement rather than two measurements.
+Z = (3 + 4i) Ω
+Z -> kΩ
+abs(Z)
+Re(Z)
+' The argument is an angle, so it is dimensionless whatever Z is measured in.
+arg(Z)
+
+' The impedance of a series RLC branch at one frequency, which is what the
+' corpus uses complex arithmetic for.
+R = 32.3383 Ω
+L = 4.58533e-5 H
+C = 4.56546e-8 F
+f = 110000 Hz
+Zrlc = R + 2*pi*f*L*i + 1/(2*pi*f*C*i)
+abs(Zrlc) -> Ω
+arg(Zrlc)*180/pi

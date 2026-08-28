@@ -1,0 +1,101 @@
+# nomo snapshot v1
+# worksheet: diagnostics
+
+=== text ===
+Diagnostics
+A worksheet of deliberate mistakes, one per line.
+
+Error messages are output too, and output that nothing checks is output that
+drifts. This file pins what the engine says when a worksheet is wrong: the
+message, the code, and the position it points at. It is expected to fail
+`nomo check` — that is what it is for.
+good = 2 m
+Dimensions that do not agree cannot be added.
+mismatch = 1 m + 1 s = [cannot combine m with s]
+Two points on an offset scale do not add, and a point cannot be scaled.
+The brackets are needed: juxtaposition binds at `*`'s precedence, so
+`2*20 °C` is `(2*20) °C`, which is the ordinary reading 40 °C and no error.
+sum_of_points = 20°C + 5°C = [cannot add two temperatures on an offset scale; add a difference instead, as in `20°C + 5 K`]
+scaled_point = 2·(20°C) = [cannot scale a temperature on an offset scale; convert to an absolute scale such as K first]
+A name that was never bound.
+undefined = missing + 1 = [`missing` is not defined]
+A function that does not exist, and one called with the wrong arity.
+nofunc = frobnicate(2) = [`frobnicate` is not a known function]
+arity = sin(1, 2) = [`sin` takes 1 argument, but 2 were given]
+A unit that does not exist.
+badunit = 5 flurbles = [`flurbles` is not defined]
+Trigonometry needs a dimensionless argument.
+dimensional = sin(2 m) = [expected a dimensionless value, found m]
+A binding that fails takes the name over anyway. `PF` is peta-farads to the
+unit table, and answering 1e15 F here rather than saying what went wrong is
+the worst thing this engine could do.
+PF = missing = [`missing` is not defined]
+PF = [`PF` has no value: the statement that defines it failed]
+A cycle. Neither statement can be evaluated, and neither line is itself wrong.
+[not evaluated]
+[not evaluated]
+Statements outside the cycle still evaluate normally.
+fine = good·3 = 2 m·3 = 6 m
+
+=== html ===
+<p class="prose">Diagnostics</p>
+<p class="prose">A worksheet of deliberate mistakes, one per line.</p>
+<p class="prose">Error messages are output too, and output that nothing checks is output that</p>
+<p class="prose">drifts. This file pins what the engine says when a worksheet is wrong: the</p>
+<p class="prose">message, the code, and the position it points at. It is expected to fail</p>
+<p class="prose">`nomo check` — that is what it is for.</p>
+<div class="step"><span class="name">good</span><span class="eq">=</span>2 m</div>
+<p class="prose">Dimensions that do not agree cannot be added.</p>
+<div class="step"><span class="name">mismatch</span><span class="eq">=</span>1 m + 1 s<span class="eq">=</span><span class="error">[cannot combine m with s]</span></div>
+<p class="prose">Two points on an offset scale do not add, and a point cannot be scaled.</p>
+<p class="prose">The brackets are needed: juxtaposition binds at `*`'s precedence, so</p>
+<p class="prose">`2*20 °C` is `(2*20) °C`, which is the ordinary reading 40 °C and no error.</p>
+<div class="step"><span class="name">sum_of_points</span><span class="eq">=</span>20°C + 5°C<span class="eq">=</span><span class="error">[cannot add two temperatures on an offset scale; add a difference instead, as in `20°C + 5 K`]</span></div>
+<div class="step"><span class="name">scaled_point</span><span class="eq">=</span>2·(20°C)<span class="eq">=</span><span class="error">[cannot scale a temperature on an offset scale; convert to an absolute scale such as K first]</span></div>
+<p class="prose">A name that was never bound.</p>
+<div class="step"><span class="name">undefined</span><span class="eq">=</span>missing + 1<span class="eq">=</span><span class="error">[`missing` is not defined]</span></div>
+<p class="prose">A function that does not exist, and one called with the wrong arity.</p>
+<div class="step"><span class="name">nofunc</span><span class="eq">=</span>frobnicate(2)<span class="eq">=</span><span class="error">[`frobnicate` is not a known function]</span></div>
+<div class="step"><span class="name">arity</span><span class="eq">=</span>sin(1, 2)<span class="eq">=</span><span class="error">[`sin` takes 1 argument, but 2 were given]</span></div>
+<p class="prose">A unit that does not exist.</p>
+<div class="step"><span class="name">badunit</span><span class="eq">=</span>5 flurbles<span class="eq">=</span><span class="error">[`flurbles` is not defined]</span></div>
+<p class="prose">Trigonometry needs a dimensionless argument.</p>
+<div class="step"><span class="name">dimensional</span><span class="eq">=</span>sin(2 m)<span class="eq">=</span><span class="error">[expected a dimensionless value, found m]</span></div>
+<p class="prose">A binding that fails takes the name over anyway. `PF` is peta-farads to the</p>
+<p class="prose">unit table, and answering 1e15 F here rather than saying what went wrong is</p>
+<p class="prose">the worst thing this engine could do.</p>
+<div class="step"><span class="name">PF</span><span class="eq">=</span>missing<span class="eq">=</span><span class="error">[`missing` is not defined]</span></div>
+<div class="step">PF<span class="eq">=</span><span class="error">[`PF` has no value: the statement that defines it failed]</span></div>
+<p class="prose">A cycle. Neither statement can be evaluated, and neither line is itself wrong.</p>
+<div class="step error">not evaluated</div>
+<div class="step error">not evaluated</div>
+<p class="prose">Statements outside the cycle still evaluate normally.</p>
+<div class="step"><span class="name">fine</span><span class="eq">=</span>good·3<span class="eq">=</span><span class="subst">2 m·3</span><span class="eq">=</span><span class="result">6 m</span></div>
+
+=== values ===
+good = 2.0 m
+mismatch = error: cannot combine m with s
+sum_of_points = error: cannot add two temperatures on an offset scale; add a difference instead, as in `20°C + 5 K`
+scaled_point = error: cannot scale a temperature on an offset scale; convert to an absolute scale such as K first
+undefined = error: a subexpression could not be evaluated
+nofunc = error: `frobnicate` is not a known function
+arity = error: `sin` takes 1 argument, but 2 were given
+badunit = error: a subexpression could not be evaluated
+dimensional = error: expected a dimensionless value, found m
+PF = error: `missing` is not defined
+? = error: `PF` has no value: the statement that defines it failed
+fine = 6.0 m
+
+=== diagnostics ===
+error[SH201] 12:12: cannot combine m with s
+error[SH201] 17:17: cannot add two temperatures on an offset scale; add a difference instead, as in `20°C + 5 K`
+error[SH201] 18:16: cannot scale a temperature on an offset scale; convert to an absolute scale such as K first
+error[SH201] 21:13: `missing` is not defined
+error[SH201] 24:10: `frobnicate` is not a known function
+error[SH201] 25:9: `sin` takes 1 argument, but 2 were given
+error[SH201] 28:13: `flurbles` is not defined
+error[SH201] 31:15: expected a dimensionless value, found m
+warning[SH202] 36:1: `PF` is also a unit; this binding hides it for the rest of the worksheet
+error[SH201] 36:6: `missing` is not defined
+error[SH201] 37:1: `PF` has no value: the statement that defines it failed
+error[SH302] 40:1: `loop_a` and `loop_b` depend on each other, so neither can be computed

@@ -1,0 +1,196 @@
+' nomo 1
+
+' LLC resonant converter — first-harmonic design
+'
+' A worked design for a half-bridge LLC stage, carried out the way the
+' textbooks do it: replace the square wave by its first harmonic, replace the
+' rectifier and its load by the equivalent resistance they present at that
+' frequency, and what is left is a linear network that can be written down.
+' Steigerwald's 1988 comparison of resonant topologies is where the method comes
+' from, and every converter application note since repeats it.
+'
+' It is here because it is the shape a real engineering worksheet has: a page of
+' stated inputs, a chain of definitions that never mutates anything, a complex
+' impedance, three gain curves that have to be compared against each other, and
+' a verdict at the end that says whether the design meets the specification.
+' image tank 520x260
+
+' The specification.
+V_bus = 400 V
+V_out = 48 V
+P_out = 1000 W
+f_sw_min = 60 kHz
+f_sw_max = 200 kHz
+
+' The bridge drives a square wave between 0 and V_bus. Only its first harmonic
+' is kept: peak 4/π of the half-swing, and the network sees the rms of that.
+V_sq_pk = 4/π*(V_bus/2)
+V_sq_rms = V_sq_pk/sqrt(2)
+
+' The rectifier and the output load together look resistive to that harmonic.
+' The 8/π² is the same 4/π twice over — once for the voltage the bridge applies
+' and once for the current the rectifier draws.
+R_load = V_out^2/P_out
+I_out = P_out/V_out
+n = V_bus/V_out
+R_ac = 8/π^2*n^2*R_load
+
+' The tank is chosen from three numbers: where it resonates, how heavily it is
+' damped at full load, and how much magnetising inductance sits across it.
+f0 = 100 kHz
+Q_nom = 0.45
+Ln = 4
+
+' Everything else follows. Z0 is the characteristic impedance the chosen Q asks
+' for at this load; the resonant frequency then fixes the two components.
+Z0 = Q_nom*R_ac
+T0 = 1/(2*π*f0)
+Lr = Z0*T0 -> µH
+Cr = T0/Z0 -> nF
+Lm = Ln*Lr -> µH
+
+' Worth checking that the parts that came out reproduce the numbers they were
+' derived from, since a slip in the algebra above would not show up anywhere
+' else on the page.
+f0_check = 1/(2*π*sqrt(Lr*Cr)) -> kHz
+Q_check = sqrt(Lr/Cr)/R_ac
+
+' The second resonance, with the magnetising inductance in series. The converter
+' cannot be operated below it, so it is the floor on the sweep.
+f_min_res = 1/(2*π*sqrt(Cr*(Lr + Lm))) -> kHz
+
+' The tank impedance seen by the bridge: Lr and Cr in series with Lm in
+' parallel with the reflected load. Complex, because the phase is the whole
+' point — the bridge has to see an inductive load to switch softly.
+fn X_Lr(f) = 2*π*f*Lr
+fn X_Lm(f) = 2*π*f*Lm
+fn X_Cr(f) = 1/(2*π*f*Cr)
+fn Z_par(f) = X_Lm(f)*i*R_ac/(X_Lm(f)*i + R_ac)
+fn Z_in(f) = X_Lr(f)*i - X_Cr(f)*i + Z_par(f)
+
+' Taken apart the three ways a worksheet asks for.
+Z_at_f0 = Z_in(f0) -> ohm
+R_in = Re(Z_at_f0)
+X_in = Im(Z_at_f0)
+mag = abs(Z_at_f0) -> ohm
+phase = arg(Z_at_f0)*180/π
+
+' Positive is inductive, which is the half of the plane the bridge must stay in.
+fn phase_deg(f) = arg(Z_in(f))*180/π
+soft_switching = phase_deg(f_sw_min) > 0
+
+' The gain, normalised to the resonant frequency. This is the expression the
+' whole first-harmonic method exists to produce.
+fn gain(f, Q) = (f/f0)^2*(Ln - 1)/sqrt((Ln*(f/f0)^2 - 1)^2 + (f/f0)^2*((f/f0)^2 - 1)^2*(Ln - 1)^2*Q^2)
+
+' A family of curves is written by naming its members, so the load each one
+' stands for has a name on the page rather than a number in a call.
+fn light(f)   = gain(f, 0.25)
+fn nominal(f) = gain(f, Q_nom)
+fn heavy(f)   = gain(f, 0.85)
+plot(light, nominal, heavy, f_sw_min, f_sw_max)
+' image gain 480x240
+
+' Unity at resonance, whatever the load — the property that makes f0 the design
+' point. Below it the converter boosts, above it it bucks.
+nominal(f0)
+light(f0)
+heavy(f0)
+
+' Where the nominal curve peaks, and how much gain is there. The slope is exact
+' rather than a difference quotient, so the peak is found by asking where the
+' slope crosses zero.
+fn slope(f) = derivative(nominal, f)
+f_peak = roots(slope, f_min_res, f0) -> kHz
+M_peak = nominal(f_peak)
+
+' The gain the specification actually demands, at both ends of the input range.
+V_bus_min = 340 V
+V_bus_max = 420 V
+M_needed_max = n*V_out/V_bus_min
+M_needed_min = n*V_out/V_bus_max
+margin = M_peak - M_needed_max
+verdict = if margin > 0 then "gain margin available" else "redesign: peak gain too low"
+
+' The impedance curve, drawn as a magnitude in ohms so the axis is a number.
+fn Z_mag(f) = abs(Z_in(f))
+fn Z_ohm(f) = Z_mag(f)/ohm
+plot(Z_ohm, f_sw_min, f_sw_max)
+
+' The lowest impedance across the operating range bounds the tank current, and
+' `min` over a sampled vector is how a worksheet asks that without a loop.
+sweep = range(f_sw_min, f_sw_max, 10 kHz)
+Z_sweep = map(Z_ohm, sweep)
+Z_low = min(Z_sweep)
+I_tank_max = V_sq_rms/(Z_low ohm) -> A
+
+' Currents and stresses, which is what the design is finally judged on.
+I_pri = P_out/V_sq_rms
+V_Cr_pk = I_pri*sqrt(2)*X_Cr(f0) -> V
+E_Lr = 1/2*Lr*(I_pri*sqrt(2))^2 -> mJ
+
+' Rated against the specification.
+V_Cr_rating = 630 V
+capacitor_ok = V_Cr_pk < V_Cr_rating
+
+' --- resources ---
+' The two diagrams above, drawn by scripts/make-example-figures.py.
+' image tank png 1535
+'   iVBORw0KGgoAAAANSUhEUgAAAggAAAEECAIAAADCtFvSAAAFxklEQVR42u3dQU7sOBCA4T4KYtHi
+'   GJySFUvO0tcCpGxY0MFpu0yq/H3KZmbAkp1Ufr0exLt8AsAPF0cAgDAAIAwACAMAwgCAMAAgDAAI
+'   AwDCAIAwACAMAAgDAMIAgDAAIAwACAMAwgCAMAAgDAAIAwAIAwDCAIAwACAMAAgDAMIAgDAAIAwA
+'   CAMAwgCAMAAgDAAIAwDCAIAwACAMAAgDAMIAgDAAIAwAIAwACAMAwgCAMAAgDAAIAwDCAIAwACAM
+'   AAgDAMIAgDAAIAwACAMAwgCAMHAKT8/XncuagDBIQtcrcuU1AWEolYTHvsaagDAUrMKQL155zZPc
+'   0P1/A8JA08tu1HetvKYwgDCsWIX97115TWEAYVi3CvdWWHlNYQBhqBOGgYusvKYwgDCoQuBP7KRb
+'   UxhAGIRBGIQBhEEV5n7gnm5NYQBhEAZhEAYQhlphsOaZ1xQGhAFhsKYwIAw5f3lcpctLvPbz4wk3
+'   v8IgDMIgDMJgfoWh7kcB4KMk81tpv8IAwmB+7VcYQBjMr/0KAwiD+bVfYQBhML/2KwwgDObXfoUB
+'   hMH82q8wCAPC4EVpv8IgDAiDF6X9CoMHC2HworRfYfBgIQzCYL/C4MECvy3YfoXBgwXCYL/C4KAB
+'   YRAGBw2YX2Fw0ID5FQYHDZhfYXDQgPkVBgcNmF9hcNCA+RUGBw2YX/sVBsD82q8wAObXfoUBML/2
+'   KwyA+bVfYQDMr/0KA2B+7VcYhAG8KO1XGIQBvCjtVxg8WOBFab/C4MECL0r7FQYPFgiD/QqDBwuE
+'   QRiEwUEDZeb39vpy6Nr2e+hbhEEYQBiEQRiEAYQheRgyLi4MgPkVBmEAzK8wlAzD9tAMuUwgCIMw
+'   CIMwgDAIQ9Ew+KwJhEEYhEEYQBiEQRiEAYRBGIRBGEAYhEEYhAFoHc+InygZu6YwCAMwacYjfuAw
+'   Yk1hEAYgfMZbXtNHX+VxawqDMACxM97zuu/8ssfWFAZhAAJnvP8DoqP/tX9NYRAGIGrGe/4P8L3v
+'   nbCmMAgDEP5rb/rX6a9C+5rCIAxAbBiGLPXrPwatKQzCAASG4Tx//mhfUxiEARAGYRAGYEoYzlma
+'   P9cUBmEAhEEYhAHI9kv0Zq4pDMIACIMwCAMgDMIgDIAwCIMwAP6iHn9RjzAAwiAMwgAIgzAIgzCA
+'   MAiDMAgDCIMwCIMwgDAIgzAIAwiDMAiDMIAwCIMwCAMIgzAIgzCAMAiDMAgDCIMwCIMwAMIgDMIA
+'   CIMwCAMgDMIgDIAwCIMwAMIgDMIACIMw/ONDM+QygSAMwiAMwgDCIAzlwuCTIhAGYRAGYQBhEAZh
+'   EAYQBmEQBg8WUCYMoZcwCAMIQ+UwbPsVBg8WYH4T71cYAPNrv8IAmF/7FQbA/NqvMADm136FATC/
+'   9isMgPm1X2EQBvCitF9hEAbworRfYfBggRel/QqDBwu8KO1XGDxYIAz2KwweLBAG+xUGBw0IgzA4
+'   aMD8CoODBsyvMDhowPwKg4MGzK8wOGjA/AqDgwbMrzA4aMD82q8wAObXfoUBML/2KwyA+bVfYQDM
+'   r/0KA2B+7VcYAPNrv8IgDOBFab/CIAzgRWm/wuDBAi9K+xUGDxZ4UdqvMHiwQBjsVxg8WCAMwiAM
+'   DhoQBmGYcdAul8uV5RIGYXC5XC5hAKAKYQBAGAAQBgCEAQBhAEAYABAGAISBDN7eP74v5+DcyH5/
+'   hQEvOOeG+ysMGADnhvsrDBgA54b7KwwYAOeG+ysMGADnhvsrDBgA54b7KwwYAOeG+ysMGADnhvsr
+'   DBgA54b7KwwACAMAwgCAMAAgDAAIAwDCAIAwACAMAAgDAMIAAMIAgDAAIAwACAMAwgCAMAAgDAAI
+'   AwDCAIAwACAMAAgDAMIAgDAAIAwACAMAwgCAMAAgDAAIAwAIAwDCAIAwACAMAAgDAMIAgDAAIAwA
+'   CAMAwgCAMAAgDAAIAwDCAIAwACAMAAgDAMIAgDAAsLAvSnTNSZxobdkAAAAASUVORK5CYII=
+' image gain png 1686
+'   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

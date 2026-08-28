@@ -1,0 +1,49 @@
+# nomo snapshot v1
+# worksheet: beam
+
+=== text ===
+Simply supported beam — imperial units throughout
+Demonstrates unit tracking across a mixed-unit calculation.
+unit klf = 1000 lbf/ft
+w = 2.5 klf
+L = 30 ft
+Maximum moment and shear
+M = w·L²/8 = 2.5 klf·(30 ft)²/8 = 381324 J
+Vmax = w·L/2 = 2.5 klf·(30 ft)/2 = 166808 N
+M = 281.25 kip*ft
+Vmax = 37.5 kip
+Required section modulus, A992 steel
+Fy = 50 ksi
+Sreq = M/(0.9·Fy) = 381324 J/(0.9·(50 ksi)) = 0.00122903 m³
+Sreq = 75 in³
+
+=== html ===
+<p class="prose">Simply supported beam — imperial units throughout</p>
+<p class="prose">Demonstrates unit tracking across a mixed-unit calculation.</p>
+<div class="step note">unit klf = 1000 lbf/ft</div>
+<div class="step"><span class="name">w</span><span class="eq">=</span>2.5 klf</div>
+<div class="step"><span class="name">L</span><span class="eq">=</span>30 ft</div>
+<p class="prose">Maximum moment and shear</p>
+<div class="step"><span class="name">M</span><span class="eq">=</span>w·L²/8<span class="eq">=</span><span class="subst">2.5 klf·(30 ft)²/8</span><span class="eq">=</span><span class="result">381324 J</span></div>
+<div class="step"><span class="name">Vmax</span><span class="eq">=</span>w·L/2<span class="eq">=</span><span class="subst">2.5 klf·(30 ft)/2</span><span class="eq">=</span><span class="result">166808 N</span></div>
+<div class="step">M<span class="eq">=</span><span class="result">281.25 kip*ft</span></div>
+<div class="step">Vmax<span class="eq">=</span><span class="result">37.5 kip</span></div>
+<p class="prose">Required section modulus, A992 steel</p>
+<div class="step"><span class="name">Fy</span><span class="eq">=</span>50 ksi</div>
+<div class="step"><span class="name">Sreq</span><span class="eq">=</span>M/(0.9·Fy)<span class="eq">=</span><span class="subst">381324 J/(0.9·(50 ksi))</span><span class="eq">=</span><span class="result">0.00122903 m³</span></div>
+<div class="step">Sreq<span class="eq">=</span><span class="result">75 in³</span></div>
+
+=== values ===
+klf = 14593.902937206363 kg·s^-2
+w = 36484.75734301591 kg·s^-2
+L = 9.144 m
+M = 381323.79796820635 m^2·kg·s^-2
+Vmax = 166808.31057226873 m·kg·s^-2
+? = 381323.79796820635 m^2·kg·s^-2
+? = 166808.31057226873 m·kg·s^-2
+Fy = 344737864.658418 m^-1·kg·s^-2
+Sreq = 0.0012290298 m^3
+? = 0.0012290298 m^3
+
+=== diagnostics ===
+none

@@ -1,0 +1,15 @@
+' nomo 1
+' Global definitions are visible everywhere, including above themselves.
+' This mirrors SMath's ≡, so imported worksheets keep working.
+
+' The design summary comes first, even though its inputs are defined below.
+W = m_total*g
+W -> kN
+
+sigma = W/A
+sigma -> MPa
+
+' Inputs
+global g       = 9.81 m/s^2
+global m_total = 2500 kg
+global A       = 0.02 m^2

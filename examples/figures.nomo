@@ -1,0 +1,36 @@
+' nomo 1
+' Figures in a worksheet
+' A worksheet carries its figures inside itself: the body refers to one by
+' name, and the data sits in the trailer at the end of the file. That keeps
+' the mathematics readable and the file a single self-contained document.
+
+' Nominal bore and working pressure of the gauge shown below.
+d = 40 mm
+p = 12 bar
+
+' The reference may say how large the figure is drawn: the gauge below is
+' 72 px of pixels placed at 216. That is the size it asks for and not a
+' promise, so a page narrower than the figure shrinks it whole rather than
+' showing part of it.
+' image gauge 216x216
+
+' Force on the diaphragm.
+A = pi*d^2/4
+F = p*A
+F -> kN
+
+' A reference with no data behind it is reported rather than passed over.
+' image missing_figure
+
+' --- resources ---
+' Images the worksheet carries, base64, one block each.
+' A block is `' image <name> <format> <bytes>` followed by the indented
+' lines under it, up to the next block or the end of the file.
+' image gauge png 378
+'   iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAIAAADajyQQAAABQUlEQVR42uXbuRXCUAxEUZdDQEhI
+'   TExN1EQRNESOI46Bb/svWmYGnZco0y1A0+F4kmwShz2u57mnxBRgGrYP2LzL2L5hMrYCTMNWhgnY
+'   VmHsti0YtW0Hxmvbh5HaqmCMtloYna0BxmVrgxHZmmEsth4Yha0Thm/rh4HbhmDItlEYrM0Ahmmz
+'   gQHazGBoNksYlM0YhmOzh4HYXGAINi9Yus0RlmvzhSXa3GFZtghYii0IFm+LgwXbQmGRtmhYmC0B
+'   FmPLgQXY0mDetkyYqy0Z5mfLhznZIGAeNhSYuQ0IZmvDghna4GBWNkTY0na53fsChY3bcGHzcSM2
+'   aNiIDR3WbSOA9dk4YB02GlirjQnWZCOD1dv4YJU2SliNjRW2ayOGbdu4YRs2etiaTQFWtInAfm06
+'   sC+bFGxpU4O9bf/xfKrXC9bZwa4fq/u1AAAAAElFTkSuQmCC

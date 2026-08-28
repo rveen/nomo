@@ -1,0 +1,242 @@
+/* Nomo editor.
+ *
+ * Print styles are here from the start rather than added later. Engineering
+ * worksheets get printed, signed and filed, and EngineeringPaper.xyz treats
+ * correct printing as a hard requirement for the same reason. Retrofitting it
+ * means rebuilding the layout around it; keeping it costs a media query.
+ */
+
+:root {
+  color-scheme: light dark;
+  --ink: #16191d;
+  --paper: #ffffff;
+  --chrome: #f4f5f7;
+  --rule: #d8dbe0;
+  --muted: #6b7280;
+  --error: #b00020;
+  --warning: #9a6400;
+  --good: #1a7f4b;
+  --unit: #0b6b8f;
+  --keyword: #7c3aed;
+  --function: #1a5fb4;
+  --constant: #9a4f00;
+  --number: #0d7060;
+  --string: #8a3c78;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e6e8ea;
+    --paper: #16181c;
+    --chrome: #1e2126;
+    --rule: #333840;
+    --muted: #9aa3ae;
+    --error: #ff6b6b;
+    --warning: #e0b050;
+    --good: #5dd39e;
+    --unit: #6fc3e0;
+    --keyword: #c4a7f7;
+    --function: #7db1f0;
+    --constant: #e5a663;
+    --number: #5fc9b4;
+    --string: #dda0c8;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--rule);
+  background: var(--chrome);
+}
+
+header h1 { font-size: 1rem; font-weight: 600; margin: 0; letter-spacing: 0.02em; }
+
+header nav { display: flex; gap: 0.35rem; }
+
+header button {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.2rem 0.7rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 0.3rem;
+  cursor: pointer;
+}
+header button:hover:not(:disabled) { border-color: var(--muted); }
+header button:disabled { opacity: 0.4; cursor: default; }
+header button[hidden] { display: none; }
+
+/* The name of the document, with a dot when it has unsaved changes. Pushed
+   right so the status line stays at the far edge where it is easy to find. */
+#file-name {
+  margin: 0 auto 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+
+#status { margin: 0; font-size: 0.85rem; color: var(--muted); }
+#status.good { color: var(--good); }
+#status.warn { color: var(--warning); }
+#status.bad  { color: var(--error); }
+
+main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 0;
+}
+
+#pane-editor { border-right: 1px solid var(--rule); min-width: 0; overflow: auto; }
+#pane-output { min-width: 0; overflow: auto; padding: 1rem 1.5rem; }
+
+footer {
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--rule);
+  background: var(--chrome);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+footer p { margin: 0; }
+
+/* One column on a narrow screen. The constraint is EP's: worksheets have to
+   work on a phone, not only on a desk. */
+@media (max-width: 46rem) {
+  main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  #pane-editor { border-right: 0; border-bottom: 1px solid var(--rule); }
+}
+
+/* ---- the editor ------------------------------------------------------- */
+
+.cm-editor { height: 100%; font-size: 0.92rem; }
+.cm-editor.cm-focused { outline: none; }
+.cm-scroller {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  line-height: 1.65;
+}
+.cm-gutters { background: var(--chrome); border-right: 1px solid var(--rule); color: var(--muted); }
+
+/* Token classes come from the engine; see web/src/highlight.js. */
+.tok-comment    { color: var(--muted); font-style: italic; }
+.tok-number     { color: var(--number); }
+.tok-keyword    { color: var(--keyword); font-weight: 600; }
+.tok-unit       { color: var(--unit); }
+.tok-function   { color: var(--function); }
+.tok-constant   { color: var(--constant); }
+.tok-text       { color: var(--string); }
+.tok-variable   { color: inherit; }
+.tok-operator,
+.tok-bracket,
+.tok-separator  { color: var(--muted); }
+/* A name that resolves to nothing. Marked rather than left plain, because it is
+   almost always a typo and this shows it before the diagnostic arrives. */
+.tok-unresolved { color: var(--error); text-decoration: underline wavy currentColor; text-underline-offset: 0.25em; }
+
+/* ---- results ---------------------------------------------------------- */
+
+#output .prose { margin: 1.1rem 0 0.4rem; color: #999; }
+#output .step {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+  overflow-x: auto;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  border-left: 4px solid #69a;
+  padding: 0.5rem;
+  background:#f8f8f7;
+}
+#output .name   { font-weight: 600; }
+#output .eq     { opacity: 0.45; padding: 0 0.35rem; }
+#output .subst  { opacity: 0.7; }
+#output .result { font-weight: 600; }
+#output .error  { color: var(--error); font-weight: 600; }
+#output .note   { opacity: 0.6; font-style: italic; }
+/* A figure carries the browser's default 40px side margin, which would inset
+   every image relative to the mathematics it belongs to. The standalone render
+   sets the same three properties in `render/html.rs`; the two panes are meant to
+   show a worksheet the same way.
+
+   `max-width` and `height: auto` are what make the `width`/`height` attributes
+   the renderer writes a *requested* size rather than a fixed one: the figure is
+   drawn at the width the worksheet asks for, in the image's own proportions,
+   and a pane narrower than that shrinks it whole. It is never cropped and never
+   stretched — a reader shown two-thirds of a diagram, or a squashed one, with
+   nothing to say so, is worse off than one shown a small diagram.
+   `scripts/check-figures.mjs` holds all three properties to that in Chrome. */
+#output figure  { margin: 1.2rem 0; }
+#output img     { max-width: 100%; height: auto; display: block; }
+
+/* A plot arrives as markup the engine generated, carrying classes and no
+   colours of its own — so without these rules it renders as an invisible grid
+   and a black blob. `render/html.rs` sets the same properties for the
+   standalone file, for the reason above: the two panes show a worksheet the
+   same way. Structure is `currentColor` so it follows the theme; the curves
+   carry accents instead, which have to read on both grounds and against each
+   other. */
+#output figure.plot svg { width: 100%; max-width: 42rem; height: auto; display: block; }
+#output .plot-grid  { stroke: currentColor; stroke-width: 0.5; opacity: 0.15; }
+#output .plot-axis  { stroke: currentColor; stroke-width: 1; opacity: 0.5; }
+#output .plot-curve { fill: none; stroke: #0072b2; stroke-width: 1.8; stroke-linejoin: round; }
+/* Six curve colours, the Okabe-Ito colourblind-safe palette without its yellow
+   and its black: a curve cannot take the page's colour the way the structure
+   does, because curves have to differ from each other as well as from the
+   ground. `render/plot.rs` cycles through them and gives a legend swatch the
+   same class as the curve it names. */
+#output .plot-curve-1 { stroke: #0072b2; }
+#output .plot-curve-2 { stroke: #d55e00; }
+#output .plot-curve-3 { stroke: #009e73; }
+#output .plot-curve-4 { stroke: #cc79a7; }
+#output .plot-curve-5 { stroke: #e69f00; }
+#output .plot-curve-6 { stroke: #56b4e9; }
+/* A measured point is drawn as an open ring in its series' own colour,
+   which is why it takes the curve's class rather than one of its own. */
+#output .plot-mark { stroke-width: 1.3; }
+#output .plot-label { fill: currentColor; opacity: 0.6; font-size: 11px; }
+#output .plot-unit  { fill: currentColor; opacity: 0.75; font-size: 11px; font-style: italic; }
+#output .plot-x       { text-anchor: middle; }
+#output .plot-y       { text-anchor: end; }
+#output .plot-start   { text-anchor: start; }
+#output .plot-end     { text-anchor: end; }
+#output .plot-y-title { text-anchor: start; }
+#output .plot-legend   { text-anchor: start; opacity: 0.75; }
+
+/* ---- print ------------------------------------------------------------ */
+
+@media print {
+  /* The worksheet is the document. The editor is a tool for making it, and has
+     no business on paper. */
+  header, footer, #pane-editor { display: none; }
+
+  body { height: auto; display: block; background: #fff; color: #000; }
+  main { display: block; }
+  #pane-output { overflow: visible; padding: 0; }
+
+  #output .step {
+    /* Long expressions must wrap rather than be clipped at the page edge: a
+       scrollbar is not a thing paper has. */
+    overflow-x: visible;
+    white-space: pre-wrap;
+    font-size: 10pt;
+  }
+  #output .prose { font-size: 10pt; }
+  /* Do not break a worked line across pages. */
+  #output .step, #output .prose { break-inside: avoid; }
+  #output .error { color: #000; text-decoration: underline; }
+}

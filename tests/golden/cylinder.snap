@@ -1,0 +1,27 @@
+# nomo snapshot v1
+# worksheet: cylinder
+
+=== text ===
+Cylinder volume
+The worked example from the design note.
+r = 5 cm
+h = 12 cm
+V = π·r²·h = π·(5 cm)²·(12 cm) = 0.000942478 m³
+V = 0.942478 dm³
+
+=== html ===
+<p class="prose">Cylinder volume</p>
+<p class="prose">The worked example from the design note.</p>
+<div class="step"><span class="name">r</span><span class="eq">=</span>5 cm</div>
+<div class="step"><span class="name">h</span><span class="eq">=</span>12 cm</div>
+<div class="step"><span class="name">V</span><span class="eq">=</span>π·r²·h<span class="eq">=</span><span class="subst">π·(5 cm)²·(12 cm)</span><span class="eq">=</span><span class="result">0.000942478 m³</span></div>
+<div class="step">V<span class="eq">=</span><span class="result">0.942478 dm³</span></div>
+
+=== values ===
+r = 0.05 m
+h = 0.12 m
+V = 0.000942477796076938 m^3
+? = 0.000942477796076938 m^3
+
+=== diagnostics ===
+none

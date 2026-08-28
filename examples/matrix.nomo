@@ -1,0 +1,76 @@
+' Vectors and matrices
+' Element-wise against matrix arithmetic, indexing, and the aggregates.
+
+v = [3, 4, 12]
+w = [1, 2, 3]
+
+' Between two vectors of equal length, `*` is element-wise: what a tabulated
+' calculation wants, column against column.
+elementwise = v*w
+
+' An inner product is asked for by name, so it is never confused with the above.
+inner = dot(v, w)
+
+' Scalars broadcast.
+scaled = 2*v
+
+' Aggregates.
+total = sum(v)
+smallest = min(v)
+largest = max(v)
+n = length(v)
+
+' Indexing is one-based.
+second = v[2]
+
+' A vector is the column of n that `rows` and `cols` say it is, so it takes the
+' column index as well: these are the same element. Any other column is out of
+' bounds, which is what a column of one means.
+also_second = v[2, 1]
+
+' Vectors carry units element by element, so a tabulated calculation keeps them.
+f = [5, 10, 15] Hz
+acc = [2.89, 3.04, 3.72] m/s^2
+stroke = acc/(2*pi*f)^2
+stroke -> mm
+
+' A matrix is a vector of rows, and is indexed row first.
+K = [[1, 2], [3, 4]]
+k21 = K[2, 1]
+
+' Between two matrices `*` is the matrix product, not element-wise. `identity(n)`
+' writes the n×n one, which is dimensionless so that `S - λ*identity(2)` — the
+' characteristic equation of a stress tensor — takes its dimension from λ.
+I = identity(2)
+product = K*I
+
+' `diag` writes a matrix with a vector down its diagonal — a mass matrix, here.
+' The zeros carry the diagonal's dimension so the result is usable in arithmetic.
+mass = diag([3, 4] kg)
+
+' Linear algebra.
+d = det(K)
+Kt = transpose(K)
+Kinv = inv(K)
+
+' The check that inv is really an inverse.
+back_to_I = K*Kinv
+
+' The cross product is three-dimensional, and units come out of the products it
+' is made of: metres crossed with newtons give newton-metres. `-> N*m` asks for
+' the moment to be shown that way rather than in joules, which share the
+' dimension but not the meaning.
+r = [1, 0, 0] m
+F = [0, 2, 0] N
+M = cross(r, F) -> N*m
+
+' Parallel vectors cross to zero, which is the check worth writing down.
+parallel = cross(r, r)
+
+' Shape and slicing. A vector answers as the column it is.
+n = rows(K)
+second = col(K, 2)
+
+' Joining: side by side, and one above the other.
+side = augment([1, 2] m, [3, 4] m)
+piled = stack([1, 2] m, [3, 4] m)

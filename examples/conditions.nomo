@@ -1,0 +1,51 @@
+' Conditions
+' Comparisons, logic, and the conditional expression.
+
+' A comparison answers 1 or 0. There is no separate boolean type: SMath
+' worksheets compute with comparisons as numbers, and this language has to be
+' able to receive them.
+span = 6 m
+allowed = 4 m
+too_long = span > allowed
+
+' Both sides are held in base SI, so a comparison converts before it compares.
+' Neither of these needs a conversion written into it.
+imperial = 1 in < 1 m
+strong = 1 kip > 1 lbf
+
+' `and`, `or` and `not` are words. `!` is factorial to anyone who has met SMath
+' and `&` is bitwise to anyone who has met C, so neither is borrowed here.
+in_range = span > 1 m and span < 10 m
+outside = not in_range
+
+' The conditional is an expression, so it composes with arithmetic and needs no
+' statement form of its own.
+overhang = if span > allowed then span - allowed else 0 m
+
+' Only the arm that is taken is evaluated, which is what lets a conditional
+' guard something that would otherwise fail. `bay[0]` would be out of bounds.
+bay = [3 m, 4 m, 5 m]
+n = 0
+chosen = if n > 0 then bay[n] else 0 m
+
+' Chained without brackets: the `else` arm reaches as far as it can, so `else
+' if` is just another conditional inside it.
+load = 7 kN
+grade = if load < 5 kN then 1 else if load < 10 kN then 2 else 3
+
+' A function body can be piecewise.
+fn stress(f, a) = if a > 0 m^2 then f/a else 0 Pa
+sigma = stress(10 kN, 2 m^2)
+
+' Substitution shows which way the worksheet went. The arm that did not run is
+' shown as it was written, because it has no values to show.
+margin = if too_long then span - allowed else allowed - span
+
+' A verdict in words. A string is a value like any other — it binds to a name,
+' an `if` chooses between two, and `==` compares them — and it has no arithmetic
+' at all, which is the whole of what a worksheet does with one.
+a = 3 m
+a_max = 4 m
+verdict = if a <= a_max then "singly reinforced" else "doubly reinforced"
+timber = "C24"
+is_c24 = timber == "C24"

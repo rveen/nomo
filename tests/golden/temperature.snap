@@ -1,0 +1,85 @@
+# nomo snapshot v1
+# worksheet: temperature
+
+=== text ===
+Temperature, and the affine rules
+°C and °F are offset scales, so not every operation on them is meaningful.
+
+A reading on an offset scale is a point; every other quantity is an interval, a
+displacement. Each rule below falls out of that distinction rather than being
+special-cased, and each is pinned here because getting one wrong produces a
+plausible-looking number that is silently wrong.
+ambient = 20°C
+rise = 5 K
+A point displaced by an interval is a point.
+operating = ambient + rise = 20°C + 5 K = 298.15 K
+The difference of two points is an interval, not a point.
+setpoint = 15°C
+margin = ambient - setpoint = 20°C - 15°C = 5 K
+Conversion is always allowed, in either direction.
+ambient = 293.15 K
+freezing = 32°F
+freezing = 0°C
+K and °R are absolute, so they are ordinary linear quantities and carry none of
+the restrictions above.
+absolute = 293.15 K
+doubled = 2·absolute = 2·(293.15 K) = 586.3 K
+Intervals on an offset scale still combine freely: it is points that are
+restricted, not the degree itself.
+span = 40 K - 10 K = 30 K
+A thermal calculation, to show the rules are not merely academic.
+c_steel = 486 J/(kg·K)
+mass = 12 kg
+heat = mass·c_steel·margin = 12 kg·(486 m²·s⁻²·K⁻¹)·(5 K) = 29160 J
+heat = 29.16 kJ
+
+=== html ===
+<p class="prose">Temperature, and the affine rules</p>
+<p class="prose">°C and °F are offset scales, so not every operation on them is meaningful.</p>
+<p class="prose">A reading on an offset scale is a point; every other quantity is an interval, a</p>
+<p class="prose">displacement. Each rule below falls out of that distinction rather than being</p>
+<p class="prose">special-cased, and each is pinned here because getting one wrong produces a</p>
+<p class="prose">plausible-looking number that is silently wrong.</p>
+<div class="step"><span class="name">ambient</span><span class="eq">=</span>20°C</div>
+<div class="step"><span class="name">rise</span><span class="eq">=</span>5 K</div>
+<p class="prose">A point displaced by an interval is a point.</p>
+<div class="step"><span class="name">operating</span><span class="eq">=</span>ambient + rise<span class="eq">=</span><span class="subst">20°C + 5 K</span><span class="eq">=</span><span class="result">298.15 K</span></div>
+<p class="prose">The difference of two points is an interval, not a point.</p>
+<div class="step"><span class="name">setpoint</span><span class="eq">=</span>15°C</div>
+<div class="step"><span class="name">margin</span><span class="eq">=</span>ambient - setpoint<span class="eq">=</span><span class="subst">20°C - 15°C</span><span class="eq">=</span><span class="result">5 K</span></div>
+<p class="prose">Conversion is always allowed, in either direction.</p>
+<div class="step">ambient<span class="eq">=</span><span class="result">293.15 K</span></div>
+<div class="step"><span class="name">freezing</span><span class="eq">=</span>32°F</div>
+<div class="step">freezing<span class="eq">=</span><span class="result">0°C</span></div>
+<p class="prose">K and °R are absolute, so they are ordinary linear quantities and carry none of</p>
+<p class="prose">the restrictions above.</p>
+<div class="step"><span class="name">absolute</span><span class="eq">=</span>293.15 K</div>
+<div class="step"><span class="name">doubled</span><span class="eq">=</span>2·absolute<span class="eq">=</span><span class="subst">2·(293.15 K)</span><span class="eq">=</span><span class="result">586.3 K</span></div>
+<p class="prose">Intervals on an offset scale still combine freely: it is points that are</p>
+<p class="prose">restricted, not the degree itself.</p>
+<div class="step"><span class="name">span</span><span class="eq">=</span>40 K - 10 K<span class="eq">=</span><span class="result">30 K</span></div>
+<p class="prose">A thermal calculation, to show the rules are not merely academic.</p>
+<div class="step"><span class="name">c_steel</span><span class="eq">=</span>486 J/(kg·K)</div>
+<div class="step"><span class="name">mass</span><span class="eq">=</span>12 kg</div>
+<div class="step"><span class="name">heat</span><span class="eq">=</span>mass·c_steel·margin<span class="eq">=</span><span class="subst">12 kg·(486 m²·s⁻²·K⁻¹)·(5 K)</span><span class="eq">=</span><span class="result">29160 J</span></div>
+<div class="step">heat<span class="eq">=</span><span class="result">29.16 kJ</span></div>
+
+=== values ===
+ambient = 293.15 K point
+rise = 5.0 K
+operating = 298.15 K point
+setpoint = 288.15 K point
+margin = 5.0 K
+? = 293.15 K point
+freezing = 273.15 K point
+? = 273.15 K point
+absolute = 293.15 K
+doubled = 586.3 K
+span = 30.0 K
+c_steel = 486.0 m^2·s^-2·K^-1
+mass = 12.0 kg
+heat = 29160.0 m^2·kg·s^-2
+? = 29160.0 m^2·kg·s^-2
+
+=== diagnostics ===
+none

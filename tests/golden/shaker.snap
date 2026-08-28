@@ -1,0 +1,44 @@
+# nomo snapshot v1
+# worksheet: shaker
+
+=== text ===
+Shaker specifications
+Adapted from the SMath corpus (ling.sm) to exercise units and vectors.
+unit kip = 1000 lbf
+Ling_rms_N = 489/sqrt(2) = 345.775
+maxstroke = 0.019 m
+coil_mass = 0.426 kg
+testmass = 100 kg
+M = testmass + coil_mass = 100 kg + 0.426 kg = 100.426 kg
+f = [5, 10, 15] Hz
+acc = [2.89, 3.04, 3.72] m/s²
+fn stroke defined
+M = 100.426 kg
+
+=== html ===
+<p class="prose">Shaker specifications</p>
+<p class="prose">Adapted from the SMath corpus (ling.sm) to exercise units and vectors.</p>
+<div class="step note">unit kip = 1000 lbf</div>
+<div class="step"><span class="name">Ling_rms_N</span><span class="eq">=</span>489/sqrt(2)<span class="eq">=</span><span class="result">345.775</span></div>
+<div class="step"><span class="name">maxstroke</span><span class="eq">=</span>0.019 m</div>
+<div class="step"><span class="name">coil_mass</span><span class="eq">=</span>0.426 kg</div>
+<div class="step"><span class="name">testmass</span><span class="eq">=</span>100 kg</div>
+<div class="step"><span class="name">M</span><span class="eq">=</span>testmass + coil_mass<span class="eq">=</span><span class="subst">100 kg + 0.426 kg</span><span class="eq">=</span><span class="result">100.426 kg</span></div>
+<div class="step"><span class="name">f</span><span class="eq">=</span>[5, 10, 15] Hz</div>
+<div class="step"><span class="name">acc</span><span class="eq">=</span>[2.89, 3.04, 3.72] m/s²</div>
+<div class="step note">fn stroke defined</div>
+<div class="step">M<span class="eq">=</span><span class="result">100.426 kg</span></div>
+
+=== values ===
+kip = 4448.2216152605 m·kg·s^-2
+Ling_rms_N = 345.7752160002217 dimensionless
+maxstroke = 0.019 m
+coil_mass = 0.426 kg
+testmass = 100.0 kg
+M = 100.426 kg
+f = [5.0 s^-1, 10.0 s^-1, 15.0 s^-1]
+acc = [2.89 m·s^-2, 3.04 m·s^-2, 3.72 m·s^-2]
+? = 100.426 kg
+
+=== diagnostics ===
+none

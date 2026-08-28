@@ -1,0 +1,19 @@
+' Simply supported beam — imperial units throughout
+' Demonstrates unit tracking across a mixed-unit calculation.
+
+unit klf = 1000 lbf/ft
+
+w = 2.5 klf
+L = 30 ft
+
+' Maximum moment and shear
+M = w*L^2/8
+Vmax = w*L/2
+
+M -> kip*ft
+Vmax -> kip
+
+' Required section modulus, A992 steel
+Fy = 50 ksi
+Sreq = M/(0.9*Fy)
+Sreq -> in^3

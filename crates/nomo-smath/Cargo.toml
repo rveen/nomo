@@ -1,0 +1,29 @@
+[package]
+name = "nomo-smath"
+description = "Reads SMath Studio .sm worksheets so they can be migrated to Nomo."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "smath-coverage"
+path = "src/bin/coverage.rs"
+
+[[bin]]
+name = "smath-import"
+path = "src/bin/import.rs"
+
+[dependencies]
+# The emitter targets the real language and the harness runs the real engine:
+# checking an import against a private back door into the evaluator would test
+# the wrong thing.
+nomo-core.workspace = true
+
+# The one dependency, and it earns its place. .sm files are machine-written XML,
+# but they still carry entity references and multilingual text, and a worksheet
+# silently corrupted by a hand-rolled scanner is the worst possible outcome for a
+# migration tool. roxmltree is pure Rust with no unsafe, and its read-only tree
+# matches how regions are read: in file order, once.
+roxmltree = "0.21"

@@ -1,0 +1,28 @@
+Nomo
+Copyright the Nomo contributors
+
+This product includes software developed as part of the Nomo project,
+licensed under the MIT licence. See LICENSE.
+
+--------------------------------------------------------------------------------
+Bundled third-party software
+
+The browser front end built by scripts/build-web.sh links the following into
+web/dist/. Each is used unmodified and under its own licence.
+
+CodeMirror 6 — @codemirror/state, @codemirror/view, @codemirror/language,
+@codemirror/commands, @codemirror/lint, and their @lezer dependencies.
+  Copyright (C) by Marijn Haverbeke and others
+  MIT licence — https://codemirror.net/
+
+esbuild is a build-time tool only and is not linked into the output.
+  Copyright (C) Evan Wallace
+  MIT licence — https://esbuild.github.io/
+
+The Rust crates compiled into the engine — libm and roxmltree — are each
+MIT OR Apache-2.0. `cargo tree` lists them in full.
+
+--------------------------------------------------------------------------------
+Third-party material this project uses but does not redistribute — the SMath
+worksheet corpora, and two reference codebases — is described in
+THIRD-PARTY.md.

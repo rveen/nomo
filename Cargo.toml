@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = ["crates/nomo-core", "crates/nomo-cli", "crates/nomo-smath", "crates/nomo-wasm"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.90"
+license = "MIT"
+repository = "https://github.com/trukeio/nomo-math"
+
+[workspace.dependencies]
+nomo-core = { path = "crates/nomo-core" }
+
+# Deterministic transcendentals compiled into the artifact. Never call the host's
+# libm or JS Math.* — that is the one remaining source of cross-machine float
+# drift once the engine runs under WASM. See docs/design-note.md §3.
+libm = "0.2"
+
+[profile.release]
+# No fast-math equivalent is enabled anywhere; results must be bit-reproducible.
+opt-level = 3
+lto = true

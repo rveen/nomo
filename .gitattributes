@@ -1,0 +1,7 @@
+# The golden-file suite compares bytes, with no tolerance and no normalisation,
+# because the engine is supposed to produce identical output everywhere. That
+# only holds if Git stops rewriting line endings on checkout, so worksheets and
+# their snapshots are pinned to LF on every platform.
+*.snap text eol=lf
+*.nomo text eol=lf
+*.rs text eol=lf

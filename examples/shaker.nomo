@@ -1,0 +1,18 @@
+' Shaker specifications
+' Adapted from the SMath corpus (ling.sm) to exercise units and vectors.
+
+unit kip = 1000 lbf
+
+Ling_rms_N = 489/sqrt(2)
+maxstroke  = 0.019 m
+coil_mass  = 0.426 kg
+testmass   = 100 kg
+
+M = testmass + coil_mass
+
+f   = [5, 10, 15] Hz
+acc = [2.89, 3.04, 3.72] m/s^2
+
+fn stroke(a, freq) = a/(2*pi*freq)^2
+
+M -> kg

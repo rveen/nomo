@@ -1,0 +1,19 @@
+{
+  "name": "nomo-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Browser front end for the Nomo engine. The engine itself is the WebAssembly module; nothing here computes.",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --serve"
+  },
+  "devDependencies": {
+    "@codemirror/commands": "^6.9.0",
+    "@codemirror/language": "^6.11.3",
+    "@codemirror/lint": "^6.9.0",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.39.1",
+    "esbuild": "^0.28.2"
+  }
+}

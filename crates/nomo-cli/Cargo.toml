@@ -1,0 +1,15 @@
+[package]
+name = "nomo-cli"
+description = "Command-line front end for the Nomo engine."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "nomo"
+path = "src/main.rs"
+
+[dependencies]
+nomo-core.workspace = true

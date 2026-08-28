@@ -1,0 +1,54 @@
+# nomo snapshot v1
+# worksheet: figures
+
+=== text ===
+nomo 1
+Figures in a worksheet
+A worksheet carries its figures inside itself: the body refers to one by
+name, and the data sits in the trailer at the end of the file. That keeps
+the mathematics readable and the file a single self-contained document.
+Nominal bore and working pressure of the gauge shown below.
+d = 40 mm
+p = 12 bar
+The reference may say how large the figure is drawn: the gauge below is
+72 px of pixels placed at 216. That is the size it asks for and not a
+promise, so a page narrower than the figure shrinks it whole rather than
+showing part of it.
+[image gauge: png, 378 bytes, 216x216]
+Force on the diaphragm.
+A = π·d²/4 = π·(40 mm)²/4 = 0.00125664 m²
+F = p·A = 12 bar·(0.00125664 m²) = 1507.96 N
+F = 1.50796 kN
+A reference with no data behind it is reported rather than passed over.
+[image missing_figure: missing]
+
+=== html ===
+<p class="prose">nomo 1</p>
+<p class="prose">Figures in a worksheet</p>
+<p class="prose">A worksheet carries its figures inside itself: the body refers to one by</p>
+<p class="prose">name, and the data sits in the trailer at the end of the file. That keeps</p>
+<p class="prose">the mathematics readable and the file a single self-contained document.</p>
+<p class="prose">Nominal bore and working pressure of the gauge shown below.</p>
+<div class="step"><span class="name">d</span><span class="eq">=</span>40 mm</div>
+<div class="step"><span class="name">p</span><span class="eq">=</span>12 bar</div>
+<p class="prose">The reference may say how large the figure is drawn: the gauge below is</p>
+<p class="prose">72 px of pixels placed at 216. That is the size it asks for and not a</p>
+<p class="prose">promise, so a page narrower than the figure shrinks it whole rather than</p>
+<p class="prose">showing part of it.</p>
+<figure><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAIAAADajyQQAAABQUlEQVR42uXbuRXCUAxEUZdDQEhITExN1EQRNESOI46Bb/svWmYGnZco0y1A0+F4kmwShz2u57mnxBRgGrYP2LzL2L5hMrYCTMNWhgnYVmHsti0YtW0Hxmvbh5HaqmCMtloYna0BxmVrgxHZmmEsth4Yha0Thm/rh4HbhmDItlEYrM0AhmmzgQHazGBoNksYlM0YhmOzh4HYXGAINi9Yus0RlmvzhSXa3GFZtghYii0IFm+LgwXbQmGRtmhYmC0BFmPLgQXY0mDetkyYqy0Z5mfLhznZIGAeNhSYuQ0IZmvDghna4GBWNkTY0na53fsChY3bcGHzcSM2aNiIDR3WbSOA9dk4YB02GlirjQnWZCOD1dv4YJU2SliNjRW2ayOGbdu4YRs2etiaTQFWtInAfm06sC+bFGxpU4O9bf/xfKrXC9bZwa4fq/u1AAAAAElFTkSuQmCC" width="216" height="216" alt="gauge"></figure>
+<p class="prose">Force on the diaphragm.</p>
+<div class="step"><span class="name">A</span><span class="eq">=</span>π·d²/4<span class="eq">=</span><span class="subst">π·(40 mm)²/4</span><span class="eq">=</span><span class="result">0.00125664 m²</span></div>
+<div class="step"><span class="name">F</span><span class="eq">=</span>p·A<span class="eq">=</span><span class="subst">12 bar·(0.00125664 m²)</span><span class="eq">=</span><span class="result">1507.96 N</span></div>
+<div class="step">F<span class="eq">=</span><span class="result">1.50796 kN</span></div>
+<p class="prose">A reference with no data behind it is reported rather than passed over.</p>
+<p class="note">[image missing_figure: missing]</p>
+
+=== values ===
+d = 0.04 m
+p = 1200000.0 m^-1·kg·s^-2
+A = 0.0012566370614359172 m^2
+F = 1507.9644737231006 m·kg·s^-2
+? = 1507.9644737231006 m·kg·s^-2
+
+=== diagnostics ===
+none

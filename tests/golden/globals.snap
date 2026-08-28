@@ -1,0 +1,42 @@
+# nomo snapshot v1
+# worksheet: globals
+
+=== text ===
+nomo 1
+Global definitions are visible everywhere, including above themselves.
+This mirrors SMath's ≡, so imported worksheets keep working.
+The design summary comes first, even though its inputs are defined below.
+W = m_total·g = 2500 kg·(9.81 m·s⁻²) = 24525 N
+W = 24.525 kN
+sigma = W/A = 24525 N/(0.02 m²) = 1226250 Pa
+sigma = 1.22625 MPa
+Inputs
+g = 9.81 m/s²
+m_total = 2500 kg
+A = 0.02 m²
+
+=== html ===
+<p class="prose">nomo 1</p>
+<p class="prose">Global definitions are visible everywhere, including above themselves.</p>
+<p class="prose">This mirrors SMath's ≡, so imported worksheets keep working.</p>
+<p class="prose">The design summary comes first, even though its inputs are defined below.</p>
+<div class="step"><span class="name">W</span><span class="eq">=</span>m_total·g<span class="eq">=</span><span class="subst">2500 kg·(9.81 m·s⁻²)</span><span class="eq">=</span><span class="result">24525 N</span></div>
+<div class="step">W<span class="eq">=</span><span class="result">24.525 kN</span></div>
+<div class="step"><span class="name">sigma</span><span class="eq">=</span>W/A<span class="eq">=</span><span class="subst">24525 N/(0.02 m²)</span><span class="eq">=</span><span class="result">1226250 Pa</span></div>
+<div class="step">sigma<span class="eq">=</span><span class="result">1.22625 MPa</span></div>
+<p class="prose">Inputs</p>
+<div class="step"><span class="name">g</span><span class="eq">=</span>9.81 m/s²</div>
+<div class="step"><span class="name">m_total</span><span class="eq">=</span>2500 kg</div>
+<div class="step"><span class="name">A</span><span class="eq">=</span>0.02 m²</div>
+
+=== values ===
+W = 24525.0 m·kg·s^-2
+? = 24525.0 m·kg·s^-2
+sigma = 1226250.0 m^-1·kg·s^-2
+? = 1226250.0 m^-1·kg·s^-2
+g = 9.81 m·s^-2
+m_total = 2500.0 kg
+A = 0.02 m^2
+
+=== diagnostics ===
+none

@@ -1,0 +1,73 @@
+' Numerical methods
+' ==================
+' Two things a worksheet reaches for that have no closed form: where a function
+' crosses zero, and the area under it. Both take the *name* of a function, the
+' way `map` and `iterate` do, and both do a fixed amount of work rather than
+' testing a tolerance — so both give the same bits on every machine.
+
+' A root, by bisection. It needs a bracket and says so if it does not have one.
+fn f(x) = x^2 - 2
+r = root(f, 1, 2)
+check = sqrt(2)
+
+' Dimensions travel through: a root of a length equation is a length.
+fn overhang(x) = x - 3 m
+a = root(overhang, 0 m, 10 m)
+
+' `root` needs a bracket. `roots` needs only a window: it samples a fixed 200
+' intervals across it and bisects every sign change it finds. That is the
+' question a worksheet usually has — where does this cross zero between here and
+' here — when the answer may be one place, two, or none.
+q_0 = 2 kN/m
+span = 2 m
+fn V(x) = q_0*(5*span^2 - 6*x*(x + span))/(12*span)
+where = roots(V, 0 m, span) -> m
+
+' A wider window holds both zeros of the same parabola, and they come back in
+' increasing order.
+both = roots(V, -2*span, 2*span) -> m
+
+' The slope of a function at a point, exactly: no step size, because every value
+' carries how fast it is changing and every operation carries the chain rule.
+fn area(r) = π*r^2
+dA = derivative(area, 2 m) -> m
+
+' The second derivative is where a curve turns, and it divides the dimension
+' twice: a distance by a time twice over is an acceleration.
+fn fall(t) = 1/2*9.81 m/s^2*t^2
+a = derivative(fall, 3 s, 2) -> m/s^2
+
+' Which is what makes a peak findable: it is where the slope crosses zero, so
+' the two numerical methods compose.
+fn gain(x) = x/(1 + (x/1000)^2)
+fn slope(x) = derivative(gain, x)
+at_peak = roots(slope, 1, 5000)
+peak = gain(at_peak)
+
+' A definite integral, by Simpson's rule over a fixed number of panels. Exact up
+' to a cubic, which covers the load shapes a beam calculation actually uses.
+fn q(x) = x^3
+area = integral(q, 0, 2)
+
+' The resultant of a triangular distributed load, which is where this earns its
+' place: the dimension falls out of f(x)·dx with no rule about integration.
+w_max = 10 kN/m
+L = 3 m
+fn w(x) = w_max*x/L
+R = integral(w, 0 m, L) -> kN
+
+' Its line of action, from the first moment of the same load.
+fn wx(x) = w_max*x/L*x
+x_bar = integral(wx, 0 m, L)/R -> m
+
+' A system of equations linear in its unknowns, which is what statics is: the
+' reactions of a body under load. `f` is a residual — what is left over when the
+' unknowns are substituted — and the second argument names them by dimension.
+weight = 10 kg*9.81 m/s^2
+fn balance(F, A, B) = [F + B - 20 N, A - weight, B - F - A]
+reactions = solve_linear(balance, [0 N, 0 N, 0 N]) -> N
+
+' The Euclidean norm, and the unit vector that comes of dividing by it.
+s = [3, 4] MPa
+mag = norm(s) -> MPa
+direction = s/mag

@@ -1,0 +1,74 @@
+' nomo 1
+' Plots
+' `plot(f, a, b)` samples a function across a span and draws it. Like `map`,
+' `iterate`, `root` and `integral`, it takes the *name* of a function — there
+' are no lambdas, and a call's callee is always a name.
+
+fn parabola(x) = x^2 - 2
+plot(parabola, 0 - 3, 3)
+
+' A fixed number of samples, whatever the span. That is `integral`'s rule — a
+' fixed amount of work rather than a tolerance test — and it is what makes a
+' drawing terminate and come out the same on every machine.
+
+' The span carries units, and so does what the function returns. Both axes are
+' labelled from the dimensions rather than from anything the author writes
+' twice.
+w = 12 kN/m
+L = 6 m
+fn moment(x) = w*x*(L - x)/2
+plot(moment, 0 m, L)
+
+' A curve that leaves the plane is drawn with a gap rather than a line through
+' values the function never took. The summary line counts them.
+fn reciprocal(x) = 1/x
+plot(reciprocal, 0 - 1, 1)
+
+' The gain of an LLC resonant tank against switching frequency — the curve
+' `examples/llc.nomo` designs against, and the reason a worksheet language
+' needs plots at all. Its peak is the thing an engineer is looking for.
+f0 = 110000 Hz
+Ln = 3.7
+Qe = 0.41
+fn gain(f) = (f/f0)^2*(Ln - 1)/sqrt((Ln*(f/f0)^2 - 1)^2 + (f/f0)^2*((f/f0)^2 - 1)^2*(Ln - 1)^2*Qe^2)
+plot(gain, 30 kHz, 200 kHz)
+
+' A plot is a value, so it can be bound to a name. It is not a number, though:
+' there is no arithmetic on one.
+picture = plot(parabola, 0, 1)
+
+' A flat function still has a chart: the axis is given an extent rather than
+' dividing by one of zero width.
+fn level(x) = 5 m
+plot(level, 0, 1)
+
+' Several curves on one plot: every argument but the last two names one. They
+' share the span and the vertical axis, so a gain drawn beside a length is
+' refused rather than given two meanings on one axis.
+fn gain_at(f, Q) = (f/f0)^2*(Ln - 1)/sqrt((Ln*(f/f0)^2 - 1)^2 + (f/f0)^2*((f/f0)^2 - 1)^2*(Ln - 1)^2*Q^2)
+
+' A family of curves is written by naming each member. That is what a language
+' with no lambdas has instead of one, and it is what an engineer wants anyway:
+' the load the tank is designed at has a name on the page.
+fn light(f) = gain_at(f, 0.2)
+fn nominal(f) = gain_at(f, Qe)
+fn heavy(f) = gain_at(f, 0.8)
+plot(light, nominal, heavy, 30 kHz, 200 kHz)
+
+' A table of measured points is the other kind of plot: an n-by-2 matrix, x in
+' the first column and y in the second. No span is written and none is needed —
+' the points brought their own x — so the horizontal axis is fitted to the data
+' the way the vertical one always was.
+deflection = [[0 kN, 0 mm], [10 kN, 1.9 mm], [20 kN, 4.1 mm], [30 kN, 6.2 mm], [40 kN, 8.5 mm], [50 kN, 11.4 mm]]
+plot(deflection)
+
+' The shape `augment` builds, which is how a worksheet plots something it just
+' computed: two columns joined into a table of points.
+t = range(0, 8)
+fn drop(k) = 4.9 m/s^2 * (k s)^2 / 2
+fallen = augment(t s, map(drop, t))
+plot(fallen)
+
+' Several tables on one plot, and each carries the name it was written under.
+model = [[0 kN, 0 mm], [50 kN, 11 mm]]
+plot(deflection, model)

@@ -80,10 +80,11 @@ cargo run -p nomo-cli -- html   examples/beam.nomo
 cargo run -p nomo-cli -- test                          # golden-file suite
 ./scripts/compare-targets.sh                            # native vs WebAssembly
 ./scripts/compare-arch.sh                               # x86-64 vs aarch64 (needs qemu-user)
-./scripts/build-web.sh                                  # front end; also runs the six
+./scripts/build-web.sh                                  # front end; also runs the seven
                                                         # browser checks, including
-                                                        # check-figures.mjs and
-                                                        # check-plots.mjs, which assert
+                                                        # check-figures.mjs,
+                                                        # check-plots.mjs and
+                                                        # check-recovery.mjs, which assert
                                                         # what only a browser can see
 
 ./scripts/fetch-corpora.sh                              # the corpora are third-party and
@@ -446,6 +447,13 @@ it fail, which was checked.
   media and asks the page what is visible. Header, footer and editor must be
   gone; the worksheet must remain, must not clip and must wrap. Both checks were
   confirmed to fail when the thing they check is broken.
+- `check-recovery.mjs` — sabotages the engine so that one `update` throws, as a
+  trap would, and asserts the editor replaces the instance and carries on with
+  the buffer intact. It exists because the failure it guards against was
+  permanent and silent, and because nothing a user can type can produce it any
+  more: the parser's nesting limit closed the one route to it, which left the
+  recovery with no natural way to be exercised. Confirmed to fail with the
+  recovery removed.
 
 `scripts/chrome.mjs` is a ~150-line CDP client over Node's built-in WebSocket. It
 is not a browser automation framework and should not become one; if a check needs
@@ -1366,7 +1374,7 @@ See "The one red job" below; it is an access problem, not a result.
   no-host-math guard.
 - **`wasm`** — the module builds for `wasm32-unknown-unknown` and agrees with
   native byte for byte.
-- **`browser`** — all six Chrome checks, on CI's own Chrome rather than this
+- **`browser`** — all seven Chrome checks, on CI's own Chrome rather than this
   machine's.
 - **`corpus`** — the two `check-corpus.sh` baselines and the coverage report,
   added in `cde475f` once the worksheets were in the repository. It asserts the

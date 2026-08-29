@@ -40,6 +40,7 @@ echo "==> in a browser"
 node scripts/check-browser.mjs
 node scripts/check-print.mjs
 node scripts/check-files.mjs
+node scripts/check-recovery.mjs
 node scripts/check-figures.mjs
 node scripts/check-plots.mjs
 node scripts/check-offline.mjs

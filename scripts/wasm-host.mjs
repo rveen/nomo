@@ -12,7 +12,7 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { bind } from "../crates/nomo-wasm/boundary.mjs";
+import { fromModule } from "../crates/nomo-wasm/boundary.mjs";
 
 export const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -47,7 +47,7 @@ export async function compile(file = wasmPath) {
  */
 export async function load(file = wasmPath) {
   const { module } = await compile(file);
-  return bind(new WebAssembly.Instance(module, {}).exports);
+  return fromModule(module);
 }
 
 /** Every import the module declares. Expected to be empty. */

@@ -53,8 +53,29 @@ const buttons = {
   new: document.querySelector("#new"),
 };
 
+/**
+ * The engine.
+ *
+ * Module scope rather than a local in `main`, and not passed to the commands
+ * that use it, because a restart *replaces* it: a handle captured in a closure
+ * would go on calling the instance that already failed.
+ */
+let engine = null;
 let session = null;
 let view = null;
+
+/** True while a restart is in flight, so a burst of edits queues one. */
+let restarting = false;
+
+/**
+ * How many times the engine may be restarted before the page gives up.
+ *
+ * A restart that immediately fails again would otherwise loop: the recovery
+ * ends by analysing the same buffer that just brought the engine down. Three is
+ * enough for a fault that is transient and few enough to notice one that is not.
+ */
+const MAX_RESTARTS = 3;
+let restarts = 0;
 
 /** The document currently being edited. */
 const current = {
@@ -99,7 +120,11 @@ function analyse() {
   try {
     result = session.update(source);
   } catch (error) {
-    status(`engine error: ${error.message}`, "bad");
+    // The engine is gone, not merely unhappy: an errored worksheet comes back
+    // as diagnostics, so anything thrown here means the instance itself failed.
+    // Whatever else happens, the buffer is safe — it belongs to CodeMirror and
+    // the engine never held it.
+    void restartEngine(error);
     return;
   }
   output.innerHTML = result.html;
@@ -134,6 +159,53 @@ function analyse() {
   }
 }
 
+/**
+ * Put the engine back after it failed mid-edit.
+ *
+ * Before this existed, one failure was permanent. The engine is a WebAssembly
+ * instance, a trap leaves its linear memory describing something that is no
+ * longer true, and every later call failed the same way — so the editor
+ * reported `engine error` once and then quietly stopped recalculating for the
+ * life of the tab, while still looking like it was working. The parser's
+ * nesting limit removed the one way a worksheet could cause that; this is what
+ * happens if a way is ever found again.
+ *
+ * The replacement instance starts from the buffer on screen, so nothing typed
+ * is lost — the text was never the engine's to hold.
+ */
+async function restartEngine(cause) {
+  if (restarting) return;
+  restarting = true;
+  try {
+    if (restarts >= MAX_RESTARTS) {
+      status(
+        `the engine failed repeatedly (${cause.message}) — reload the page`,
+        "bad",
+      );
+      return;
+    }
+    restarts += 1;
+
+    // The old session's handle points into memory that no longer exists.
+    // Freeing it is what would crash; dropping it on the floor is correct.
+    session = null;
+
+    try {
+      engine = engine.restart();
+      session = engine.open(view.state.doc.toString());
+    } catch (error) {
+      status(`the engine could not be restarted: ${error.message}`, "bad");
+      return;
+    }
+  } finally {
+    restarting = false;
+  }
+
+  // Analyse again so the results catch up with the buffer. If this fails too it
+  // comes back here, and the counter above is what stops that being a loop.
+  analyse();
+}
+
 /** Replace the buffer wholesale, as opening a file does. */
 function setDocument(text, name, handle) {
   current.name = name;
@@ -149,7 +221,7 @@ function setDocument(text, name, handle) {
 
 // ---- commands ------------------------------------------------------------
 
-async function commandOpen(engine) {
+async function commandOpen() {
   let opened;
   try {
     opened = await openWorksheet();
@@ -163,12 +235,11 @@ async function commandOpen(engine) {
   // Opening replaces the draft: the draft is a safety net for unsaved work, and
   // what was just loaded from disk is not unsaved.
   await saveDraft(opened.text, opened.name);
-  void engine;
 }
 
-async function commandSave(engine) {
+async function commandSave() {
   const text = engine.forSaving(view.state.doc.toString());
-  if (!current.handle) return commandSaveAs(engine);
+  if (!current.handle) return commandSaveAs();
 
   try {
     await writeWorksheet(current.handle, text);
@@ -179,7 +250,7 @@ async function commandSave(engine) {
   afterWrite(text);
 }
 
-async function commandSaveAs(engine) {
+async function commandSaveAs() {
   const text = engine.forSaving(view.state.doc.toString());
 
   if (!canWriteFiles) {
@@ -251,7 +322,6 @@ function registerServiceWorker() {
 async function main() {
   status("loading the engine…");
 
-  let engine;
   try {
     engine = await loadEngine();
   } catch (error) {
@@ -300,14 +370,14 @@ async function main() {
           {
             key: "Mod-s",
             run: () => {
-              void commandSave(engine);
+              void commandSave();
               return true;
             },
           },
           {
             key: "Mod-o",
             run: () => {
-              void commandOpen(engine);
+              void commandOpen();
               return true;
             },
           },
@@ -321,9 +391,9 @@ async function main() {
     }),
   });
 
-  buttons.open.addEventListener("click", () => void commandOpen(engine));
-  buttons.save.addEventListener("click", () => void commandSave(engine));
-  buttons.saveAs.addEventListener("click", () => void commandSaveAs(engine));
+  buttons.open.addEventListener("click", () => void commandOpen());
+  buttons.save.addEventListener("click", () => void commandSave());
+  buttons.saveAs.addEventListener("click", () => void commandSaveAs());
   buttons.new.addEventListener("click", () => void commandNew());
 
   if (!canWriteFiles) {

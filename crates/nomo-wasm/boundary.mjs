@@ -126,6 +126,25 @@ export function bind(exports) {
 export async function instantiate(source) {
   const module =
     source instanceof WebAssembly.Module ? source : new WebAssembly.Module(source);
-  const instance = new WebAssembly.Instance(module, {});
-  return bind(instance.exports);
+  return fromModule(module);
+}
+
+/**
+ * Bind one instance of a compiled module, and offer a replacement for it.
+ *
+ * An instance that traps cannot be repaired. The trap unwinds out of Rust
+ * without running any of it, so the allocator is left mid-update and every
+ * later call reads memory that no longer describes itself — which is why a host
+ * that catches an error from any call here must replace the instance rather than
+ * carry on with it. `restart()` returns that replacement; the caller has to use
+ * what it hands back, because this one stays broken.
+ *
+ * It re-instantiates rather than re-compiling, which gives a new linear memory
+ * from bytes already compiled — no fetch, so a recovery works with the network
+ * off, and necessarily the same engine, because it is the same module.
+ */
+export function fromModule(module) {
+  const api = bind(new WebAssembly.Instance(module, {}).exports);
+  api.restart = () => fromModule(module);
+  return api;
 }

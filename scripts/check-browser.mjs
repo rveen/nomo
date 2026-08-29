@@ -104,6 +104,51 @@ try {
 
   // The editor mounted.
   has('class="cm-editor', "CodeMirror did not mount");
+
+  // The worksheet that used to end the session, typed into the real editor.
+  //
+  // 2 000 nested brackets overflowed the module's 1 MB stack. The trap left the
+  // instance's memory describing something no longer true, so it was not that
+  // edit which failed but every edit after it — and the editor said `engine
+  // error` once and then went on looking like it was working while
+  // recalculating nothing. Two things had to change: the parser refuses this
+  // depth now, and the front end replaces a failed instance rather than
+  // carrying on with it.
+  //
+  // The cursor is at the start of the document, so this lands above the
+  // existing worksheet and leaves it in place — which is the point: the lines
+  // that follow a refused one must still compute.
+  await browser.type(
+    `x = ${"(".repeat(2000)}1${")".repeat(2000)}\ny = 2 m + 3 m\n`,
+  );
+  await waitFor(
+    browser,
+    `document.querySelector("#status").textContent !== "ok"`,
+    "the editor to react to the deep line",
+  );
+
+  const statusText = await browser.evaluate(
+    `document.querySelector("#status").textContent`,
+  );
+  if (!/^\d+ errors?$/.test(statusText)) {
+    failures.push(
+      "a deeply nested line should be an ordinary diagnostic, but the status " +
+        `line said: ${statusText}`,
+    );
+  }
+
+  const output = await browser.evaluate(
+    `document.querySelector("#output").textContent`,
+  );
+  if (!output.includes("5 m")) {
+    failures.push(
+      "the line after the refused one did not compute — the editor stopped " +
+        "recalculating, which is the failure this checks for",
+    );
+  }
+  if (!output.includes("0.942478")) {
+    failures.push("the rest of the worksheet stopped computing");
+  }
 } catch (error) {
   failures.push(`could not drive the browser: ${error.message}`);
 } finally {

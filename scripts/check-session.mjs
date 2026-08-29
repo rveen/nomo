@@ -105,6 +105,49 @@ try {
 }
 check(threw, "a closed session should refuse further edits");
 
+// Recovery. A WebAssembly instance that has trapped stays broken — its memory
+// no longer describes itself — so the front end replaces it rather than
+// carrying on, and `restart()` is what it replaces it with. The editor's own
+// recovery is checked in a browser by `check-browser.mjs`; this checks the
+// mechanism underneath it, which is the half that lives in `boundary.mjs`.
+const replacement = engine.restart();
+check(
+  typeof replacement.restart === "function",
+  "a restarted engine must itself be restartable, or recovery works once",
+);
+const afterRestart = replacement.open("r = 5 cm\nV = pi*r^2\n");
+check(
+  afterRestart.update("r = 5 cm\nV = pi*r^2\n").html.includes("0.00785398"),
+  "a session on the restarted engine should compute",
+);
+
+// The replacement is a *different* instance, not a reset of the old one: the
+// old engine's sessions keep working, which is what proves the memories are
+// separate rather than shared.
+const onTheOld = engine.open("x = 2 m\n");
+check(
+  onTheOld.update("x = 3 m\n").html.includes("3 m"),
+  "restarting must not disturb the engine it was made from",
+);
+onTheOld.close();
+afterRestart.close();
+
+// The worksheet that used to take the whole instance down with it. 2 000 nested
+// brackets trapped this module before the parser had a nesting limit, and every
+// later call then failed too; now it is an ordinary diagnostic and the session
+// carries on. This is the regression test for that crash at the boundary.
+const deep = replacement.open("x = 1\n");
+const refused = deep.update(`x = ${"(".repeat(2000)}1${")".repeat(2000)}\n`);
+check(
+  refused.diagnostics.some((d) => d.code === "SH010"),
+  "a deeply nested expression should be refused by the parser",
+);
+check(
+  deep.update("y = 2 m + 3 m\n").html.includes("5 m"),
+  "the session must survive the worksheet that used to trap it",
+);
+deep.close();
+
 if (failures.length > 0) {
   console.error("check-session: the editing path misbehaved\n");
   for (const failure of failures) console.error(`  error: ${failure}`);

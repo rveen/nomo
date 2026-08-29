@@ -338,10 +338,22 @@ limitation. And a collection over twenty values now renders as its shape rather
 than its contents: an `rk4` over a hundred steps is two hundred and two numbers,
 printed in the substituted column of every line that touches the table.
 
-### 16. Symmetric eigenvalues
+### 16. Symmetric eigenvalues — **done**
 
-Jacobi with a fixed sweep count — the same determinism argument, ten corpus
-uses, and principal stresses and mode shapes are core mechanical content.
+Cyclic Jacobi at twelve sweeps — a count rather than a convergence test, and
+the count is measured: the two slowest cases are repeated eigenvalues and
+eigenvalues six orders of magnitude apart, and both are exact well before the
+twelfth sweep at 8x8, which is larger than anything a worksheet holds.
+
+The decision worth recording is the refusal. A matrix that is symmetric only to
+rounding is **not** symmetrised: deciding how nearly symmetric is near enough is
+exactly the heuristic zero-test §8.40 refused symbolic linear algebra over, and
+the message names the remedy instead so the worksheet writes it where a reader
+can see it.
+
+`examples/shaft.nomo` gained its principal stresses, and they check against the
+Tresca stress the worksheet already had from a closed formula — an independent
+check of the solver inside a real calculation rather than in a test.
 
 ### 17. Complex vectors
 

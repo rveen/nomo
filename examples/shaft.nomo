@@ -60,6 +60,31 @@ d_required = nthroot(32*n_target*sqrt(M^2 + 0.75*T^2)/(pi*Fy_S355), 3) -> mm
 
 check d >= d_required
 
+' ## The same state, as principal stresses
+'
+' Bending and torsion at a point are a plane stress state, and its principal
+' stresses are the eigenvalues of the tensor that holds it. They are what the
+' two failure theories above are written in terms of — von Mises is a distance
+' between them and Tresca is the largest difference — so computing them says the
+' same thing a third way and shows where the numbers come from.
+
+state = [[sigma_b, tau], [tau, 0 MPa]]
+
+principal = reverse(eigenvalues(state)) -> MPa
+
+' Largest first, which is how a stress table is read: σ₁ is tension, σ₂ is
+' compression, and the third principal stress of a plane state is zero.
+
+sigma_1 = principal[1] -> MPa
+sigma_2 = principal[2] -> MPa
+
+' Tresca is the largest difference between any two of the three, and the third
+' one here is zero — so it is σ₁ − σ₂, and it agrees with the formula above.
+
+tresca_check = sigma_1 - sigma_2 -> MPa
+
+check abs(tresca_check - sigma_tresca) <= 0.001 MPa
+
 ' ## What this calculation does not include
 '
 ' First yield at a plain section, and nothing else. A shaft fails at its

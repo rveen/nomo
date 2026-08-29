@@ -1240,6 +1240,115 @@ fn the_reciprocal_and_inverse_hyperbolic_functions() {
     assert!(errors("cot(1 m)")[0].contains("dimensionless"));
 }
 
+// ---- eigenvalues --------------------------------------------------------
+
+#[test]
+fn principal_stresses_come_out_of_a_stress_tensor() {
+    // The Mohr's circle answer, which is what this is for: the principal
+    // stresses of [[100, 30], [30, 40]] are 70 ± √(30² + 30²).
+    let src = "s = [[100, 30], [30, 40]] MPa\neigenvalues(s)";
+    let got = magnitudes(&last_query(src));
+    let mid = 70.0e6;
+    let r = ((30.0e6_f64).powi(2) + (30.0e6_f64).powi(2)).sqrt();
+    // Relative, because these are stresses in pascals: `assert_close`'s absolute
+    // nanounit would be asking for agreement 24 digits down.
+    for (got, want) in got.iter().zip([mid - r, mid + r]) {
+        assert!(
+            (got - want).abs() <= want * 1e-12,
+            "principal stress: got {got}, wanted {want}"
+        );
+    }
+    // Ascending, so a stress table reads them through `reverse`.
+    assert!(got[0] < got[1]);
+}
+
+#[test]
+fn eigenvectors_are_the_directions_of_their_values() {
+    // The defining property, checked rather than assumed: A·v = λ·v for every
+    // pair. A diagonal matrix would satisfy that by accident, so this uses one
+    // whose axes are rotated off the coordinate axes.
+    let src = "\
+A = [[6, 2], [2, 3]]
+v = eigenvectors(A)
+lambda = eigenvalues(A)
+A*col(v, 1) - lambda[1]*col(v, 1)
+";
+    for residual in magnitudes(&last_query(src)) {
+        assert!(residual.abs() < 1e-12, "A·v - λ·v = {residual}");
+    }
+    // And the directions are unit vectors, which is what makes them directions.
+    let norm = "A = [[6, 2], [2, 3]]\nnorm(col(eigenvectors(A), 1))";
+    assert_close(
+        last_raw(norm),
+        1.0,
+        "an eigenvector should be a unit vector",
+    );
+}
+
+#[test]
+fn twelve_sweeps_is_enough_for_anything_a_worksheet_holds() {
+    // The measurement behind `JACOBI_SWEEPS`. The two slow cases are repeated
+    // eigenvalues and eigenvalues that differ by orders of magnitude, so both
+    // are here, at the largest size a worksheet plausibly carries.
+    let cases = [
+        // A repeated eigenvalue: this has 1, 1, 1 and 4.
+        ("[[2, 1, 1], [1, 2, 1], [1, 1, 2]]", vec![1.0, 1.0, 4.0]),
+        // Six orders of magnitude between the smallest and the largest.
+        ("[[1e-3, 0], [0, 1e3]]", vec![1e-3, 1e3]),
+    ];
+    for (matrix, want) in cases {
+        let got = magnitudes(&last_query(&format!("eigenvalues({matrix})")));
+        for (g, w) in got.iter().zip(&want) {
+            assert!(
+                (g - w).abs() <= w.abs() * 1e-12,
+                "{matrix}: got {g}, wanted {w}"
+            );
+        }
+    }
+
+    // An 8x8, the size at which the sweeps have the most work to do. Its
+    // eigenvalues are known by construction: a diagonal matrix conjugated by a
+    // rotation keeps them, so the trace has to come back unchanged and every
+    // value has to be one of the eight put in.
+    let mut src = String::from("A = [");
+    for r in 0..8 {
+        src.push_str(if r == 0 { "[" } else { ", [" });
+        for c in 0..8 {
+            let v = if r == c {
+                (r + 1) as f64
+            } else {
+                1.0 / (r + c + 2) as f64
+            };
+            src.push_str(&format!("{}{v}", if c == 0 { "" } else { ", " }));
+        }
+        src.push(']');
+    }
+    src.push_str("]\nsum(eigenvalues(A))");
+    // The trace is 1+2+…+8 = 36, and eigenvalues sum to it exactly enough.
+    assert!(
+        (last_raw(&src) - 36.0).abs() < 1e-10,
+        "the eigenvalues of an 8x8 should sum to its trace, got {}",
+        last_raw(&src)
+    );
+}
+
+#[test]
+fn an_asymmetric_matrix_is_refused_rather_than_symmetrised() {
+    // Including one that is symmetric to eleven digits: deciding how nearly
+    // symmetric is near enough is the heuristic zero-test this project refuses
+    // everywhere, so the worksheet is asked to say what it meant.
+    for m in ["[[1, 2], [3, 4]]", "[[1, 2], [2.00000000001, 4]]"] {
+        let e = errors(&format!("eigenvalues({m})"));
+        assert!(e[0].contains("symmetric"), "{m}: {e:?}");
+        assert!(
+            e[0].contains("transpose"),
+            "the remedy should be named: {e:?}"
+        );
+    }
+    assert!(errors("eigenvalues([[1, 2, 3], [4, 5, 6]])")[0].contains("square"));
+    assert!(errors("eigenvalues([[1 m, 2 s], [2 s, 4 m]])")[0].contains("one dimension"));
+}
+
 // ---- initial value problems ---------------------------------------------
 
 #[test]

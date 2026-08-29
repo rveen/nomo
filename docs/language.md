@@ -497,7 +497,7 @@ that a worksheet gives the same last bits on every machine.
 | Exponential | `exp` `ln` `log` `log10` `log2` |
 | Numeric | `sqrt` `nthroot` `abs` `sign` `round` `floor` `ceil` `mod` `hypot` |
 | Aggregate | `sum` `product` `min` `max` `mean` `median` `length` |
-| Linear algebra | `transpose` `det` `inv` `identity` `diag` `dot` `cross` `norm` `trace` |
+| Linear algebra | `transpose` `det` `inv` `identity` `diag` `dot` `cross` `norm` `trace` `eigenvalues` `eigenvectors` |
 | Shape | `rows` `cols` `row` `col` `augment` `stack` `submatrix` `sort` `reverse` |
 | Repetition | `range` `map` `iterate` |
 | Numerical | `root` `roots` `derivative` `integral` `solve_linear` `rk4` |
@@ -533,6 +533,31 @@ silently, the language does not offer the name.
 `submatrix(m, r1, r2, c1, c2)` takes the block from row `r1` to `r2` and column
 `c1` to `c2`, inclusive, counting from one. A single column comes back as a
 vector.
+
+### Eigenvalues
+
+`eigenvalues(m)` gives the eigenvalues of a **symmetric** matrix, ascending, and
+`eigenvectors(m)` the directions that go with them as the columns of a matrix in
+the same order. Principal stresses and their axes, mode shapes and their
+frequencies, the axes of an inertia tensor.
+
+```nomo
+state = [[79.6, 63.7], [63.7, 0]] MPa
+principal = reverse(eigenvalues(state))     ' largest first, as a stress table reads
+```
+
+The elements must share one dimension, and the eigenvalues carry it; the vectors
+are dimensionless, because a direction is not a stress.
+
+**Symmetric, and exactly symmetric.** A general matrix has complex eigenvalues
+and is a different problem; a matrix that is symmetric only to rounding is
+refused rather than quietly symmetrised, because deciding how nearly symmetric
+is near enough is a tolerance, and this engine does not have those. The message
+names the remedy — `(m + transpose(m))/2` — which the worksheet then writes and
+a reader can see.
+
+The method is cyclic Jacobi at a **fixed twelve sweeps**, which is a count
+rather than a convergence test for the reason every limit here is a count.
 
 ### An initial value problem
 

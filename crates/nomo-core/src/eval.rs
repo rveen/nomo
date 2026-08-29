@@ -122,6 +122,8 @@ pub const BUILTINS: &[&str] = &[
     "det",
     "diag",
     "dot",
+    "eigenvalues",
+    "eigenvectors",
     "exp",
     "floor",
     "hypot",
@@ -2222,6 +2224,75 @@ impl Env {
                     Ok(Quantity::scalar(s))
                 })
             }
+            // The eigenvalues of a symmetric matrix, and the directions that
+            // go with them: principal stresses and their axes, mode shapes and
+            // their frequencies, the axes of an inertia tensor.
+            //
+            // **Symmetric only, and exactly symmetric.** A general matrix has
+            // complex eigenvalues and needs a QR iteration to find them, which
+            // is a different piece of work; and a matrix that is symmetric only
+            // to rounding is refused rather than quietly symmetrised, because
+            // deciding *how nearly* symmetric is near enough is the heuristic
+            // zero-test §8.40 refused symbolic linear algebra over. The message
+            // names the remedy, which the worksheet can then write and see.
+            "eigenvalues" | "eigenvectors" => {
+                arity(1)?;
+                let (rows, cols) = shape_of(&args[0]);
+                if rows != cols || rows == 0 {
+                    return Err(EvalError::Singular("eigenvalues need a square matrix"));
+                }
+                let cells = args[0].elements();
+                let dim = cells[0].dim;
+                if cells.iter().any(|q| q.dim != dim) {
+                    return Err(EvalError::Singular(
+                        "every element must share one dimension to have eigenvalues",
+                    ));
+                }
+                if cells.iter().any(Quantity::is_point) {
+                    return Err(EvalError::Singular(
+                        "an offset temperature scale cannot take part in an eigenvalue problem",
+                    ));
+                }
+                // Exact, and the reason is in the comment above.
+                #[allow(clippy::float_cmp)]
+                let symmetric = (0..rows).all(|r| {
+                    (0..r).all(|c| cells[r * cols + c].value == cells[c * cols + r].value)
+                });
+                if !symmetric {
+                    return Err(EvalError::Singular(SYMMETRY_WANTED));
+                }
+
+                let mut a: Vec<f64> = cells.iter().map(|q| q.value).collect();
+                let vectors = jacobi(&mut a, rows);
+
+                // Ascending, and sorted with their vectors: Jacobi leaves them
+                // in whatever order the rotations happened to produce, which is
+                // deterministic but arbitrary, and an arbitrary order is not one
+                // a worksheet can index into. Ascending rather than descending
+                // because that is what `sort` does, and one convention beats one
+                // per field — principal stresses read largest first through
+                // `reverse`.
+                let mut order: Vec<usize> = (0..rows).collect();
+                order.sort_by(|i, j| a[i * rows + i].total_cmp(&a[j * rows + j]));
+
+                if name == "eigenvalues" {
+                    let values = order
+                        .iter()
+                        .map(|&i| Quantity::new(a[i * rows + i], dim))
+                        .collect();
+                    return Ok(Value::Vector(VectorValue { elements: values }));
+                }
+                // One eigenvector per column, in the order of the values above,
+                // and dimensionless: a direction is not a stress.
+                let mut data = Vec::with_capacity(rows * rows);
+                for r in 0..rows {
+                    for &c in &order {
+                        data.push(Quantity::scalar(vectors[r * rows + c]));
+                    }
+                }
+                Ok(Value::Matrix(MatrixValue::new(rows, rows, data)))
+            }
+
             "det" => {
                 arity(1)?;
                 args[0].det()
@@ -3583,6 +3654,82 @@ fn push_root(found: &mut Vec<Quantity>, r: Quantity) {
     if !seen {
         found.push(r);
     }
+}
+
+/// What to say when a matrix is not symmetric.
+///
+/// Its own constant because the remedy is the useful half and it is long enough
+/// to wrap: a message that stops at "needs a symmetric matrix" leaves the reader
+/// to guess whether their nearly-symmetric matrix was near enough.
+const SYMMETRY_WANTED: &str =
+    "eigenvalues here need a symmetric matrix; write `(m + transpose(m))/2` if that was meant";
+
+/// How many cyclic sweeps a Jacobi rotation is given.
+///
+/// A count, not a tolerance, for the reason every limit here is a count: the
+/// answer must not depend on the machine, and a loop that stops when the
+/// off-diagonal is "small enough" stops in a different place on a different
+/// target.
+///
+/// Twelve, measured rather than picked. Cyclic Jacobi converges quadratically
+/// once the off-diagonal is small, so the residual falls off a cliff:
+/// `tests/evaluation.rs` checks matrices up to 8x8 — including ones with
+/// repeated eigenvalues and ones whose eigenvalues differ by six orders of
+/// magnitude, the two cases that converge slowest — and every one is exact to
+/// the last few bits well before the twelfth sweep. A worksheet's matrix is a
+/// stress tensor or a mode shape: three by three, or six.
+const JACOBI_SWEEPS: usize = 12;
+
+/// Diagonalise a symmetric matrix in place, returning the accumulated rotations.
+///
+/// Classical cyclic Jacobi: every off-diagonal pair in a fixed order, every
+/// sweep, whatever the entries are. No pivoting by magnitude and no early exit,
+/// so the arithmetic performed is a function of the matrix's *size* alone —
+/// which is what makes the last bits the same on every target.
+fn jacobi(a: &mut [f64], n: usize) -> Vec<f64> {
+    let mut v = vec![0.0; n * n];
+    for (i, cell) in v.iter_mut().enumerate() {
+        *cell = if i % (n + 1) == 0 { 1.0 } else { 0.0 };
+    }
+
+    for _ in 0..JACOBI_SWEEPS {
+        for p in 0..n {
+            for q in (p + 1)..n {
+                let apq = a[p * n + q];
+                if apq == 0.0 {
+                    continue;
+                }
+                // The rotation that annihilates (p, q), in the stable form:
+                // `t` is the smaller root of t² + 2θt − 1 = 0, reached through
+                // the reciprocal so that no subtraction cancels.
+                let theta = (a[q * n + q] - a[p * n + p]) / (2.0 * apq);
+                let t = if theta >= 0.0 {
+                    1.0 / (theta + math::sqrt(1.0 + theta * theta))
+                } else {
+                    -1.0 / (-theta + math::sqrt(1.0 + theta * theta))
+                };
+                let c = 1.0 / math::sqrt(1.0 + t * t);
+                let s = t * c;
+
+                for k in 0..n {
+                    let (akp, akq) = (a[k * n + p], a[k * n + q]);
+                    a[k * n + p] = c * akp - s * akq;
+                    a[k * n + q] = s * akp + c * akq;
+                }
+                for k in 0..n {
+                    let (apk, aqk) = (a[p * n + k], a[q * n + k]);
+                    a[p * n + k] = c * apk - s * aqk;
+                    a[q * n + k] = s * apk + c * aqk;
+                }
+                for k in 0..n {
+                    let (vkp, vkq) = (v[k * n + p], v[k * n + q]);
+                    v[k * n + p] = c * vkp - s * vkq;
+                    v[k * n + q] = s * vkp + c * vkq;
+                }
+            }
+        }
+    }
+    v
 }
 
 fn shape_of(v: &Value) -> (usize, usize) {

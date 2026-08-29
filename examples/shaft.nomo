@@ -1,0 +1,82 @@
+' nomo 1
+
+' # A shaft under bending and torsion at once
+'
+' A transmission shaft is almost never in pure torsion. It carries the torque it
+' was put there for, and it carries bending from the gear or pulley loads that
+' deliver that torque — and the two combine into a stress state neither one
+' predicts on its own.
+'
+' This is a solid round shaft in a gearbox: 40 mm diameter, S355, carrying 800
+' N·m of torque with 500 N·m of bending at the section being checked.
+
+use steel
+
+d = 40 mm
+M = 500 N*m
+T = 800 N*m
+
+' ## The two stresses
+'
+' Bending is largest at the surface, and so is torsional shear, and on a round
+' section they are largest at the same place — which is why the combination has
+' to be taken at a point rather than averaged.
+
+Z = pi*d^3/32
+Z_p = pi*d^3/16
+
+Z -> mm^3
+Z_p -> mm^3
+
+sigma_b = M/Z
+tau = T/Z_p
+
+sigma_b -> MPa
+tau -> MPa
+
+' ## Two failure theories, and the gap between them
+'
+' Distortion energy (von Mises) is the usual choice for a ductile steel and
+' matches test data best. Maximum shear (Tresca) is the more conservative, by
+' about 15% in pure shear, and some codes require it.
+
+sigma_vm = sqrt(sigma_b^2 + 3*tau^2)
+sigma_tresca = sqrt(sigma_b^2 + 4*tau^2)
+
+sigma_vm -> MPa
+sigma_tresca -> MPa
+
+' The factor of safety against first yield, on each theory.
+
+n_vm = Fy_S355/sigma_vm
+n_tresca = Fy_S355/sigma_tresca
+
+check n_tresca >= 2
+
+' ## What diameter the load actually needs
+'
+' Rearranged rather than iterated: the equivalent stress is proportional to
+' 1/d³, so the diameter for a chosen factor comes out in one line — and the cube
+' root divides the dimension, which is what a length is doing inside a cubed
+' quantity in the first place.
+
+n_target = 2
+
+d_required = nthroot(32*n_target*sqrt(M^2 + 0.75*T^2)/(pi*Fy_S355), 3)
+d_required -> mm
+
+check d >= d_required
+
+' ## What this calculation does not include
+'
+' First yield at a plain section, and nothing else. A shaft fails at its
+' shoulders, keyways and cross-holes, where the stress concentration factor
+' multiplies these numbers by two or more, and it fails in fatigue rather than
+' by yielding — the torque is steady but the bending is fully reversed once per
+' revolution. Both belong in a design check and neither is here.
+
+' ## Safety factor against diameter
+
+fn factor(dia) = Fy_S355/sqrt((32*M/(pi*(dia*mm)^3))^2 + 3*(16*T/(pi*(dia*mm)^3))^2)
+
+plot(factor, 25, 60)

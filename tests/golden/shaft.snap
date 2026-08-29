@@ -1,0 +1,163 @@
+# nomo snapshot v1
+# worksheet: shaft
+
+=== text ===
+# A shaft under bending and torsion at once
+
+A transmission shaft is almost never in pure torsion. It carries the torque it
+was put there for, and it carries bending from the gear or pulley loads that
+deliver that torque — and the two combine into a stress state neither one
+predicts on its own.
+
+This is a solid round shaft in a gearbox: 40 mm diameter, S355, carrying 800
+N·m of torque with 500 N·m of bending at the section being checked.
+use steel
+d = 40 mm
+M = 500 N·m
+T = 800 N·m
+## The two stresses
+
+Bending is largest at the surface, and so is torsional shear, and on a round
+section they are largest at the same place — which is why the combination has
+to be taken at a point rather than averaged.
+Z = π·d³/32 = π·(40 mm)³/32 = 6.28319e-6 m³
+Z_p = π·d³/16 = π·(40 mm)³/16 = 1.25664e-5 m³
+Z = 6283.19 mm³
+Z_p = 12566.4 mm³
+sigma_b = M/Z = 500 J/(6.28319e-6 m³) = 79577500 Pa
+tau = T/Z_p = 800 J/(1.25664e-5 m³) = 63662000 Pa
+sigma_b = 79.5775 MPa
+tau = 63.662 MPa
+## Two failure theories, and the gap between them
+
+Distortion energy (von Mises) is the usual choice for a ductile steel and
+matches test data best. Maximum shear (Tresca) is the more conservative, by
+about 15% in pure shear, and some codes require it.
+sigma_vm = sqrt(sigma_b² + 3·tau²) = sqrt((79577500 Pa)² + 3·(63662000 Pa)²) = 135982000 Pa
+sigma_tresca = sqrt(sigma_b² + 4·tau²) = sqrt((79577500 Pa)² + 4·(63662000 Pa)²) = 150146000 Pa
+sigma_vm = 135.982 MPa
+sigma_tresca = 150.146 MPa
+The factor of safety against first yield, on each theory.
+n_vm = Fy_S355/sigma_vm = 355 MPa/(135982000 Pa) = 2.61064
+n_tresca = Fy_S355/sigma_tresca = 355 MPa/(150146000 Pa) = 2.36436
+check n_tresca ≥ 2 = 2.36436 ≥ 2 — pass
+## What diameter the load actually needs
+
+Rearranged rather than iterated: the equivalent stress is proportional to
+1/d³, so the diameter for a chosen factor comes out in one line — and the cube
+root divides the dimension, which is what a length is doing inside a cubed
+quantity in the first place.
+n_target = 2
+d_required = nthroot(32·n_target·sqrt(M² + 0.75·T²)/(π·Fy_S355), 3) = nthroot(32·2·sqrt((500 J)² + 0.75·(800 J)²)/(π·(355 MPa)), 3) = 0.0366006 m
+d_required = 36.6006 mm
+check d ≥ d_required = 40 mm ≥ 0.0366006 m — pass
+## What this calculation does not include
+
+First yield at a plain section, and nothing else. A shaft fails at its
+shoulders, keyways and cross-holes, where the stress concentration factor
+multiplies these numbers by two or more, and it fails in fatigue rather than
+by yielding — the torque is steady but the bending is fully reversed once per
+revolution. Both belong in a design check and neither is here.
+## Safety factor against diameter
+fn factor defined
+plot(factor, 25, 60) = [plot factor: 25 to 60, 257 points, 0.637363 to 8.81091]
+
+=== html ===
+<h1 class="prose">A shaft under bending and torsion at once</h1>
+<p class="prose">A transmission shaft is almost never in pure torsion. It carries the torque it was put there for, and it carries bending from the gear or pulley loads that deliver that torque — and the two combine into a stress state neither one predicts on its own.</p>
+<p class="prose">This is a solid round shaft in a gearbox: 40 mm diameter, S355, carrying 800 N·m of torque with 500 N·m of bending at the section being checked.</p>
+<div class="step note">use steel</div>
+<div class="step"><span class="name">d</span><span class="eq">=</span>40 mm</div>
+<div class="step"><span class="name">M</span><span class="eq">=</span>500 N·m</div>
+<div class="step"><span class="name">T</span><span class="eq">=</span>800 N·m</div>
+<h2 class="prose">The two stresses</h2>
+<p class="prose">Bending is largest at the surface, and so is torsional shear, and on a round section they are largest at the same place — which is why the combination has to be taken at a point rather than averaged.</p>
+<div class="step"><span class="name">Z</span><span class="eq">=</span>π·d³/32<span class="eq">=</span><span class="subst">π·(40 mm)³/32</span><span class="eq">=</span><span class="result">6.28319e-6 m³</span></div>
+<div class="step"><span class="name">Z_p</span><span class="eq">=</span>π·d³/16<span class="eq">=</span><span class="subst">π·(40 mm)³/16</span><span class="eq">=</span><span class="result">1.25664e-5 m³</span></div>
+<div class="step">Z<span class="eq">=</span><span class="result">6283.19 mm³</span></div>
+<div class="step">Z_p<span class="eq">=</span><span class="result">12566.4 mm³</span></div>
+<div class="step"><span class="name">sigma_b</span><span class="eq">=</span>M/Z<span class="eq">=</span><span class="subst">500 J/(6.28319e-6 m³)</span><span class="eq">=</span><span class="result">79577500 Pa</span></div>
+<div class="step"><span class="name">tau</span><span class="eq">=</span>T/Z_p<span class="eq">=</span><span class="subst">800 J/(1.25664e-5 m³)</span><span class="eq">=</span><span class="result">63662000 Pa</span></div>
+<div class="step">sigma_b<span class="eq">=</span><span class="result">79.5775 MPa</span></div>
+<div class="step">tau<span class="eq">=</span><span class="result">63.662 MPa</span></div>
+<h2 class="prose">Two failure theories, and the gap between them</h2>
+<p class="prose">Distortion energy (von Mises) is the usual choice for a ductile steel and matches test data best. Maximum shear (Tresca) is the more conservative, by about 15% in pure shear, and some codes require it.</p>
+<div class="step"><span class="name">sigma_vm</span><span class="eq">=</span>sqrt(sigma_b² + 3·tau²)<span class="eq">=</span><span class="subst">sqrt((79577500 Pa)² + 3·(63662000 Pa)²)</span><span class="eq">=</span><span class="result">135982000 Pa</span></div>
+<div class="step"><span class="name">sigma_tresca</span><span class="eq">=</span>sqrt(sigma_b² + 4·tau²)<span class="eq">=</span><span class="subst">sqrt((79577500 Pa)² + 4·(63662000 Pa)²)</span><span class="eq">=</span><span class="result">150146000 Pa</span></div>
+<div class="step">sigma_vm<span class="eq">=</span><span class="result">135.982 MPa</span></div>
+<div class="step">sigma_tresca<span class="eq">=</span><span class="result">150.146 MPa</span></div>
+<p class="prose">The factor of safety against first yield, on each theory.</p>
+<div class="step"><span class="name">n_vm</span><span class="eq">=</span>Fy_S355/sigma_vm<span class="eq">=</span><span class="subst">355 MPa/(135982000 Pa)</span><span class="eq">=</span><span class="result">2.61064</span></div>
+<div class="step"><span class="name">n_tresca</span><span class="eq">=</span>Fy_S355/sigma_tresca<span class="eq">=</span><span class="subst">355 MPa/(150146000 Pa)</span><span class="eq">=</span><span class="result">2.36436</span></div>
+<div class="step check pass"><span class="name">check</span>n_tresca ≥ 2<span class="eq">=</span><span class="subst">2.36436 ≥ 2</span><span class="verdict">pass</span></div>
+<h2 class="prose">What diameter the load actually needs</h2>
+<p class="prose">Rearranged rather than iterated: the equivalent stress is proportional to 1/d³, so the diameter for a chosen factor comes out in one line — and the cube root divides the dimension, which is what a length is doing inside a cubed quantity in the first place.</p>
+<div class="step"><span class="name">n_target</span><span class="eq">=</span>2</div>
+<div class="step"><span class="name">d_required</span><span class="eq">=</span>nthroot(32·n_target·sqrt(M² + 0.75·T²)/(π·Fy_S355), 3)<span class="eq">=</span><span class="subst">nthroot(32·2·sqrt((500 J)² + 0.75·(800 J)²)/(π·(355 MPa)), 3)</span><span class="eq">=</span><span class="result">0.0366006 m</span></div>
+<div class="step">d_required<span class="eq">=</span><span class="result">36.6006 mm</span></div>
+<div class="step check pass"><span class="name">check</span>d ≥ d_required<span class="eq">=</span><span class="subst">40 mm ≥ 0.0366006 m</span><span class="verdict">pass</span></div>
+<h2 class="prose">What this calculation does not include</h2>
+<p class="prose">First yield at a plain section, and nothing else. A shaft fails at its shoulders, keyways and cross-holes, where the stress concentration factor multiplies these numbers by two or more, and it fails in fatigue rather than by yielding — the torque is steady but the bending is fully reversed once per revolution. Both belong in a design check and neither is here.</p>
+<h2 class="prose">Safety factor against diameter</h2>
+<div class="step note">fn factor defined</div>
+<div class="step">plot(factor, 25, 60)</div>
+<figure class="plot"><svg viewBox="0 0 640 380" role="img" aria-label="plot of factor">
+<line class="plot-grid" x1="152.29" y1="14.00" x2="152.29" y2="338.00"/>
+<text class="plot-label plot-x" x="152.29" y="356.00">30</text>
+<line class="plot-grid" x1="308.86" y1="14.00" x2="308.86" y2="338.00"/>
+<text class="plot-label plot-x" x="308.86" y="356.00">40</text>
+<line class="plot-grid" x1="465.43" y1="14.00" x2="465.43" y2="338.00"/>
+<text class="plot-label plot-x" x="465.43" y="356.00">50</text>
+<line class="plot-grid" x1="622.00" y1="14.00" x2="622.00" y2="338.00"/>
+<text class="plot-label plot-end" x="622.00" y="356.00">60</text>
+<line class="plot-grid" x1="74.00" y1="338.00" x2="622.00" y2="338.00"/>
+<text class="plot-label plot-y" x="66.00" y="342.00">0</text>
+<line class="plot-grid" x1="74.00" y1="273.20" x2="622.00" y2="273.20"/>
+<text class="plot-label plot-y" x="66.00" y="277.20">2</text>
+<line class="plot-grid" x1="74.00" y1="208.40" x2="622.00" y2="208.40"/>
+<text class="plot-label plot-y" x="66.00" y="212.40">4</text>
+<line class="plot-grid" x1="74.00" y1="143.60" x2="622.00" y2="143.60"/>
+<text class="plot-label plot-y" x="66.00" y="147.60">6</text>
+<line class="plot-grid" x1="74.00" y1="78.80" x2="622.00" y2="78.80"/>
+<text class="plot-label plot-y" x="66.00" y="82.80">8</text>
+<line class="plot-grid" x1="74.00" y1="14.00" x2="622.00" y2="14.00"/>
+<text class="plot-label plot-y" x="66.00" y="18.00">10</text>
+<line class="plot-axis" x1="74.00" y1="338.00" x2="622.00" y2="338.00"/>
+<line class="plot-axis" x1="74.00" y1="14.00" x2="74.00" y2="338.00"/>
+<polyline class="plot-curve plot-curve-1" points="74.00,317.35 76.14,317.01 78.28,316.66 80.42,316.32 82.56,315.96 84.70,315.61 86.84,315.25 88.98,314.89 91.13,314.52 93.27,314.15 95.41,313.77 97.55,313.39 99.69,313.01 101.83,312.62 103.97,312.23 106.11,311.84 108.25,311.44 110.39,311.04 112.53,310.63 114.67,310.22 116.81,309.81 118.95,309.39 121.09,308.96 123.23,308.54 125.38,308.10 127.52,307.67 129.66,307.23 131.80,306.78 133.94,306.34 136.08,305.88 138.22,305.43 140.36,304.97 142.50,304.50 144.64,304.03 146.78,303.56 148.92,303.08 151.06,302.59 153.20,302.11 155.34,301.61 157.48,301.12 159.63,300.62 161.77,300.11 163.91,299.60 166.05,299.09 168.19,298.57 170.33,298.04 172.47,297.52 174.61,296.98 176.75,296.44 178.89,295.90 181.03,295.36 183.17,294.80 185.31,294.25 187.45,293.69 189.59,293.12 191.73,292.55 193.88,291.97 196.02,291.39 198.16,290.81 200.30,290.22 202.44,289.62 204.58,289.02 206.72,288.42 208.86,287.81 211.00,287.19 213.14,286.57 215.28,285.95 217.42,285.32 219.56,284.68 221.70,284.04 223.84,283.40 225.98,282.75 228.13,282.09 230.27,281.43 232.41,280.76 234.55,280.09 236.69,279.42 238.83,278.73 240.97,278.05 243.11,277.36 245.25,276.66 247.39,275.96 249.53,275.25 251.67,274.53 253.81,273.82 255.95,273.09 258.09,272.36 260.23,271.63 262.38,270.89 264.52,270.14 266.66,269.39 268.80,268.63 270.94,267.87 273.08,267.10 275.22,266.33 277.36,265.55 279.50,264.76 281.64,263.97 283.78,263.17 285.92,262.37 288.06,261.56 290.20,260.75 292.34,259.93 294.48,259.11 296.63,258.28 298.77,257.44 300.91,256.60 303.05,255.75 305.19,254.89 307.33,254.03 309.47,253.17 311.61,252.30 313.75,251.42 315.89,250.53 318.03,249.64 320.17,248.75 322.31,247.85 324.45,246.94 326.59,246.02 328.73,245.10 330.88,244.18 333.02,243.24 335.16,242.31 337.30,241.36 339.44,240.41 341.58,239.45 343.72,238.49 345.86,237.52 348.00,236.54 350.14,235.56 352.28,234.57 354.42,233.58 356.56,232.58 358.70,231.57 360.84,230.55 362.98,229.53 365.13,228.51 367.27,227.47 369.41,226.43 371.55,225.39 373.69,224.33 375.83,223.28 377.97,222.21 380.11,221.14 382.25,220.06 384.39,218.97 386.53,217.88 388.67,216.78 390.81,215.67 392.95,214.56 395.09,213.44 397.23,212.32 399.38,211.18 401.52,210.04 403.66,208.90 405.80,207.74 407.94,206.58 410.08,205.42 412.22,204.24 414.36,203.06 416.50,201.88 418.64,200.68 420.78,199.48 422.92,198.27 425.06,197.06 427.20,195.83 429.34,194.60 431.48,193.37 433.63,192.12 435.77,190.87 437.91,189.61 440.05,188.35 442.19,187.08 444.33,185.80 446.47,184.51 448.61,183.22 450.75,181.92 452.89,180.61 455.03,179.29 457.17,177.97 459.31,176.64 461.45,175.30 463.59,173.95 465.73,172.60 467.88,171.24 470.02,169.87 472.16,168.50 474.30,167.12 476.44,165.73 478.58,164.33 480.72,162.93 482.86,161.51 485.00,160.09 487.14,158.67 489.28,157.23 491.42,155.79 493.56,154.34 495.70,152.88 497.84,151.41 499.98,149.94 502.13,148.46 504.27,146.97 506.41,145.47 508.55,143.97 510.69,142.45 512.83,140.93 514.97,139.41 517.11,137.87 519.25,136.33 521.39,134.77 523.53,133.21 525.67,131.65 527.81,130.07 529.95,128.49 532.09,126.89 534.23,125.30 536.38,123.69 538.52,122.07 540.66,120.45 542.80,118.81 544.94,117.17 547.08,115.53 549.22,113.87 551.36,112.20 553.50,110.53 555.64,108.85 557.78,107.16 559.92,105.46 562.06,103.76 564.20,102.04 566.34,100.32 568.48,98.59 570.63,96.85 572.77,95.10 574.91,93.34 577.05,91.58 579.19,89.80 581.33,88.02 583.47,86.23 585.61,84.43 587.75,82.63 589.89,80.81 592.03,78.99 594.17,77.15 596.31,75.31 598.45,73.46 600.59,71.60 602.73,69.73 604.88,67.86 607.02,65.97 609.16,64.08 611.30,62.17 613.44,60.26 615.58,58.34 617.72,56.41 619.86,54.47 622.00,52.53"/>
+</svg></figure>
+
+=== values ===
+E_steel = 200000000000.0 m^-1·kg·s^-2
+G_steel = 77000000000.0 m^-1·kg·s^-2
+nu_steel = 0.3 dimensionless
+rho_steel = 7850.0 m^-3·kg
+alpha_steel = 1.2e-5 K^-1
+Fy_A36 = 248211262.55406097 m^-1·kg·s^-2
+Fy_A992 = 344737864.658418 m^-1·kg·s^-2
+Fy_S235 = 235000000.0 m^-1·kg·s^-2
+Fy_S355 = 355000000.0 m^-1·kg·s^-2
+d = 0.04 m
+M = 500.0 m^2·kg·s^-2
+T = 800.0 m^2·kg·s^-2
+Z = 6.2831853071795875e-6 m^3
+Z_p = 1.2566370614359175e-5 m^3
+? = 6.2831853071795875e-6 m^3
+? = 1.2566370614359175e-5 m^3
+sigma_b = 79577471.54594766 m^-1·kg·s^-2
+tau = 63661977.23675812 m^-1·kg·s^-2
+? = 79577471.54594766 m^-1·kg·s^-2
+? = 63661977.23675812 m^-1·kg·s^-2
+sigma_vm = 135982042.9862952 m^-1·kg·s^-2
+sigma_tresca = 150146473.02024826 m^-1·kg·s^-2
+? = 135982042.9862952 m^-1·kg·s^-2
+? = 150146473.02024826 m^-1·kg·s^-2
+n_vm = 2.610638818213507 dimensionless
+n_tresca = 2.364357902380603 dimensionless
+n_target = 2.0 dimensionless
+d_required = 0.036600559647038 m
+? = 0.036600559647038 m
+? = plot 25.0..60.0 (chosen) dimensionless over dimensionless {factor: [0.6373629927279069, 0.6478770188496242, 0.6585060409918788, 0.6692506846186524, 0.680111575193926, 0.6910893381816806, 0.7021845990458975, 0.7133979832505577, 0.7247301162596423, 0.7361816235371327, 0.7477531305470102, 0.7594452627532557, 0.7712586456198506, 0.7831939046107759, 0.7952516651900127, 0.8074325528215419, 0.8197371929693452, 0.8321662110974037, 0.8447202326696988, 0.8573998831502109, 0.8702057880029216, 0.8831385726918118, 0.8961988626808635, 0.909387283434057, 0.9227044604153737, 0.9361510190887951, 0.9497275849183019, 0.9634347833678751, 0.977273239901497, 0.9912435799831474, 1.0053464290768084, 1.0195824126464608, 1.0339521561560856, 1.048456285069664, 1.0630954248511777, 1.0778702009646075, 1.0927812388739344, 1.1078291640431401, 1.123014601936205, 1.138338178017111, 1.1538005177498383, 1.1694022465983693, 1.1851439900266845, 1.2010263734987652, 1.2170500224785923, 1.2332155624301475, 1.249523618817411, 1.265974817104365, 1.2825697827549907, 1.2993091412332682, 1.3161935180031796, 1.333223538528706, 1.3503998282738283, 1.3677230127025277, 1.3851937172787852, 1.4028125674665817, 1.4205801887298992, 1.4384972065327186, 1.4565642463390214, 1.474781933612788, 1.4931508938179998, 1.5116717524186385, 1.5303451348786845, 1.5491716666621191, 1.5681519732329243, 1.5872866800550798, 1.6065764125925683, 1.6260217963093697, 1.645623456669465, 1.6653820191368378, 1.6852981091754666, 1.7053723522493343, 1.7256053738224206, 1.745997799358708, 1.7665502543221765, 1.787263364176808, 1.8081377543865838, 1.8291740504154845, 1.8503728777274915, 1.8717348617865863, 1.8932606280567492, 1.9149508020019612, 1.936806009086205, 1.9588268747734614, 1.9810140245277106, 2.003368083812935, 2.025889678093114, 2.0485794328322307, 2.0714379734942656, 2.094465925543199, 2.1176639144430127, 2.1410325656576883, 2.1645725046512068, 2.1882843568875474, 2.212168747830695, 2.2362263029446274, 2.260457647693328, 2.2848634075407777, 2.309444207950955, 2.3342006743878456, 2.3591334323154274, 2.384243107197682, 2.4095303244985913, 2.4349957096821355, 2.4606398882122966, 2.4864634855530556, 2.5124671271683923, 2.538651438522291, 2.5650170450787306, 2.591564572301693, 2.6182946456551592, 2.6452078906031096, 2.672304932609527, 2.6995863971383907, 2.7270529096536835, 2.7547050956193853, 2.7825435804994774, 2.810568989757942, 2.8387819488587582, 2.86718308326591, 2.8957730184433768, 2.9245523798551405, 2.953521792965182, 2.9826818832374817, 3.012033276136022, 3.0415765971247835, 3.071312471667747, 3.101241525228895, 3.1313643832722065, 3.1616816712616647, 3.1921940146612493, 3.222902038934942, 3.2538063695467243, 3.2849076319605772, 3.316206451640482, 3.3477034540504196, 3.3793992646543716, 3.411294508916319, 3.4433898123002415, 3.475685800270123, 3.5081830982899427, 3.5408823318236826, 3.573784126335323, 3.606889107288844, 3.6401979001482303, 3.6737111303774608, 3.7074294234405176, 3.7413534048013815, 3.7754836999240324, 3.8098209342724543, 3.844365733310626, 3.879118722502528, 3.914080527312143, 3.9492517732034513, 3.9846330856404366, 4.020225090087077, 4.056028412007354, 4.09204367686525, 4.128271510124748, 4.164712537249825, 4.201367383704463, 4.238236674952646, 4.2753210364583545, 4.312621093685567, 4.3501374720982655, 4.387870797160432, 4.425821694336049, 4.463990789089095, 4.5023787068835555, 4.5409860731834035, 4.579813513452628, 4.618861653155207, 4.658131117755122, 4.697622532716356, 4.737336523502886, 4.777273715578698, 4.817434734407769, 4.857820205454082, 4.898430754181619, 4.93926700605436, 4.980329586536287, 5.021619121091377, 5.063136235183618, 5.104881554276987, 5.146855703835467, 5.189059309323038, 5.231492996203682, 5.274157389941379, 5.317053116000111, 5.360180799843858, 5.4035410669366035, 5.447134542742327, 5.490961852725008, 5.535023622348633, 5.579320477077176, 5.623853042374623, 5.668621943704955, 5.713627806532153, 5.758871256320197, 5.804352918533068, 5.850073418634749, 5.896033382089219, 5.94223343436046, 5.988674200912453, 6.035356307209182, 6.082280378714623, 6.129447040892759, 6.176856919207573, 6.224510639123046, 6.272408826103159, 6.320552105611891, 6.368941103113225, 6.417576444071143, 6.466458753949622, 6.515588658212649, 6.564966782324201, 6.614593751748261, 6.664470191948809, 6.714596728389828, 6.764973986535293, 6.815602591849196, 6.866483169795511, 6.91761634583822, 6.969002745441305, 7.020642994068747, 7.072537717184526, 7.124687540252623, 7.177093088737023, 7.229754988101704, 7.282673863810647, 7.335850341327836, 7.389285046117245, 7.442978603642863, 7.496931639368669, 7.551144778758641, 7.605618647276766, 7.660353870387022, 7.7153510735533875, 7.770610882239849, 7.826133921910382, 7.881920818028972, 7.937972196059598, 7.994288681466242, 8.050870899712885, 8.107719476263506, 8.164835036582092, 8.222218206132618, 8.27986961037907, 8.337789874785425, 8.395979624815666, 8.454439485933776, 8.513170083603734, 8.57217204328952, 8.631445990455116, 8.690992550564507, 8.75081234908167, 8.810906011470582]}
+
+=== diagnostics ===
+none

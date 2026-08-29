@@ -2637,6 +2637,15 @@ impl Env {
                 }
             }
 
+            // The pack's own statements are spliced in beside this one and
+            // evaluated as themselves; nothing is left for this line to do but
+            // say which pack it was.
+            Stmt::Use { name, span } => Outcome {
+                span: *span,
+                kind: OutcomeKind::Use(name.text.clone()),
+                diagnostics: vec![],
+            },
+
             Stmt::Check { expr, span } => {
                 let trace = self.eval(expr);
                 let mut diagnostics = diagnose(&trace);
@@ -2762,6 +2771,8 @@ pub enum OutcomeKind {
         trace: Trace,
     },
     Query(Trace),
+    /// `use steel` — the pack's name.
+    Use(String),
     /// `check …` — the condition, and whether it held.
     ///
     /// `passed` is `None` when the condition could not be evaluated at all, or

@@ -290,16 +290,18 @@ fn binding_of(stmt: &Stmt) -> Binding {
         }
         Stmt::GlobalDef { name, .. } => Binding::Global(name.text.clone()),
         // A check binds nothing: it is read by a reader, not by a statement.
-        Stmt::Comment { .. } | Stmt::Query { .. } | Stmt::Check { .. } | Stmt::Error { .. } => {
-            Binding::None
-        }
+        Stmt::Comment { .. }
+        | Stmt::Query { .. }
+        | Stmt::Check { .. }
+        | Stmt::Use { .. }
+        | Stmt::Error { .. } => Binding::None,
     }
 }
 
 fn uses_of(stmt: &Stmt) -> BTreeSet<String> {
     let mut out = BTreeSet::new();
     match stmt {
-        Stmt::Comment { .. } | Stmt::Error { .. } => {}
+        Stmt::Comment { .. } | Stmt::Use { .. } | Stmt::Error { .. } => {}
         Stmt::Assign { value, .. }
         | Stmt::GlobalDef { value, .. }
         | Stmt::UnitDecl { value, .. } => collect_names(value, &mut out),

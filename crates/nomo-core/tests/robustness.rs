@@ -158,6 +158,7 @@ const SEEDS: &[&str] = &[
     "fn f(x) = x^2 - 2\nz = root(f, 0, 2)\ns = sum(map(f, range(0, 4)))\n",
     "a = 3 m\nverdict = if a <= 4 m then \"ok\" else \"no\"\n",
     "' # Title\n' Some prose about the calculation.\nq = 2 m + 3 m\n",
+    "use steel\nsigma_allow = 0.6*Fy_A992\ncheck sigma_allow >= 20 ksi\n",
 ];
 
 /// Run a case list on a thread with room to spare.

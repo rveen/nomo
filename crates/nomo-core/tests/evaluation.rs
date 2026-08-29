@@ -1047,6 +1047,80 @@ f(2)
     );
 }
 
+// ---- packs --------------------------------------------------------------
+
+#[test]
+fn a_pack_brings_its_definitions() {
+    assert_close(
+        last_in("use steel\nsigma = 0.6*Fy_A992\nsigma -> ksi", "ksi"),
+        30.0,
+        "six tenths of A992's yield",
+    );
+    // Two packs at once, and a value that needs both.
+    assert_close(
+        last_in(
+            "use steel\nuse constants\nw = rho_steel*g_earth\nw -> N/m^3",
+            "N/m^3",
+        ),
+        7850.0 * 9.80665,
+        "the weight density of steel",
+    );
+}
+
+#[test]
+fn a_pack_is_visible_above_the_line_that_brings_it() {
+    // Its definitions are globals, so where `use` sits does not change what the
+    // worksheet means. A positional binding would make the same worksheet
+    // answer differently depending on where the line was typed.
+    assert_close(
+        last_in("x = 2*E_steel\nuse steel\nx -> GPa", "GPa"),
+        400.0,
+        "read above the `use`",
+    );
+}
+
+#[test]
+fn a_pack_that_does_not_exist_says_which_do() {
+    let e = errors("use nosuchpack\n");
+    assert!(e[0].contains("no pack called `nosuchpack`"), "{e:?}");
+    assert!(
+        e[0].contains("steel"),
+        "the message should list what exists: {e:?}"
+    );
+}
+
+#[test]
+fn a_packs_statements_point_at_the_use_line() {
+    // The spliced statements carry spans from the *pack's* source, which is a
+    // different string from the one the editor slices with them. Left alone
+    // they would be out of bounds — and `use steel` is 9 characters, so this is
+    // not a subtle overrun.
+    let src = "use steel\n";
+    let sheet = nomo_core::Sheet::new(src);
+    for outcome in sheet.outcomes() {
+        assert!(
+            outcome.span.end as usize <= src.len(),
+            "a spliced statement kept a span from the pack: {:?}",
+            outcome.span
+        );
+    }
+}
+
+#[test]
+fn a_pack_is_not_rendered_into_the_worksheet() {
+    // Fourteen constants nobody typed would bury the three lines somebody did.
+    let sheet = nomo_core::Sheet::new("use steel\nx = 1 m\n");
+    let text = nomo_core::render::text::render(&sheet, &nomo_core::RenderOptions::default());
+    assert!(
+        text.contains("use steel"),
+        "the `use` line should show: {text}"
+    );
+    assert!(
+        !text.contains("E_steel"),
+        "the pack's own statements should not: {text}"
+    );
+}
+
 // ---- the second batch of builtins ---------------------------------------
 
 #[test]

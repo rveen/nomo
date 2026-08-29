@@ -1,0 +1,18 @@
+' Structural steel: the properties a design sheet asks for by name.
+'
+' The elastic constants are the conventional design values, not measurements of
+' any particular heat. The grades are named by the standard that defines them
+' and carry one number each — the specified minimum yield — which is the number
+' a calculation uses. Nothing here reproduces a table: look the rest up.
+
+global E_steel = 200 GPa
+global G_steel = 77 GPa
+global nu_steel = 0.3
+global rho_steel = 7850 kg/m^3
+global alpha_steel = 12e-6 / K
+
+' Specified minimum yield strength, by grade.
+global Fy_A36 = 36 ksi
+global Fy_A992 = 50 ksi
+global Fy_S235 = 235 MPa
+global Fy_S355 = 355 MPa

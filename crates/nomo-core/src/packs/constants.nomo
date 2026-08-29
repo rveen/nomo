@@ -1,0 +1,16 @@
+' Physical constants, in SI.
+'
+' The 2019 SI defines the first four exactly: the kilogram, the ampere, the
+' kelvin and the mole are fixed by them, so these are definitions rather than
+' measurements and cannot go out of date.
+
+global c_light = 299792458 m/s
+global h_planck = 6.62607015e-34 J*s
+global k_boltzmann = 1.380649e-23 J/K
+global e_charge = 1.602176634e-19 C
+global N_avogadro = 6.02214076e23 / mol
+
+' Derived from those, and standard by convention.
+global R_gas = 8.31446261815324 J/(mol*K)
+global g_earth = 9.80665 m/s^2
+global sigma_stefan = 5.670374419e-8 W/(m^2*K^4)

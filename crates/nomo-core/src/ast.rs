@@ -253,6 +253,12 @@ pub enum Stmt {
     /// make `has_errors` true. What it produces is a verdict, counted and
     /// answered for in the exit code.
     Check { expr: Expr, span: Span },
+    /// `use steel` — bring in a pack of definitions.
+    ///
+    /// The pack's own statements are spliced in where this stands and hidden
+    /// from the output; this node is what the reader sees, and what a
+    /// diagnostic about the pack points at. See [`crate::packs`].
+    Use { name: Name, span: Span },
     /// `fn area(d) = pi*d^2/4`
     FnDef {
         name: Name,
@@ -273,6 +279,7 @@ impl Stmt {
             | Stmt::Query { span, .. }
             | Stmt::UnitDecl { span, .. }
             | Stmt::Check { span, .. }
+            | Stmt::Use { span, .. }
             | Stmt::FnDef { span, .. }
             | Stmt::Error { span } => *span,
         }

@@ -31,6 +31,7 @@ fn main() -> ExitCode {
         "html" => run_over(rest, render_html),
         "test" => harness::run(rest),
         "bench" => bench::run(rest),
+        "packs" => list_packs(),
         "--help" | "-h" | "help" => {
             usage();
             ExitCode::SUCCESS
@@ -52,7 +53,8 @@ fn usage() {
          nomo html   <file.nomo>...   write a standalone HTML file\n    \
          nomo ast    <file.nomo>...   print the syntax tree\n    \
          nomo test   [--write]        check every example against its snapshot\n    \
-         nomo bench                   time the engine on worksheets of fixed shape\n\n\
+         nomo bench                   time the engine on worksheets of fixed shape\n    \
+         nomo packs                   list the packs `use` can bring in\n\n\
          `test` runs from the repository root; --examples and --golden override\n\
          the directories it uses.\n\n\
          EXIT: 0 all well; 1 the worksheet does not evaluate; 2 it evaluates and\n\
@@ -124,6 +126,23 @@ fn plural(n: usize) -> &'static str {
     } else {
         "s"
     }
+}
+
+/// What `use` can bring in, and what each one holds.
+///
+/// The packs are compiled into the engine, so this list is a fact about the
+/// build rather than about the machine it runs on — which is the same reason
+/// they are compiled in at all.
+fn list_packs() -> ExitCode {
+    for pack in nomo_core::packs::PACKS {
+        println!("{:<12} {}", pack.name, pack.summary);
+        for stmt in nomo_core::parse(pack.source).ast.stmts {
+            if let nomo_core::ast::Stmt::GlobalDef { name, .. } = stmt {
+                println!("             {}", name.text);
+            }
+        }
+    }
+    ExitCode::SUCCESS
 }
 
 fn run_over(paths: &[String], f: fn(&str, &str) -> Verdict) -> ExitCode {

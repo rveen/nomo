@@ -25,6 +25,7 @@ pub mod golden;
 pub mod graph;
 pub mod lex;
 pub mod math;
+pub mod packs;
 pub mod parse;
 pub mod plot;
 pub mod prose;

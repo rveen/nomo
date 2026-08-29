@@ -25,7 +25,7 @@
 //! was retrofitted. The constraint it was defending — old worksheets must always
 //! open, with no data loss — is the right one, adopted late.
 
-use crate::ast::{Ast, Stmt};
+use crate::ast::{Ast, Expr, Stmt};
 use crate::diag::{Diagnostic, Severity};
 use crate::eval::{Env, Outcome, OutcomeKind};
 use crate::graph::DepGraph;
@@ -40,6 +40,10 @@ pub const CURRENT_VERSION: u32 = 1;
 pub mod doc_codes {
     pub const FROM_THE_FUTURE: &str = "SH301";
     pub const CYCLE: &str = "SH302";
+    /// `use` naming a pack this build does not carry.
+    pub const UNKNOWN_PACK: &str = "SH303";
+    /// The same pack used twice in one worksheet.
+    pub const PACK_TWICE: &str = "SH304";
 }
 
 /// Read the `' nomo <n>` pragma, if the first line carries one.
@@ -82,6 +86,8 @@ pub struct Document {
     pub version: u32,
     pub source: String,
     pub ast: Ast,
+    /// Statement indices that came from a pack rather than from the worksheet.
+    pub from_packs: BTreeSet<usize>,
     pub diagnostics: Vec<Diagnostic>,
 }
 
@@ -110,12 +116,184 @@ impl Document {
             );
         }
 
+        let mut ast = parsed.ast;
+        let from_packs = splice_packs(&mut ast, &mut diagnostics);
+
         Document {
             version,
             source,
-            ast: parsed.ast,
+            ast,
+            from_packs,
             diagnostics,
         }
+    }
+}
+
+/// Replace every `use` with the statements of the pack it names.
+///
+/// Returns the indices of the statements that came from a pack, which is what
+/// keeps them out of the rendered output: a worksheet that shows its work should
+/// show *its* work, not fourteen constants nobody typed.
+///
+/// The spliced statements take the span of the `use` line that brought them.
+/// Their own spans point into the pack's source, which is a different string
+/// from the one every consumer here slices — the editor draws diagnostics with
+/// them and the highlighter indexes the worksheet with them, so a span from
+/// another file is not merely wrong but out of bounds. Pointing at the `use`
+/// line is also the right answer for a reader: that is the line they wrote.
+fn splice_packs(ast: &mut Ast, diagnostics: &mut Vec<Diagnostic>) -> BTreeSet<usize> {
+    if !ast.stmts.iter().any(|s| matches!(s, Stmt::Use { .. })) {
+        return BTreeSet::new();
+    }
+
+    let mut out: Vec<Stmt> = Vec::with_capacity(ast.stmts.len());
+    let mut from_packs = BTreeSet::new();
+    let mut used: Vec<String> = Vec::new();
+
+    for stmt in ast.stmts.drain(..) {
+        let Stmt::Use { name, span } = &stmt else {
+            out.push(stmt);
+            continue;
+        };
+        let (name, span) = (name.clone(), *span);
+
+        let Some(pack) = crate::packs::find(&name.text) else {
+            diagnostics.push(Diagnostic::error(
+                doc_codes::UNKNOWN_PACK,
+                name.span,
+                format!(
+                    "there is no pack called `{}`; this build carries {}",
+                    name.text,
+                    crate::packs::names().join(", ")
+                ),
+            ));
+            out.push(stmt);
+            continue;
+        };
+
+        // Using one twice is harmless — the definitions are the same either way
+        // — but it is almost certainly a mistake, and a silent one.
+        if used.iter().any(|u| u == &name.text) {
+            diagnostics.push(Diagnostic::warning(
+                doc_codes::PACK_TWICE,
+                name.span,
+                format!("`{}` is already in use here", name.text),
+            ));
+            out.push(stmt);
+            continue;
+        }
+        used.push(name.text.clone());
+
+        out.push(stmt);
+        for mut brought in crate::parse(pack.source).ast.stmts {
+            set_span(&mut brought, span);
+            from_packs.insert(out.len());
+            out.push(brought);
+        }
+    }
+
+    ast.stmts = out;
+    from_packs
+}
+
+/// Point a statement, and everything inside it, at `span`.
+fn set_span(stmt: &mut Stmt, span: Span) {
+    match stmt {
+        Stmt::Comment { span: s, .. }
+        | Stmt::Assign { span: s, .. }
+        | Stmt::GlobalDef { span: s, .. }
+        | Stmt::Query { span: s, .. }
+        | Stmt::UnitDecl { span: s, .. }
+        | Stmt::Check { span: s, .. }
+        | Stmt::Use { span: s, .. }
+        | Stmt::FnDef { span: s, .. }
+        | Stmt::Error { span: s } => *s = span,
+    }
+    match stmt {
+        Stmt::Assign { name, value, .. }
+        | Stmt::GlobalDef { name, value, .. }
+        | Stmt::UnitDecl { name, value, .. } => {
+            name.span = span;
+            set_expr_span(value, span);
+        }
+        Stmt::FnDef {
+            name, params, body, ..
+        } => {
+            name.span = span;
+            for p in params {
+                p.span = span;
+            }
+            set_expr_span(body, span);
+        }
+        Stmt::Query { expr, .. } | Stmt::Check { expr, .. } => set_expr_span(expr, span),
+        Stmt::Use { name, .. } => name.span = span,
+        Stmt::Comment { .. } | Stmt::Error { .. } => {}
+    }
+}
+
+fn set_expr_span(expr: &mut Expr, span: Span) {
+    use Expr::*;
+    match expr {
+        Number { span: s, .. }
+        | Text { span: s, .. }
+        | Unary { span: s, .. }
+        | Binary { span: s, .. }
+        | Call { span: s, .. }
+        | Index { span: s, .. }
+        | Vector { span: s, .. }
+        | Matrix { span: s, .. }
+        | If { span: s, .. }
+        | Paren { span: s, .. }
+        | Convert { span: s, .. }
+        | Error { span: s } => *s = span,
+        Ident(name) => name.span = span,
+    }
+    match expr {
+        Unary { operand, .. } | Paren { inner: operand, .. } => set_expr_span(operand, span),
+        Binary { lhs, rhs, .. }
+        | Convert {
+            value: lhs,
+            unit: rhs,
+            ..
+        } => {
+            set_expr_span(lhs, span);
+            set_expr_span(rhs, span);
+        }
+        Call { callee, args, .. } => {
+            callee.span = span;
+            for a in args {
+                set_expr_span(a, span);
+            }
+        }
+        Index { base, indices, .. } => {
+            set_expr_span(base, span);
+            for i in indices {
+                set_expr_span(i, span);
+            }
+        }
+        Vector { elements, .. } => {
+            for e in elements {
+                set_expr_span(e, span);
+            }
+        }
+        Matrix { rows, .. } => {
+            for row in rows {
+                for e in row {
+                    set_expr_span(e, span);
+                }
+            }
+        }
+        If {
+            cond,
+            then,
+            otherwise,
+            ..
+        } => {
+            set_expr_span(cond, span);
+            set_expr_span(then, span);
+            set_expr_span(otherwise, span);
+        }
+        Number { .. } | Text { .. } | Ident(_) | Error { .. } => {}
     }
 }
 
@@ -246,6 +424,14 @@ impl Sheet {
 
     pub fn diagnostics(&self) -> &[Diagnostic] {
         &self.diagnostics
+    }
+
+    /// Whether statement `index` came from a pack rather than from the author.
+    ///
+    /// Hidden from both renderers for the same reason the resource trailer is:
+    /// a worksheet that shows its work should show the work its author did.
+    pub fn is_from_pack(&self, index: usize) -> bool {
+        self.doc.from_packs.contains(&index)
     }
 
     /// How many checks this worksheet states, and how many of them failed.

@@ -33,6 +33,7 @@ V -> dm^3
 | Global definition | `global g = 9.81 m/s^2` | Bind a name visible *everywhere*, including above this line. |
 | Function definition | `fn area(d) = pi*d^2/4` | Define a function. |
 | Check | `check sigma <= sigma_allow` | State a limit and report a verdict on it. |
+| Pack | `use steel` | Bring in a curated set of definitions. |
 
 Only a bare name may appear on the left of `=`. `x + 1 = 2` is an error, not an
 equation to solve.
@@ -189,6 +190,39 @@ column says which way the worksheet went.
 Note that both arms are still *dependencies*. Which one runs depends on values,
 and the dependency graph is built before any value exists, so editing an input
 used only by the untaken arm still recalculates the line.
+
+## Packs — definitions that arrive by name
+
+```nomo
+use steel
+sigma_allow = 0.6*Fy_A992
+```
+
+A design office does not want the elastic modulus of steel typed into forty
+worksheets, each free to be wrong on its own. A **pack** is a curated set of
+definitions that lives in one place. `nomo packs` lists what this build carries
+and what each one holds.
+
+A pack's definitions are **global**, so where the `use` line sits does not change
+what the worksheet means, and its statements are **not shown** in the output: a
+worksheet that shows its work should show the work its author did, not fourteen
+constants nobody typed.
+
+The names are the pack's own and are not qualified — `use steel` brings
+`E_steel`, not `steel.E`. A qualified name would need a resolution rule and a
+lexer that admits `.` in an identifier; the packs suffix instead, which reads the
+way an engineer writes anyway.
+
+**Packs are compiled into the engine.** They are not files beside the worksheet
+and not fetched: a browser opens a file rather than a directory, so an include
+that read the disk would work on the command line and not in the editor, and a
+fetched one would put a network round trip inside a claim about determinism and
+break working offline. The cost is that changing a constant means a new build.
+The gain is that a worksheet gives the same answer on every machine and with the
+network off.
+
+Using a pack that does not exist is an error that lists the ones that do. Using
+the same one twice is a warning — harmless, and almost certainly a mistake.
 
 ## Checks — a worksheet that states whether it holds
 
@@ -1061,5 +1095,5 @@ Recorded so the omissions are deliberate rather than forgotten.
 
 ## Reserved
 
-`unit`, `fn`, `global`, `check`, `if`, `then`, `else`, `and`, `or` and `not` are
-keywords and cannot be used as names.
+`unit`, `fn`, `global`, `check`, `use`, `if`, `then`, `else`, `and`, `or` and
+`not` are keywords and cannot be used as names.

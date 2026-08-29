@@ -22,7 +22,7 @@ pub fn render(sheet: &Sheet, opts: &RenderOptions) -> String {
         // every golden snapshot. The version pragma is metadata for the same
         // reason: it says which format the file is in, not anything about the
         // engineering, and the two renderers agree on what counts as prose.
-        if sheet.resources().is_hidden(i) || sheet.is_version_pragma(i) {
+        if sheet.resources().is_hidden(i) || sheet.is_version_pragma(i) || sheet.is_from_pack(i) {
             continue;
         }
         match &outcome.kind {
@@ -61,6 +61,10 @@ pub fn render(sheet: &Sheet, opts: &RenderOptions) -> String {
                 line.push_str(&format!(" = {}", r.result(trace)));
                 out.push_str(&line);
                 out.push('\n');
+            }
+
+            OutcomeKind::Use(name) => {
+                out.push_str(&format!("use {name}\n"));
             }
 
             OutcomeKind::Check { trace, passed } => {

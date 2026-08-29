@@ -224,6 +224,7 @@ impl<'s> Parser<'s> {
             TokenKind::KwFn => self.parse_fn_def(),
             TokenKind::KwGlobal => self.parse_global_def(),
             TokenKind::KwCheck => self.parse_check(),
+            TokenKind::KwUse => self.parse_use(),
             _ => self.parse_assign_or_query(),
         }
     }
@@ -290,6 +291,19 @@ impl<'s> Parser<'s> {
         let span = kw.span.to(value.span());
         self.finish_line();
         Some(Stmt::UnitDecl { name, value, span })
+    }
+
+    /// `use steel`.
+    ///
+    /// One name and nothing else. Not a dotted path: `.` is not a character an
+    /// identifier may contain here, and a namespace for the packs that exist
+    /// would be a lexer change in exchange for nothing.
+    fn parse_use(&mut self) -> Option<Stmt> {
+        let start = self.bump().span;
+        let name = self.parse_name("use")?;
+        let span = start.to(name.span);
+        self.finish_line();
+        Some(Stmt::Use { name, span })
     }
 
     /// `check sigma <= sigma_allow`.

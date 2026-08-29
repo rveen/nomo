@@ -158,7 +158,7 @@ fn opening_heading(sheet: &Sheet) -> Option<String> {
     let mut run_end: Option<u32> = None;
 
     for (i, outcome) in sheet.outcomes().iter().enumerate() {
-        if sheet.resources().is_hidden(i) || sheet.is_version_pragma(i) {
+        if sheet.resources().is_hidden(i) || sheet.is_version_pragma(i) || sheet.is_from_pack(i) {
             // The pragma stands above the title in most worksheets, so skipping
             // it is the point; anything hidden after the prose has begun ends it.
             if run.is_empty() {
@@ -209,7 +209,8 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
         // thousand paragraphs of base64 ahead of the figures themselves. The
         // version pragma is metadata, and a paragraph beginning `nomo 1` is
         // what showing it would now produce.
-        let hidden = sheet.resources().is_hidden(i) || sheet.is_version_pragma(i);
+        let hidden =
+            sheet.resources().is_hidden(i) || sheet.is_version_pragma(i) || sheet.is_from_pack(i);
 
         // A run of prose ends at anything that is not its next line: a
         // statement, a figure, a blank source line, the trailer or the pragma.
@@ -267,6 +268,13 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                 }
                 line.push_str("</div>\n");
                 body.push_str(&line);
+            }
+
+            OutcomeKind::Use(name) => {
+                body.push_str(&format!(
+                    "<div class=\"step note\">use {}</div>\n",
+                    escape(name)
+                ));
             }
 
             OutcomeKind::Check { trace, passed } => {

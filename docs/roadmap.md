@@ -189,7 +189,7 @@ and against SMath's own implementation where a convention was at stake: `mod`
 takes the sign of its dividend (`rem` on two doubles) and `submatrix` is
 inclusive and one-based. Wiki agreement went from 304/337 to 312/344.
 
-### 9. Packs — shared units and constants, without I/O
+### 9. Packs — shared units and constants, without I/O — **done**
 
 Twelve how-tos must not each redeclare steel. A fetched include would break the
 offline story and put a network round trip inside a determinism claim, and the
@@ -206,7 +206,17 @@ listed by `nomo packs`, and rendered as one line rather than a hundred
 definitions. A user-authored pack directory for the CLI is a later step; it is
 not this one, because the browser is the constraint and the CLI is not.
 
-*Gate:* `cargo test`, golden, `scripts/compare-targets.sh`.
+Built as designed, with one simplification and one thing that had to be got
+right. The simplification: `use steel`, not `use materials.steel` — `.` is not a
+character an identifier may contain here, and a namespace for two packs would
+have been a lexer change in exchange for nothing.
+
+The thing to get right: a pack's statements are spliced into the tree where the
+`use` stands, and they arrive carrying spans that point into the *pack's* source
+— a different string from the one the editor slices and the highlighter indexes.
+Left alone they are not merely wrong but out of bounds. They take the span of
+the `use` line instead, which is also the right answer for a reader: that is the
+line they wrote.
 
 ## Phase 3 — the applications
 

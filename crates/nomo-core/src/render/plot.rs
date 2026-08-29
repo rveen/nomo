@@ -80,10 +80,17 @@ pub const PALETTE: usize = 6;
 const TICKS: usize = 5;
 
 /// One axis, once its ticks have been chosen.
+///
+/// A logarithmic axis is the same structure read differently: `lo` and `hi` are
+/// still the ends in the data's own units, and `step` is unused because the
+/// ticks are the decades between them. Keeping one type means `fraction` is the
+/// only place that has to know which kind it is, and every caller asks the same
+/// question — where along this axis does a value fall.
 struct Axis {
     lo: f64,
     hi: f64,
     step: f64,
+    log: bool,
 }
 
 impl Axis {
@@ -97,6 +104,7 @@ impl Axis {
         Axis {
             lo,
             hi,
+            log: false,
             step: nice_step(hi - lo),
         }
     }
@@ -126,11 +134,47 @@ impl Axis {
             lo: math::floor(lo / step) * step,
             hi: -math::floor(-hi / step) * step,
             step,
+            log: false,
+        }
+    }
+
+    /// A logarithmic axis, rounded outwards to whole decades.
+    ///
+    /// Whole decades because that is what a reader of a log chart counts in,
+    /// and because the alternative — the data's own ends — puts the first
+    /// gridline at 3.7 and asks somebody to do arithmetic in their head.
+    ///
+    /// A non-positive end has no logarithm. The sampled case cannot reach here
+    /// (`plot` refuses such a span outright) but a *table* can, and a fitted
+    /// axis is not the place to discover it, so the caller checks first.
+    fn logarithmic(lo: f64, hi: f64) -> Axis {
+        let lo = math::floor(math::log10(lo));
+        let hi = -math::floor(-math::log10(hi));
+        // A single decade would have one gridline and no extent; widen it, the
+        // way `fit` widens a flat curve and for the same reason.
+        #[allow(clippy::float_cmp)]
+        let (lo, hi) = if lo == hi { (lo, hi + 1.0) } else { (lo, hi) };
+        Axis {
+            lo: math::powf(10.0, lo),
+            hi: math::powf(10.0, hi),
+            step: 1.0,
+            log: true,
         }
     }
 
     /// Where `value` falls along the axis, as a fraction from `lo` to `hi`.
+    ///
+    /// On a logarithmic axis that is a ratio of logarithms, and a value at or
+    /// below zero has no place on it at all — the caller draws a gap there, the
+    /// same answer a non-finite sample already gets.
     fn fraction(&self, value: f64) -> f64 {
+        if self.log {
+            if value <= 0.0 {
+                return f64::NAN;
+            }
+            let (lo, hi) = (math::log10(self.lo), math::log10(self.hi));
+            return (math::log10(value) - lo) / (hi - lo);
+        }
         (value - self.lo) / (self.hi - self.lo)
     }
 
@@ -142,6 +186,18 @@ impl Axis {
     /// given by the worksheet generally does not, so the first tick is the
     /// first multiple inside it.
     fn ticks(&self) -> Vec<f64> {
+        if self.log {
+            // One per decade. Ten decades is already a wide chart and sixty
+            // would be unreadable, so the same ceiling applies as below.
+            let (lo, hi) = (math::log10(self.lo), math::log10(self.hi));
+            let mut out = Vec::new();
+            let mut e = math::round(lo);
+            while e <= hi + 1.0 / 1024.0 && out.len() <= 64 {
+                out.push(math::powf(10.0, e));
+                e += 1.0;
+            }
+            return out;
+        }
         let first = -math::floor(-self.lo / self.step) * self.step;
         let mut out = Vec::new();
         let mut i = 0.0;
@@ -231,11 +287,40 @@ pub fn svg(plot: &PlotValue, units: &UnitTable, numbers: &NumberFormat) -> Strin
     // fitted to the data and rounded out to whole ticks. That is why the
     // vertical axis has always been fitted, and a table's horizontal one is in
     // the same position: no author picked it.
-    let x_axis = match plot.extent {
-        Extent::Chosen => Axis::over(plot.from, plot.to),
-        Extent::Measured => Axis::fit(plot.from, plot.to),
+    //
+    // Three ways an extent is decided, in order of who decided it: the
+    // worksheet's own `axis` limits win, then the span it plotted over, then
+    // the data. Limits are separate from the span on purpose — the span says
+    // what was computed and `axis` says what is shown, so choosing a window
+    // cannot quietly change the curve.
+    let x_axis = match (plot.x_limits, plot.x_log, plot.extent) {
+        (Some((lo, hi)), true, _) if lo > 0.0 => Axis::logarithmic(lo, hi),
+        (Some((lo, hi)), _, _) => Axis::over(lo, hi),
+        (None, true, _) if plot.from > 0.0 && plot.to > 0.0 => {
+            Axis::logarithmic(plot.from, plot.to)
+        }
+        (None, _, Extent::Chosen) => Axis::over(plot.from, plot.to),
+        (None, _, Extent::Measured) => Axis::fit(plot.from, plot.to),
     };
-    let y_axis = Axis::fit(y_lo, y_hi);
+    let y_axis = match (plot.y_limits, plot.y_log) {
+        (Some((lo, hi)), true) if lo > 0.0 => Axis::logarithmic(lo, hi),
+        (Some((lo, hi)), _) => Axis::over(lo, hi),
+        // A logarithmic axis fitted to data that reaches zero or below has no
+        // bottom; the positive part of the data is what there is to show, and
+        // the rest is drawn as the gap it is.
+        (None, true) => {
+            let positive = plot
+                .series
+                .iter()
+                .flat_map(|s| s.points.iter().map(|p| p.1))
+                .filter(|y| *y > 0.0 && y.is_finite());
+            match PlotValue::range(positive) {
+                Some((lo, hi)) => Axis::logarithmic(lo, hi),
+                None => Axis::fit(y_lo, y_hi),
+            }
+        }
+        (None, false) => Axis::fit(y_lo, y_hi),
+    };
 
     let plot_w = WIDTH - LEFT - RIGHT;
     let plot_h = HEIGHT - TOP - BOTTOM;

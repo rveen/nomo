@@ -364,8 +364,28 @@ impl<'a> Renderer<'a> {
             .map(|s| s.points.len().to_string())
             .collect();
         counts.dedup();
+        // The scale and any chosen window belong in the summary because the
+        // golden suite reads this line: a log plot and a linear one over the
+        // same span hold different samples, and a snapshot that could not tell
+        // them apart would let one turn into the other unnoticed.
+        let scale = match (p.x_log, p.y_log) {
+            (false, false) => String::new(),
+            (true, false) => String::from(", log x"),
+            (false, true) => String::from(", log y"),
+            (true, true) => String::from(", log x and y"),
+        };
+        let window = match (p.x_limits, p.y_limits) {
+            (None, None) => String::new(),
+            (x, y) => {
+                let side = |l: Option<(f64, f64)>| match l {
+                    Some((lo, hi)) => format!("{} to {}", n(lo), n(hi)),
+                    None => String::from("auto"),
+                };
+                format!(", window x {} y {}", side(x), side(y))
+            }
+        };
         format!(
-            "[plot {}: {} to {}{}, {} points, {extent}{gaps}]",
+            "[plot {}: {} to {}{}, {} points, {extent}{gaps}{scale}{window}]",
             names.join(", "),
             n(p.from),
             n(p.to),

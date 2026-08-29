@@ -1240,6 +1240,81 @@ fn the_reciprocal_and_inverse_hyperbolic_functions() {
     assert!(errors("cot(1 m)")[0].contains("dimensionless"));
 }
 
+// ---- axes ---------------------------------------------------------------
+
+/// The plot a worksheet's last statement produced.
+fn last_plot(src: &str) -> nomo_core::plot::PlotValue {
+    match last_query(src) {
+        nomo_core::value::Value::Plot(p) => *p,
+        other => panic!("expected a plot, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_logarithmic_axis_changes_the_sampling_not_only_the_drawing() {
+    // The reason `x_log` is on the value rather than in the renderer. Across
+    // four decades, linear spacing puts four of 257 samples in the first
+    // decade; logarithmic spacing puts a quarter of them there, which is what
+    // anyone reading a Bode plot assumes has happened.
+    let f = "fn g(x) = x\n";
+    let linear = last_plot(&format!("{f}plot(g, 10, 100000)"));
+    let logarithmic = last_plot(&format!("{f}axis x log\nplot(g, 10, 100000)"));
+
+    let below = |p: &nomo_core::plot::PlotValue| {
+        p.series[0]
+            .points
+            .iter()
+            .filter(|(x, _)| *x < 100.0)
+            .count()
+    };
+    assert!(below(&linear) < 5, "linear spacing: {}", below(&linear));
+    assert!(
+        below(&logarithmic) > 50,
+        "logarithmic spacing: {}",
+        below(&logarithmic)
+    );
+
+    // Both ends still land exactly where the worksheet put them.
+    let ends = &logarithmic.series[0].points;
+    assert_close(ends[0].0, 10.0, "the first sample");
+    assert_close(ends[ends.len() - 1].0, 100000.0, "the last sample");
+}
+
+#[test]
+fn an_axis_setting_applies_to_the_plots_below_it() {
+    let f = "fn g(x) = x\n";
+    assert!(!last_plot(&format!("{f}plot(g, 1, 10)")).x_log);
+    assert!(last_plot(&format!("{f}axis x log\nplot(g, 1, 10)")).x_log);
+    // And is undone by `linear` or `auto`, so a worksheet can go back.
+    assert!(!last_plot(&format!("{f}axis x log\naxis x linear\nplot(g, 1, 10)")).x_log);
+    assert!(!last_plot(&format!("{f}axis y log\naxis y auto\nplot(g, 1, 10)")).y_log);
+}
+
+#[test]
+fn a_window_is_what_is_shown_and_the_span_is_what_is_computed() {
+    // Keeping them apart is the whole design: a window that resampled would
+    // make zooming a chart change the curve under it.
+    let p = last_plot("fn g(x) = x\naxis y 0, 5\nplot(g, 1, 10)");
+    assert_eq!(p.y_limits, Some((0.0, 5.0)));
+    assert_close(p.from, 1.0, "the span is untouched");
+    assert_close(p.to, 10.0, "the span is untouched");
+    assert_eq!(p.series[0].points.len(), nomo_core::plot::SAMPLES);
+}
+
+#[test]
+fn an_impossible_axis_is_refused_rather_than_redrawn() {
+    // A span that touches zero has no logarithm.
+    assert!(errors("fn g(x) = x\naxis x log\nplot(g, 0, 10)")[0].contains("above zero"));
+    // A logarithmic axis and a window below zero describe no chart. Refused
+    // from both directions, because a worksheet can set them in either order.
+    assert!(errors("axis y log\naxis y -1, 10")[0].contains("at or below zero"));
+    assert!(errors("axis y -1, 10\naxis y log")[0].contains("no place for"));
+    // And the ordinary mistakes.
+    assert!(errors("axis y 10, 1")[0].contains("lower limit below its upper"));
+    assert!(errors("axis y 1 m, 10 s")[0].contains("one dimension"));
+    assert!(!errors("axis z log").is_empty());
+}
+
 // ---- interpolation ------------------------------------------------------
 
 #[test]

@@ -207,6 +207,7 @@ fn set_span(stmt: &mut Stmt, span: Span) {
         | Stmt::Check { span: s, .. }
         | Stmt::Use { span: s, .. }
         | Stmt::Digits { span: s, .. }
+        | Stmt::Axis { span: s, .. }
         | Stmt::FnDef { span: s, .. }
         | Stmt::Error { span: s } => *s = span,
     }
@@ -228,6 +229,12 @@ fn set_span(stmt: &mut Stmt, span: Span) {
         }
         Stmt::Query { expr, .. } | Stmt::Check { expr, .. } => set_expr_span(expr, span),
         Stmt::Use { name, .. } => name.span = span,
+        Stmt::Axis { setting, .. } => {
+            if let crate::ast::AxisSetting::Limits(lo, hi) = setting {
+                set_expr_span(lo, span);
+                set_expr_span(hi, span);
+            }
+        }
         Stmt::Comment { .. } | Stmt::Digits { .. } | Stmt::Error { .. } => {}
     }
 }

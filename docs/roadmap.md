@@ -305,12 +305,19 @@ still works offline after one visit.
 
 ## Phase 5 — the deeper engine, ranked by what Phase 3 asked for
 
-### 14. A plot's axis limits, and a log scale
+### 14. A plot's axis limits, and a log scale — **done**
 
-A Bode plot cannot be drawn today, which blocks the electrical direction
-entirely. SMath's own `limits_x/y` attributes give the semantics for free
-(§8.21) and no worksheet in either corpus sets them — so this is a language
-decision rather than an import one.
+Done as `axis x log` / `axis y 0, 100`, a statement in the shape `digits`
+established. Reading `PlotRegion.dll` settled what there was to follow and what
+there was not: SMath has explicit axis limits — `HasLimits` with a `Left`,
+`Right`, `Top` and `Bottom` — and **no logarithmic scale of any kind**. So the
+limits have a precedent and the scale is Nomo's own decision, taken with no
+import pressure behind it.
+
+The part worth remembering: a logarithmic *horizontal* axis had to change the
+sampling and not only the drawing, so it lives on the plot value rather than in
+the renderer. 257 samples spaced linearly across four decades put four of them
+in the first one.
 
 ### 15. A fixed-step ODE
 

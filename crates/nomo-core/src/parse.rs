@@ -30,7 +30,7 @@
 //! by a vector literal. Both avoid making whitespace significant, which would be
 //! worse.
 
-use crate::ast::{Ast, BinaryOp, Expr, Name, Stmt, UnaryOp};
+use crate::ast::{Ast, AxisSetting, BinaryOp, Expr, Name, Stmt, UnaryOp};
 use crate::diag::{codes, Diagnostic};
 use crate::lex::{lex, Token, TokenKind};
 use crate::span::Span;
@@ -226,6 +226,7 @@ impl<'s> Parser<'s> {
             TokenKind::KwCheck => self.parse_check(),
             TokenKind::KwUse => self.parse_use(),
             TokenKind::KwDigits => self.parse_digits(),
+            TokenKind::KwAxis => self.parse_axis(),
             _ => self.parse_assign_or_query(),
         }
     }
@@ -292,6 +293,70 @@ impl<'s> Parser<'s> {
         let span = kw.span.to(value.span());
         self.finish_line();
         Some(Stmt::UnitDecl { name, value, span })
+    }
+
+    /// `axis x log`, `axis y linear`, `axis y auto`, `axis y 0 kN, 100 kN`.
+    ///
+    /// After the axis name, the three words `log`, `linear` and `auto` are the
+    /// settings and anything else begins a pair of limits. That is a small
+    /// ambiguity — a limit expression could start with a name spelled `log` —
+    /// and it is settled in favour of the setting, which is what the line is
+    /// almost always for.
+    fn parse_axis(&mut self) -> Option<Stmt> {
+        let start = self.bump().span;
+        let axis = self.parse_name("axis")?;
+        let vertical = match axis.text.as_str() {
+            "x" => false,
+            "y" => true,
+            other => {
+                self.error(
+                    codes::EXPECTED_TOKEN,
+                    axis.span,
+                    format!("`axis` names `x` or `y`, not `{other}`"),
+                );
+                self.recover_to_line_end();
+                return Some(Stmt::Error {
+                    span: start.to(axis.span),
+                });
+            }
+        };
+
+        let word = if self.at(&TokenKind::Ident) {
+            Some(self.peek_token().span.text(self.source).to_string())
+        } else {
+            None
+        };
+        let setting = match word.as_deref() {
+            Some("log") => {
+                self.bump();
+                AxisSetting::Log(true)
+            }
+            Some("linear") => {
+                self.bump();
+                AxisSetting::Log(false)
+            }
+            Some("auto") => {
+                self.bump();
+                AxisSetting::Auto
+            }
+            _ => {
+                let lo = self.parse_expr(0);
+                if !self.expect(&TokenKind::Comma, "`,`", "the lower limit") {
+                    return Some(Stmt::Error {
+                        span: start.to(lo.span()),
+                    });
+                }
+                let hi = self.parse_expr(0);
+                AxisSetting::Limits(lo, hi)
+            }
+        };
+        let span = start.to(self.tokens[self.pos.saturating_sub(1)].span);
+        self.finish_line();
+        Some(Stmt::Axis {
+            vertical,
+            setting,
+            span,
+        })
     }
 
     /// `digits 3`.

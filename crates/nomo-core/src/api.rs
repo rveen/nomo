@@ -105,6 +105,7 @@ pub fn classify(sheet: &Sheet) -> Vec<ClassifiedToken> {
             | TokenKind::KwCheck
             | TokenKind::KwUse
             | TokenKind::KwDigits
+            | TokenKind::KwAxis
             | TokenKind::KwIf
             | TokenKind::KwThen
             | TokenKind::KwElse
@@ -194,6 +195,12 @@ fn collect_names(stmt: &Stmt, callees: &mut Vec<Span>, bound: &mut Vec<String>) 
             walk(body, callees);
         }
         Stmt::Query { expr, .. } | Stmt::Check { expr, .. } => walk(expr, callees),
+        Stmt::Axis { setting, .. } => {
+            if let crate::ast::AxisSetting::Limits(lo, hi) = setting {
+                walk(lo, callees);
+                walk(hi, callees);
+            }
+        }
         Stmt::Comment { .. } | Stmt::Use { .. } | Stmt::Digits { .. } | Stmt::Error { .. } => {}
     }
 }

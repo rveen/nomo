@@ -295,6 +295,7 @@ fn binding_of(stmt: &Stmt) -> Binding {
         | Stmt::Check { .. }
         | Stmt::Use { .. }
         | Stmt::Digits { .. }
+        | Stmt::Axis { .. }
         | Stmt::Error { .. } => Binding::None,
     }
 }
@@ -302,6 +303,14 @@ fn binding_of(stmt: &Stmt) -> Binding {
 fn uses_of(stmt: &Stmt) -> BTreeSet<String> {
     let mut out = BTreeSet::new();
     match stmt {
+        // An axis limit reads names like any other expression, so a plot below
+        // it has to be redrawn when they change.
+        Stmt::Axis { setting, .. } => {
+            if let crate::ast::AxisSetting::Limits(lo, hi) = setting {
+                collect_names(lo, &mut out);
+                collect_names(hi, &mut out);
+            }
+        }
         Stmt::Comment { .. } | Stmt::Use { .. } | Stmt::Digits { .. } | Stmt::Error { .. } => {}
         Stmt::Assign { value, .. }
         | Stmt::GlobalDef { value, .. }

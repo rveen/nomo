@@ -35,6 +35,7 @@ V -> dm^3
 | Check | `check sigma <= sigma_allow` | State a limit and report a verdict on it. |
 | Pack | `use steel` | Bring in a curated set of definitions. |
 | Digits | `digits 4` | Significant figures for results, from that line down. |
+| Axis | `axis x log`, `axis y 0, 100` | How the plots below are drawn. |
 
 Only a bare name may appear on the left of `=`. `x + 1 = 2` is an error, not an
 equation to solve.
@@ -224,6 +225,45 @@ network off.
 
 Using a pack that does not exist is an error that lists the ones that do. Using
 the same one twice is a warning — harmless, and almost certainly a mistake.
+
+## Axes
+
+```nomo
+axis x log
+plot(gain_dB, 10, 100000)          ' a Bode plot
+
+axis y linear
+axis y -90, 0                      ' the window a phase response lives in
+plot(phase, 10, 100000)
+```
+
+`axis x` and `axis y` say how the plots *below* them are drawn, the way `digits`
+says how the results below it are shown. Four settings:
+
+| | |
+|---|---|
+| `axis x log` | a logarithmic axis, labelled in decades |
+| `axis x linear` | back to a linear one |
+| `axis y 0, 100` | a window: what is drawn, in the axis's own units |
+| `axis y auto` | back to the extent the span or the data implies |
+
+**A logarithmic *horizontal* axis changes the sampling as well as the drawing.**
+This is the one place a display directive reaches the numbers, and it is
+deliberate: 257 samples spaced linearly over 10 Hz to 100 kHz put four of them
+below 1 kHz, so the first decade of a Bode plot would be drawn from four points
+however fine the rest was. Spaced logarithmically, every decade gets the same
+number — which is what a reader of the chart assumes has happened. The ends
+still land exactly where the worksheet put them.
+
+**A window is what is shown; the span is what is computed.** `plot(f, a, b)`
+decides what is sampled and `axis` decides what is drawn, and they are kept
+apart so that zooming a chart cannot quietly change the curve under it.
+
+A logarithmic axis has no place at or below zero. A span that touches zero is
+refused outright; a window that starts at or below zero is refused as long as
+that axis is logarithmic, in whichever order the two lines were written. On a
+fitted logarithmic axis, values at or below zero are drawn as the gap they are —
+the same answer a non-finite sample gets.
 
 ## Checks — a worksheet that states whether it holds
 
@@ -1099,8 +1139,6 @@ Recorded so the omissions are deliberate rather than forgotten.
 
 - More than two tables on one plot. Two is what the arity rule leaves room for
   before a span would be ambiguous, and no corpus worksheet draws more.
-- Choosing a plot's axis range, or its scale. Every plot is linear; its
-  vertical extent is fitted to the data, and so is a table's horizontal one.
 - Complex vectors and matrices. A collection holds real quantities, so a complex
   element reports that rather than losing its imaginary part.
 - Transcendentals of a complex argument — `sqrt`, `exp`, `ln`, the trigonometric
@@ -1122,5 +1160,5 @@ Recorded so the omissions are deliberate rather than forgotten.
 
 ## Reserved
 
-`unit`, `fn`, `global`, `check`, `use`, `digits`, `if`, `then`, `else`, `and`,
-`or` and `not` are keywords and cannot be used as names.
+`unit`, `fn`, `global`, `check`, `use`, `digits`, `axis`, `if`, `then`, `else`,
+`and`, `or` and `not` are keywords and cannot be used as names.

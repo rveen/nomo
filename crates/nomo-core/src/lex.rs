@@ -35,6 +35,8 @@ pub enum TokenKind {
     KwUse,
     /// `digits` — how many significant figures results are shown to.
     KwDigits,
+    /// `axis` — how the plots below are drawn.
+    KwAxis,
     /// `if`, `then`, `else` — a conditional expression.
     KwIf,
     KwThen,
@@ -278,6 +280,7 @@ pub fn lex(source: &str) -> Lexed {
                 "check" => TokenKind::KwCheck,
                 "use" => TokenKind::KwUse,
                 "digits" => TokenKind::KwDigits,
+                "axis" => TokenKind::KwAxis,
                 "if" => TokenKind::KwIf,
                 "then" => TokenKind::KwThen,
                 "else" => TokenKind::KwElse,

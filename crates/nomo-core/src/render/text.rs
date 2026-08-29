@@ -65,6 +65,14 @@ pub fn render(sheet: &Sheet, opts: &RenderOptions) -> String {
 
             // Presentation, applied from here down. The line itself is a note:
             // it is a fact about the page rather than about the engineering.
+            OutcomeKind::Axis {
+                vertical,
+                described,
+            } => {
+                let which = if *vertical { "y" } else { "x" };
+                out.push_str(&format!("axis {which} {described}\n"));
+            }
+
             OutcomeKind::Digits(figures) => {
                 r.set_significant_figures(*figures);
                 out.push_str(&format!("digits {figures}\n"));

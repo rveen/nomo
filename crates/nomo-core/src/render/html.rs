@@ -270,6 +270,17 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                 body.push_str(&line);
             }
 
+            OutcomeKind::Axis {
+                vertical,
+                described,
+            } => {
+                let which = if *vertical { "y" } else { "x" };
+                body.push_str(&format!(
+                    "<div class=\"step note\">axis {which} {}</div>\n",
+                    escape(described)
+                ));
+            }
+
             OutcomeKind::Digits(figures) => {
                 r.set_significant_figures(*figures);
                 body.push_str(&format!(

@@ -71,6 +71,9 @@ pub struct Env {
     /// spends the same budget twice over, and a per-frame counter would not
     /// notice.
     budget: Rc<Cell<usize>>,
+    /// How the axes of the next plot are drawn. Set by `axis`, and copied into
+    /// each plot as it is built.
+    axes: crate::plot::Axes,
     /// How deep evaluation is nested right now. See [`MAX_EVAL_NEST`].
     ///
     /// Shared for the same reason the budget is, and a sharper one: a called
@@ -205,6 +208,7 @@ impl Env {
             funcs: BTreeMap::new(),
             units: UnitTable::new(),
             depth: 0,
+            axes: crate::plot::Axes::default(),
             budget: Rc::new(Cell::new(MAX_CALLS)),
             nesting: Rc::new(Cell::new(0)),
         }
@@ -705,6 +709,7 @@ impl Env {
             funcs: self.funcs.clone(),
             units: self.units.clone(),
             depth: self.depth + 1,
+            axes: self.axes,
             budget: Rc::clone(&self.budget),
             nesting: Rc::clone(&self.nesting),
         };
@@ -1435,6 +1440,10 @@ impl Env {
                     x_dim: crate::dim::Dimension::DIMENSIONLESS,
                     y_dim: crate::dim::Dimension::DIMENSIONLESS,
                     series: Vec::new(),
+                    x_log: self.axes.x_log,
+                    y_log: self.axes.y_log,
+                    x_limits: self.axes.x_limits,
+                    y_limits: self.axes.y_limits,
                 };
                 let mut dims: Option<(crate::dim::Dimension, crate::dim::Dimension)> = None;
                 for (i, table) in tables.iter().enumerate() {
@@ -1544,7 +1553,19 @@ impl Env {
                     x_dim: from.dim,
                     y_dim: from.dim,
                     series: Vec::new(),
+                    x_log: self.axes.x_log,
+                    y_log: self.axes.y_log,
+                    x_limits: self.axes.x_limits,
+                    y_limits: self.axes.y_limits,
                 };
+                // A logarithmic axis has no place for zero and no place at all
+                // for a negative number, and a span that crosses either would
+                // be sampled into nonsense rather than drawn wrongly.
+                if sampled.x_log && (from.value <= 0.0 || to.value <= 0.0) {
+                    return Err(EvalError::Singular(
+                        "a logarithmic x axis needs a span with both ends above zero",
+                    ));
+                }
                 // One vertical axis for the whole plot, so one dimension —
                 // across the curves as well as along each. A gain beside a
                 // frequency has no chart, and drawing it anyway would put two
@@ -2694,6 +2715,112 @@ impl Env {
                 diagnostics: vec![],
             },
 
+            // How the plots below are drawn — and, for `axis x log`, how they
+            // are sampled. `mut self` is why this sits with the statements
+            // rather than the expressions: it changes what comes after it.
+            Stmt::Axis {
+                vertical,
+                setting,
+                span,
+            } => {
+                let mut diagnostics = Vec::new();
+                let described = match setting {
+                    crate::ast::AxisSetting::Auto => {
+                        if *vertical {
+                            self.axes.y_log = false;
+                            self.axes.y_limits = None;
+                        } else {
+                            self.axes.x_log = false;
+                            self.axes.x_limits = None;
+                        }
+                        String::from("auto")
+                    }
+                    crate::ast::AxisSetting::Log(on) => {
+                        // And the same contradiction from the other side: a
+                        // window already set below zero cannot become
+                        // logarithmic either.
+                        let limits = if *vertical {
+                            self.axes.y_limits
+                        } else {
+                            self.axes.x_limits
+                        };
+                        if *on && limits.is_some_and(|(lo, _)| lo <= 0.0) {
+                            diagnostics.push(Diagnostic::error(
+                                eval_codes::EVAL_ERROR,
+                                *span,
+                                "this axis is limited to a window that starts at or below \
+                                 zero, which a logarithmic axis has no place for",
+                            ));
+                        } else if *vertical {
+                            self.axes.y_log = *on;
+                        } else {
+                            self.axes.x_log = *on;
+                        }
+                        String::from(if *on { "log" } else { "linear" })
+                    }
+                    crate::ast::AxisSetting::Limits(lo, hi) => {
+                        let (lo, hi) = (self.eval(lo), self.eval(hi));
+                        diagnostics.extend(diagnose(&lo));
+                        diagnostics.extend(diagnose(&hi));
+                        match (
+                            lo.value.as_ref().ok().and_then(Value::as_scalar),
+                            hi.value.as_ref().ok().and_then(Value::as_scalar),
+                        ) {
+                            (Some(a), Some(b)) if a.dim == b.dim && a.value < b.value => {
+                                let log = if *vertical {
+                                    self.axes.y_log
+                                } else {
+                                    self.axes.x_log
+                                };
+                                // A logarithmic axis has no place at or below
+                                // zero, so this pair of settings describes no
+                                // chart. Refused rather than quietly drawn
+                                // linearly, which would leave the worksheet
+                                // saying one thing and the picture showing
+                                // another.
+                                if log && a.value <= 0.0 {
+                                    diagnostics.push(Diagnostic::error(
+                                        eval_codes::EVAL_ERROR,
+                                        *span,
+                                        "a logarithmic axis cannot start at or below zero; \
+                                         write `linear` first if that is what is wanted",
+                                    ));
+                                } else {
+                                    let pair = Some((a.value, b.value));
+                                    if *vertical {
+                                        self.axes.y_limits = pair;
+                                    } else {
+                                        self.axes.x_limits = pair;
+                                    }
+                                }
+                                String::from("limits")
+                            }
+                            (Some(a), Some(b)) => {
+                                diagnostics.push(Diagnostic::error(
+                                    eval_codes::EVAL_ERROR,
+                                    *span,
+                                    if a.dim == b.dim {
+                                        "an axis needs its lower limit below its upper one"
+                                    } else {
+                                        "an axis needs both limits in one dimension"
+                                    },
+                                ));
+                                String::from("limits")
+                            }
+                            _ => String::from("limits"),
+                        }
+                    }
+                };
+                Outcome {
+                    span: *span,
+                    kind: OutcomeKind::Axis {
+                        vertical: *vertical,
+                        described,
+                    },
+                    diagnostics,
+                }
+            }
+
             // Presentation only: nothing is computed and nothing depends on it.
             Stmt::Digits { figures, span } => Outcome {
                 span: *span,
@@ -2830,6 +2957,11 @@ pub enum OutcomeKind {
     Use(String),
     /// `digits 3` — significant figures, from here down.
     Digits(u32),
+    /// `axis y log` — how the plots below are drawn.
+    Axis {
+        vertical: bool,
+        described: String,
+    },
     /// `check …` — the condition, and whether it held.
     ///
     /// `passed` is `None` when the condition could not be evaluated at all, or

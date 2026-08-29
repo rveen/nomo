@@ -105,6 +105,37 @@ pub struct PlotValue {
     /// built rather than drawn with two meanings on one axis.
     pub y_dim: Dimension,
     pub series: Vec<Series>,
+    /// A logarithmic horizontal axis, and with it logarithmic *sampling*.
+    ///
+    /// Not only a drawing decision, which is why it is here rather than in the
+    /// renderer: a decade sweep sampled linearly puts nine tenths of its points
+    /// in the last decade and almost none in the first, so the low end of a
+    /// Bode plot would be drawn from four samples however finely the rest was
+    /// resolved. See [`PlotValue::x_at`].
+    pub x_log: bool,
+    /// A logarithmic vertical axis. Drawing only — the ordinates are whatever
+    /// the function returned.
+    pub y_log: bool,
+    /// The window to draw, when the worksheet asked for one, in base SI.
+    ///
+    /// Separate from `from`/`to`, which say what was *sampled*: `axis` chooses
+    /// what is shown and the span chooses what is computed, and conflating them
+    /// would make zooming a chart silently change the curve.
+    pub x_limits: Option<(f64, f64)>,
+    pub y_limits: Option<(f64, f64)>,
+}
+
+/// How the axes of the next plot are drawn.
+///
+/// Carried by the evaluator and copied into each plot as it is built, so that a
+/// worksheet's `axis` lines apply to the plots below them the way `digits`
+/// applies to the results below it.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct Axes {
+    pub x_log: bool,
+    pub y_log: bool,
+    pub x_limits: Option<(f64, f64)>,
+    pub y_limits: Option<(f64, f64)>,
 }
 
 impl PlotValue {
@@ -114,6 +145,16 @@ impl PlotValue {
     /// evaluator cannot drift apart on it: there is one expression for where a
     /// sample is, and both use it.
     pub fn x_at(&self, i: usize) -> f64 {
+        if self.x_log {
+            // Geometric rather than arithmetic spacing, by the same `a + i*step`
+            // rule one level up: the exponent is what advances in equal steps,
+            // so the samples land evenly along the axis they will be drawn on.
+            // Both ends are positive — plot refuses a logarithmic span that
+            // touches zero — so the logarithms exist.
+            let (lo, hi) = (crate::math::ln(self.from), crate::math::ln(self.to));
+            let step = (hi - lo) / (SAMPLES - 1) as f64;
+            return crate::math::exp(lo + (i as f64) * step);
+        }
         let step = (self.to - self.from) / (SAMPLES - 1) as f64;
         self.from + (i as f64) * step
     }
@@ -140,7 +181,10 @@ impl PlotValue {
         )
     }
 
-    fn range(values: impl Iterator<Item = f64>) -> Option<(f64, f64)> {
+    /// The smallest and largest of a run of values, ignoring what is not
+    /// finite. Public because a logarithmic axis asks it of the positive part
+    /// of the data rather than of all of it.
+    pub fn range(values: impl Iterator<Item = f64>) -> Option<(f64, f64)> {
         let mut range: Option<(f64, f64)> = None;
         for value in values {
             if !value.is_finite() {
@@ -182,6 +226,10 @@ mod tests {
             extent: Extent::Chosen,
             x_dim: Dimension::DIMENSIONLESS,
             y_dim: Dimension::DIMENSIONLESS,
+            x_log: false,
+            y_log: false,
+            x_limits: None,
+            y_limits: None,
             series: vec![Series {
                 name: "f".into(),
                 points: ordinates

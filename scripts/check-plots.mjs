@@ -90,6 +90,13 @@ const check = (condition, description) => {
   if (!condition) failures.push(description);
 };
 
+/// A decade sweep, which only a logarithmic axis draws readably.
+const LOG = [
+  "fn g(f) = 1/sqrt(1 + (f/1000)^2)",
+  "axis x log",
+  "plot(g, 10, 100000)",
+].join("\n");
+
 let browser;
 try {
   browser = await launch();
@@ -271,12 +278,32 @@ try {
     `the legend strip is not in the viewBox (${box}); a legend drawn outside it` +
       " is clipped away",
   );
+  // A logarithmic axis, which is the one kind of chart whose correctness is
+  // visible only in what the ticks say: the numbers along the bottom have to be
+  // decades, and the curve has to be drawn against them.
+  await render(LOG, 1);
+  const labels = JSON.parse(
+    await browser.evaluate(`
+      (() => {
+        const svg = document.querySelector("#output figure.plot svg");
+        return JSON.stringify([...svg.querySelectorAll("text")].map((t) => t.textContent));
+      })()
+    `),
+  );
+  for (const decade of ["10", "100", "1000", "10000", "100000"]) {
+    check(
+      labels.includes(decade),
+      `a logarithmic axis should be labelled in decades; ${decade} is missing from ${JSON.stringify(labels.slice(0, 10))}`,
+    );
+  }
+
 } catch (error) {
   failures.push(`could not drive the browser: ${error.message}`);
 } finally {
   await browser?.close();
   server.close();
 }
+
 
 if (failures.length > 0) {
   console.error("check-plots: a plot did not reach the screen as a picture\n");

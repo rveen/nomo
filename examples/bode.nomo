@@ -1,0 +1,78 @@
+' nomo 1
+
+' # A Bode plot, and the axis that makes it one
+'
+' A frequency response is read on a logarithmic frequency axis, because what
+' matters about it happens per decade rather than per hertz. Drawn linearly, the
+' first decade of a four-decade sweep is the leftmost thousandth of the chart
+' and everything below the corner is a vertical line at the origin.
+'
+' `axis x log` says so — and it changes the *sampling* as well as the drawing.
+' A fixed number of samples spaced linearly across 10 Hz to 100 kHz puts four of
+' them below 1 kHz; spaced logarithmically, every decade gets the same number,
+' which is what a reader of the chart assumes has happened.
+
+digits 4
+
+' ## An RC low-pass
+'
+' One resistor, one capacitor, and the corner frequency where the reactance of
+' the capacitor equals the resistance.
+
+R = 10 kohm
+C = 16 nF
+
+f_c = 1/(2*pi*R*C) -> Hz
+
+' The magnitude response, as a ratio and in decibels. Written as functions of a
+' dimensionless frequency in hertz so that the plot can sample them: a plotted
+' function takes one number and returns one number.
+
+fn gain(f) = 1/sqrt(1 + (f*Hz/f_c)^2)
+fn gain_dB(f) = 20*log10(gain(f))
+
+' At the corner the magnitude is 1/√2, which is where the decibel figure of
+' −3 dB comes from — it is not a convention but the value of the function.
+
+corner = gain(f_c/Hz)
+minus_3dB = gain_dB(f_c/Hz)
+
+check corner >= 0.7 and corner <= 0.71
+
+' ## Magnitude, both ways
+'
+' In decibels the vertical axis is already logarithmic — a decibel is ten times
+' a logarithm — so it is drawn linearly and the curve is the familiar straight
+' asymptote falling at 20 dB per decade.
+
+axis x log
+plot(gain_dB, 10, 100000)
+
+' As a plain ratio the same response needs a logarithmic vertical axis to show
+' the same straight line. The two charts carry the same numbers and the same
+' shape, which is the point: a decibel is a unit for reading a log axis without
+' drawing one.
+
+axis y log
+plot(gain, 10, 100000)
+
+' ## Phase
+'
+' Back to a linear vertical axis, and a window on it: the phase of a first-order
+' response runs from 0° to −90° and nowhere else, so the axis is told to show
+' exactly that rather than fitting itself to the sampled extremes.
+
+fn phase(f) = -atan(f*Hz/f_c)/°
+
+axis y linear
+axis y -90, 0
+plot(phase, 10, 100000)
+
+' ## And what the axis lines do not do
+'
+' `axis` chooses what is drawn. The span in the `plot` call chooses what is
+' computed, and the two are kept apart on purpose: a window that quietly
+' resampled the function would make zooming a chart change the curve.
+
+axis y auto
+axis x linear

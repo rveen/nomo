@@ -223,6 +223,17 @@ impl Expr {
     }
 }
 
+/// What an `axis` line asks for.
+#[derive(Debug, Clone, PartialEq)]
+pub enum AxisSetting {
+    /// `log` or `linear`.
+    Log(bool),
+    /// `0 kN, 100 kN` — the window to draw, whatever was sampled.
+    Limits(Expr, Expr),
+    /// `auto` — back to the extent the data or the span implies, and linear.
+    Auto,
+}
+
 /// A top-level worksheet statement.
 ///
 /// There are two kinds of binding. A positional one resolves in reading order; a
@@ -265,6 +276,16 @@ pub enum Stmt {
     /// about what was computed, which is why it may sit anywhere and why the
     /// snapshot's values section ignores it.
     Digits { figures: u32, span: Span },
+    /// `axis x log`, `axis y 0 kN, 100 kN`, `axis y auto`.
+    ///
+    /// How the plots below this line are drawn — and, for a logarithmic
+    /// horizontal axis, how they are *sampled*: a decade sweep spaced linearly
+    /// has almost no points in its first decade.
+    Axis {
+        vertical: bool,
+        setting: AxisSetting,
+        span: Span,
+    },
     /// `fn area(d) = pi*d^2/4`
     FnDef {
         name: Name,
@@ -287,6 +308,7 @@ impl Stmt {
             | Stmt::Check { span, .. }
             | Stmt::Use { span, .. }
             | Stmt::Digits { span, .. }
+            | Stmt::Axis { span, .. }
             | Stmt::FnDef { span, .. }
             | Stmt::Error { span } => *span,
         }

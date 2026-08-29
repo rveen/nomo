@@ -1,14 +1,32 @@
 # Status
 
-Snapshot for picking the work back up. Last updated after prose became Markdown
-(design note §8.41) and after CI was checked on the public repository, where four
-of its five jobs pass and `corpus` has never got past fetching the worksheets —
-see "The plan is finished. What is worth doing next". The nine numbered phases
-were complete before any of the language work below; the most recent commits are
-the importer's seventh phase, figure sizing,
-complex numbers, plots, several curves on one plot, a plot of a table of
-measured points, the importer's side of it, and a definition that is really a
-function of `x`, in that order.
+Snapshot for picking the work back up. Last updated after labelled axes and
+named curves (design note §8.46). The nine numbered phases were complete before
+any of the language work below; the most recent commits are the importer's
+seventh phase, figure sizing, complex numbers, plots, several curves on one
+plot, a plot of a table of measured points, the importer's side of it, a
+definition that is really a function of `x`, prose as Markdown (§8.41), the
+v0.1.0 release, and labelled axes.
+
+**Where the last session stopped, and what it left.** Everything below is
+committed and every gate named here is green. Three things are pending, in the
+order they are worth doing:
+
+1. **`52ae56d` is committed but not pushed.** The labelled-axes commit is on
+   local `main` only. Push it before anything else — CI has not seen it, and
+   the `arm64` job is the only check on this change that cannot be run here.
+2. **The importer's plot configuration.** `XYPlot'Labels'XLabel` and
+   `Traces#n'Name` are still refused, and the reason they were refused is gone:
+   the language can say them now. Before translating, three things need
+   measuring against the corpora — whether a configuration block sits before or
+   after the plot it configures, whether trace indices are dense from zero, and
+   how the block's region name relates to the `plot(…)` call the emitter
+   writes. Design note §8.46 and roadmap step 21 hold the detail.
+3. **Multiple open documents in the editor** — deferred by the owner, and
+   listed under "What this build does not do" with the reason.
+
+`./scripts/compare-arch.sh` did not run in that session: `qemu-user` is not
+installed on this machine. CI's `arm64` job covers it.
 
 ## Where things stand
 
@@ -1839,8 +1857,11 @@ None of these are bugs; they are scope, recorded so they are not rediscovered.
   reasoning — all three need a branch cut nobody can state for the worksheet.
 - **No mutation, and so no loop statement.** `map`, `iterate` and `range` are
   what a worksheet's loops were doing. Deliberate, and not coming.
-- **A plot has no chosen axis range and no log scale.** The horizontal axis is
-  the span that was asked for and the vertical one is fitted to the data.
+- **A plot's legend is a strip, not a placed key.** It sits under the drawing
+  because a legend floated in a corner covers whichever curve went there. The
+  axes can be scaled, windowed and named — `axis x log`, `axis y 0, 100`,
+  `axis x "Frequency"`, `label "Gain", "Phase"` — but where the legend goes is
+  not a choice the worksheet gets to make.
 - **The editor holds one worksheet at a time.** Multiple open documents would
   mean multiple sessions, which the boundary already supports — nothing in the
   module is global — but there is no interface for it. It is the one part of

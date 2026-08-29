@@ -2,7 +2,7 @@
 # worksheet: shaker
 
 === text ===
-Shaker specifications
+# Shaker specifications
 Adapted from the SMath corpus (ling.sm) to exercise units and vectors.
 unit kip = 1000 lbf
 Ling_rms_N = 489/sqrt(2) = 345.775
@@ -16,7 +16,7 @@ fn stroke defined
 M = 100.426 kg
 
 === html ===
-<p class="prose">Shaker specifications</p>
+<h1 class="prose">Shaker specifications</h1>
 <p class="prose">Adapted from the SMath corpus (ling.sm) to exercise units and vectors.</p>
 <div class="step note">unit kip = 1000 lbf</div>
 <div class="step"><span class="name">Ling_rms_N</span><span class="eq">=</span>489/sqrt(2)<span class="eq">=</span><span class="result">345.775</span></div>

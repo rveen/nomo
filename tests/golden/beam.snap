@@ -2,7 +2,7 @@
 # worksheet: beam
 
 === text ===
-Simply supported beam — imperial units throughout
+# Simply supported beam — imperial units throughout
 Demonstrates unit tracking across a mixed-unit calculation.
 unit klf = 1000 lbf/ft
 w = 2.5 klf
@@ -18,7 +18,7 @@ Sreq = M/(0.9·Fy) = 381324 J/(0.9·(50 ksi)) = 0.00122903 m³
 Sreq = 75 in³
 
 === html ===
-<p class="prose">Simply supported beam — imperial units throughout</p>
+<h1 class="prose">Simply supported beam — imperial units throughout</h1>
 <p class="prose">Demonstrates unit tracking across a mixed-unit calculation.</p>
 <div class="step note">unit klf = 1000 lbf/ft</div>
 <div class="step"><span class="name">w</span><span class="eq">=</span>2.5 klf</div>

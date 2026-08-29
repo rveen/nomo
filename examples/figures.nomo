@@ -1,5 +1,5 @@
 ' nomo 1
-' Figures in a worksheet
+' # Figures in a worksheet
 ' A worksheet carries its figures inside itself: the body refers to one by
 ' name, and the data sits in the trailer at the end of the file. That keeps
 ' the mathematics readable and the file a single self-contained document.

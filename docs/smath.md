@@ -200,6 +200,20 @@ Text regions become comments. Prose that sat *beside* a value on SMath's
 two-dimensional page reads *after* it once flattened to lines; that is said once,
 in a note, rather than on each of the several hundred regions it applies to.
 
+**A comment's text is Markdown** (see "Comments" in `docs/language.md`), and
+imported prose was measured against that before the subset was fixed: of the
+6088 prose lines the importer emits across both corpora, 143 begin with a block
+marker and 103 of those are genuine lists — 76 bullets written `- `, 24 numbered
+steps, 3 written `* `, no headings at all. They render as the lists their authors
+wrote. Nothing is escaped on the way out, because nothing needs to be: the
+remaining 40 are four-space-indented continuations, and indentation carries no
+meaning in the subset for exactly that reason. Marker lines are inert too — they
+begin `[import]`, which starts nothing.
+
+SMath's `Area` regions carry a title, which is a section heading in the original
+document and could translate to `## `. It is not done: it changes emitted prose,
+so it moves the corpus baselines, and it belongs in its own commit.
+
 Pictures are carried whole. The body gets a reference at the size SMath drew the
 figure — `' image figure1 349x410` — and the base64 sits in a trailer at the end
 of the file. Every line of it is an ordinary comment, so an imported worksheet

@@ -207,6 +207,28 @@ impl Sheet {
         &self.outcomes
     }
 
+    /// Whether outcome `index` is the version pragma.
+    ///
+    /// It is metadata written as a comment, and a renderer that shows it prints
+    /// `nomo 1` at the head of every worksheet. That was cosmetic while each
+    /// comment line rendered as its own paragraph; now that a run of them is one
+    /// paragraph (`crate::prose`), the pragma would be swallowed into the first
+    /// sentence of the document — `nomo 1 Complex numbers The imaginary unit is
+    /// …` — so it is hidden the way the resource trailer is.
+    ///
+    /// Nothing else changes: the pragma is still an ordinary comment, still
+    /// parsed as one, and a build that has never heard of it still opens the
+    /// file. Only the first line can carry one, which is what `read_version`
+    /// means, so this is an index test rather than a search.
+    pub fn is_version_pragma(&self, index: usize) -> bool {
+        index == 0
+            && matches!(
+                self.outcomes.first().map(|o| &o.kind),
+                Some(OutcomeKind::Comment(_))
+            )
+            && read_version(self.source()).is_some()
+    }
+
     /// The images this worksheet carries, and which of its statements are their
     /// data rather than something to show.
     pub fn resources(&self) -> &Resources {

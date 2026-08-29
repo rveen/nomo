@@ -2,7 +2,7 @@
 # worksheet: functions
 
 === text ===
-Built-in functions
+# Built-in functions
 Every transcendental the language offers, in one place.
 
 This worksheet exists for the golden-file suite more than for the reader. The
@@ -43,14 +43,9 @@ The identity that would catch a mismatched pair.
 pythagoras = sin(x)² + cos(x)² = sin(0.7)² + cos(0.7)² = 1
 
 === html ===
-<p class="prose">Built-in functions</p>
+<h1 class="prose">Built-in functions</h1>
 <p class="prose">Every transcendental the language offers, in one place.</p>
-<p class="prose">This worksheet exists for the golden-file suite more than for the reader. The</p>
-<p class="prose">claim the whole design rests on is that transcendentals come from a libm</p>
-<p class="prose">compiled into the artifact rather than the host's, so that two machines agree</p>
-<p class="prose">to the last bit. Nothing else under examples/ calls one, so without this file</p>
-<p class="prose">the native-versus-WASM comparison in phase 7 would pass without testing the</p>
-<p class="prose">thing it exists to test.</p>
+<p class="prose">This worksheet exists for the golden-file suite more than for the reader. The claim the whole design rests on is that transcendentals come from a libm compiled into the artifact rather than the host's, so that two machines agree to the last bit. Nothing else under examples/ calls one, so without this file the native-versus-WASM comparison in phase 7 would pass without testing the thing it exists to test.</p>
 <div class="step"><span class="name">x</span><span class="eq">=</span>0.7</div>
 <div class="step"><span class="name">n</span><span class="eq">=</span>3.25</div>
 <p class="prose">Trigonometric. Arguments are dimensionless; rad, ° and % all qualify.</p>

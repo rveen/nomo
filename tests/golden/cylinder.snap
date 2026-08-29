@@ -2,7 +2,7 @@
 # worksheet: cylinder
 
 === text ===
-Cylinder volume
+# Cylinder volume
 The worked example from the design note.
 r = 5 cm
 h = 12 cm
@@ -10,7 +10,7 @@ V = π·r²·h = π·(5 cm)²·(12 cm) = 0.000942478 m³
 V = 0.942478 dm³
 
 === html ===
-<p class="prose">Cylinder volume</p>
+<h1 class="prose">Cylinder volume</h1>
 <p class="prose">The worked example from the design note.</p>
 <div class="step"><span class="name">r</span><span class="eq">=</span>5 cm</div>
 <div class="step"><span class="name">h</span><span class="eq">=</span>12 cm</div>

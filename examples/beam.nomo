@@ -1,4 +1,4 @@
-' Simply supported beam — imperial units throughout
+' # Simply supported beam — imperial units throughout
 ' Demonstrates unit tracking across a mixed-unit calculation.
 
 unit klf = 1000 lbf/ft

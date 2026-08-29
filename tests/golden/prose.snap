@@ -1,0 +1,125 @@
+# nomo snapshot v1
+# worksheet: prose
+
+=== text ===
+# Prose in a worksheet
+A comment is Markdown. This worksheet is what pins that: every construct
+below is in the golden snapshot beside it, so a change to how prose renders
+shows up here in the diff.
+## Paragraphs
+Consecutive comment lines are one paragraph. Prose wraps at whatever width
+the file is written to, and comes out as a paragraph rather than as a stack
+of one-line ones.
+
+A blank line starts the next paragraph, and so does a bare comment marker
+like the one above this line.
+## Headings
+`#` through `######`, with a space after the marker. A level-1 heading at the
+top of a worksheet names the document: `nomo html` takes the page's title
+from there rather than from the file name.
+## Lists
+Bullets take `-`, `*` or `+`:
+- the marker needs a space after it
+- an item continues onto the lines under it, so a long one wraps
+  like this rather than becoming a second item
+- and there is no nesting: indentation is a wrap
+Numbered items take `1.` or `1)` and keep the number they were written with.
+That matters because a worksheet numbers its steps with the mathematics
+between them, so each step arrives on its own:
+1. State the load and the supply.
+P_load = 3.6 kW
+V_line = 230 V
+I_load = P_load/V_line = 3.6 kW/(230 V) = 15.6522 A
+2. Size the conductor from the current. Six amps per square millimetre is
+   what this installation works to.
+J_max = 6 A/mm²
+A_min = I_load/J_max = 15.6522 A/(6000000 m⁻²·A) = 2.6087e-6 m²
+A_min = 2.6087 mm²
+3. Check the drop over the run at the section actually installed.
+rho = 0.0175 ohm·mm²/m
+L_run = 35 m
+A_used = 4 mm²
+V_drop = 2·rho·L_run·I_load/A_used = 2·(1.75e-8 m³·kg·s⁻³·A⁻²)·(35 m)·(15.6522 A)/(4e-6 m²) = 4.79348 V
+drop_ratio = V_drop/V_line = 4.79348 V/(230 V) = 0.0208412
+## What stays prose
+The subset is closed. Three things are outside it on purpose, and this is
+what they look like when a worksheet writes them:
+The three dashes on the next line are text, not a rule.
+---
+There are no thematic breaks and no setext headings, because
+`' --- resources ---` is what opens the resource trailer and a worksheet must
+not acquire a section break by writing about a range of values.
+Leading whitespace is a wrap and not a code block, so a line
+    indented like this one joins the line above it.
+#3 is a screw size rather than a heading, because a heading needs a space
+after its marker.
+A backslash protects a marker that was meant literally, so the line below is
+prose rather than a one-item list:
+
+\- 40 °C is the lower limit of the qualified range.
+## And none of it is markup
+Prose is escaped on its way into the document. A worksheet may have been
+written by the SMath importer out of a file nobody here wrote, so <b>this</b>
+is four characters and a word, not bold text.
+
+=== html ===
+<h1 class="prose">Prose in a worksheet</h1>
+<p class="prose">A comment is Markdown. This worksheet is what pins that: every construct below is in the golden snapshot beside it, so a change to how prose renders shows up here in the diff.</p>
+<h2 class="prose">Paragraphs</h2>
+<p class="prose">Consecutive comment lines are one paragraph. Prose wraps at whatever width the file is written to, and comes out as a paragraph rather than as a stack of one-line ones.</p>
+<p class="prose">A blank line starts the next paragraph, and so does a bare comment marker like the one above this line.</p>
+<h2 class="prose">Headings</h2>
+<p class="prose">`#` through `######`, with a space after the marker. A level-1 heading at the top of a worksheet names the document: `nomo html` takes the page's title from there rather than from the file name.</p>
+<h2 class="prose">Lists</h2>
+<p class="prose">Bullets take `-`, `*` or `+`:</p>
+<ul class="prose">
+<li>the marker needs a space after it</li>
+<li>an item continues onto the lines under it, so a long one wraps like this rather than becoming a second item</li>
+<li>and there is no nesting: indentation is a wrap</li>
+</ul>
+<p class="prose">Numbered items take `1.` or `1)` and keep the number they were written with. That matters because a worksheet numbers its steps with the mathematics between them, so each step arrives on its own:</p>
+<ol class="prose">
+<li>State the load and the supply.</li>
+</ol>
+<div class="step"><span class="name">P_load</span><span class="eq">=</span>3.6 kW</div>
+<div class="step"><span class="name">V_line</span><span class="eq">=</span>230 V</div>
+<div class="step"><span class="name">I_load</span><span class="eq">=</span>P_load/V_line<span class="eq">=</span><span class="subst">3.6 kW/(230 V)</span><span class="eq">=</span><span class="result">15.6522 A</span></div>
+<ol class="prose" start="2">
+<li>Size the conductor from the current. Six amps per square millimetre is what this installation works to.</li>
+</ol>
+<div class="step"><span class="name">J_max</span><span class="eq">=</span>6 A/mm²</div>
+<div class="step"><span class="name">A_min</span><span class="eq">=</span>I_load/J_max<span class="eq">=</span><span class="subst">15.6522 A/(6000000 m⁻²·A)</span><span class="eq">=</span><span class="result">2.6087e-6 m²</span></div>
+<div class="step">A_min<span class="eq">=</span><span class="result">2.6087 mm²</span></div>
+<ol class="prose" start="3">
+<li>Check the drop over the run at the section actually installed.</li>
+</ol>
+<div class="step"><span class="name">rho</span><span class="eq">=</span>0.0175 ohm·mm²/m</div>
+<div class="step"><span class="name">L_run</span><span class="eq">=</span>35 m</div>
+<div class="step"><span class="name">A_used</span><span class="eq">=</span>4 mm²</div>
+<div class="step"><span class="name">V_drop</span><span class="eq">=</span>2·rho·L_run·I_load/A_used<span class="eq">=</span><span class="subst">2·(1.75e-8 m³·kg·s⁻³·A⁻²)·(35 m)·(15.6522 A)/(4e-6 m²)</span><span class="eq">=</span><span class="result">4.79348 V</span></div>
+<div class="step"><span class="name">drop_ratio</span><span class="eq">=</span>V_drop/V_line<span class="eq">=</span><span class="subst">4.79348 V/(230 V)</span><span class="eq">=</span><span class="result">0.0208412</span></div>
+<h2 class="prose">What stays prose</h2>
+<p class="prose">The subset is closed. Three things are outside it on purpose, and this is what they look like when a worksheet writes them:</p>
+<p class="prose">The three dashes on the next line are text, not a rule. --- There are no thematic breaks and no setext headings, because `' --- resources ---` is what opens the resource trailer and a worksheet must not acquire a section break by writing about a range of values.</p>
+<p class="prose">Leading whitespace is a wrap and not a code block, so a line indented like this one joins the line above it.</p>
+<p class="prose">#3 is a screw size rather than a heading, because a heading needs a space after its marker.</p>
+<p class="prose">A backslash protects a marker that was meant literally, so the line below is prose rather than a one-item list:</p>
+<p class="prose">- 40 °C is the lower limit of the qualified range.</p>
+<h2 class="prose">And none of it is markup</h2>
+<p class="prose">Prose is escaped on its way into the document. A worksheet may have been written by the SMath importer out of a file nobody here wrote, so &lt;b&gt;this&lt;/b&gt; is four characters and a word, not bold text.</p>
+
+=== values ===
+P_load = 3600.0 m^2·kg·s^-3
+V_line = 230.0 m^2·kg·s^-3·A^-1
+I_load = 15.652173913043478 A
+J_max = 6000000.0 m^-2·A
+A_min = 2.6086956521739132e-6 m^2
+? = 2.6086956521739132e-6 m^2
+rho = 1.75e-8 m^3·kg·s^-3·A^-2
+L_run = 35.0 m
+A_used = 4e-6 m^2
+V_drop = 4.793478260869566 m^2·kg·s^-3·A^-1
+drop_ratio = 0.02084120982986768 dimensionless
+
+=== diagnostics ===
+none

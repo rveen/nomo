@@ -2657,6 +2657,146 @@ numeric path, and it stops short of the pivot zero-test, which is the actual cli
 The trigger for reopening is unchanged from §8.12 and is a demand question, never a capability one:
 evidence from the target user's own files, not from the corpora.
 
+### 8.41 A worksheet's prose is Markdown (2026-08-29)
+
+**Decided: the text of a comment is Markdown, and it is a rendering concern only.** Headings,
+paragraphs and lists to begin with, in a subset that is closed and written down rather than "as much
+CommonMark as fits". Nothing about the language changes — not the lexer, not the AST, not the graph.
+
+**What makes it nearly free is a decision already taken.** `lex.rs` keeps a comment as a token rather
+than discarding it, and `eval.rs` gives it an `Outcome` with a span, *because a worksheet's prose is
+part of its output* (§5). Prose therefore already arrives at the renderer as an ordered run of lines
+with source positions on them, which is exactly the input a block parser needs. Markdown is read
+there and nowhere else.
+
+**It also fixes something that was wrong.** `render/html.rs` emits one `<p class="prose">` per source
+line, so a paragraph wrapped across five lines renders as five paragraphs — visible in
+`tests/golden/llc.snap`, where a six-line introduction is six `<p>` elements. Joining a run of lines
+into one paragraph is the first thing a block model does.
+
+#### The blocking rule
+
+A run of consecutive `Comment` outcomes **on consecutive source lines** is one block run. A
+statement, a blank source line, or an empty `'` ends it. Both terminators are already legible: a
+blank source line produces no outcome at all, so the gap shows in the spans the outcomes carry, and
+an empty `'` produces an empty comment, which is Markdown's own paragraph separator anyway.
+
+That rule keeps the whole thing inside the renderer. The parser, the document layer, the dependency
+graph, the version pragma and the resource trailer are untouched, and a build that renders prose as
+flat lines still renders every worksheet — the property §7 asks of any format change.
+
+#### The subset, and why each exclusion is not timidity
+
+| In | Out |
+|---|---|
+| ATX headings `#`…`######`, space required | setext headings, `---` thematic breaks |
+| paragraphs, soft-wrapped lines joined | indented code blocks |
+| bullet lists `-` `*` `+` | block quotes, fenced code, tables |
+| ordered lists `n.` `n)` | raw HTML |
+| the existing `' image <name> [WxH]` line | inline emphasis, links |
+
+- **`---` collides with the format.** `' --- resources ---` is the trailer sentinel, and a setext
+  underline would additionally promote any paragraph followed by a line of dashes into a heading.
+  A worksheet must never acquire a section break by writing about a range of values.
+- **Indented code is the one measured hazard** — see below. In a worksheet, leading whitespace on a
+  prose line is a wrap, not a program.
+- **Raw HTML passthrough is an injection path.** `body()` escapes everything it emits and the browser
+  front end assigns the result to `innerHTML`. The renderer keeps escaping everything.
+- **Inline emphasis is deferred, and `_` should never be built.** 106 corpus prose lines carry two or
+  more underscores and every sampled one is an identifier — `fn qq_at_1(k) = 448.83*xx[k]`, a line
+  the importer commented out. Underscore emphasis would eat variable names in the one kind of prose
+  this project has most of. If inline is ever wanted, `` ` `` and `**` only.
+
+**One escape, for humans rather than for the importer:** a backslash before a leading marker,
+`' \# not a heading`. The measurement below says the importer needs to escape nothing.
+
+#### What real prose actually contains
+
+Measured rather than assumed: `smath-import` over all 114 worksheets of both corpora, 6088 prose
+comment lines outside the trailers, counting lines that begin with a Markdown block marker.
+
+| leading marker | lines | what they are |
+|---|---|---|
+| `- ` | 76 | genuine bullets — `- perimetro`, `- area`, `- momenti di inerzia` |
+| four spaces | 43 | **wrap continuations** — `    to the top-most fiber)` |
+| `1.`–`6.` | 24 | genuine numbered steps — `1. The matrix, T, below contains a table of values.` |
+| `* ` | 3 | genuine bullets — `* Trash screen:` |
+| `#` | 0 | — |
+
+**103 of the 143 hits are lists that Markdown renders correctly**, which is the case for doing this
+at all: the prose in these files is already written as Markdown by people who were not writing
+Markdown. The remaining 40 are the reason indented code blocks are out of the subset, and dropping
+them from the subset costs nothing anyone will miss — a worksheet that wants a program has statements.
+
+Two further things the corpus settles. The importer's own markers read `' [import] unsupported: …`,
+which begins with `[` and is inert under every construct listed above. And `examples/interlock.nomo`
+numbers four steps with math *between* them, so each item is its own single-item list rather than one
+list of four — which is what the file means, and it is worth knowing that it renders as `<ol start=n>`
+by design rather than by accident.
+
+#### The image line stays as it is
+
+`' image <name> [WxH]` is recognised as a block before Markdown sees the line, and `![alt](name)` is
+not added. The reason is the size: §8.19 argues that how large a figure was drawn is *placement*, part
+of what the author decided, and Markdown's image syntax has nowhere to put it. A second syntax that
+could express only the weaker half of the existing one would be a way to lose the layout by accident.
+A caption, if one is wanted, extends the line that already carries the placement.
+
+#### Two things about the frame, both settled by building it
+
+Both were written down as open questions and both were closed by the renderer, one of them because
+grouping forced it.
+
+- **`' nomo 1` is no longer rendered.** It was a paragraph reading "nomo 1" at the head of every
+  worksheet, which was cosmetic while each comment line was its own paragraph. Grouping made it a
+  correctness problem: the pragma sits immediately above the title in most worksheets, so the first
+  paragraph came out as *"nomo 1 Complex numbers The imaginary unit is `i`…"*. It is hidden the way
+  the trailer is — `Sheet::is_version_pragma`, an index test rather than a search, because only the
+  first line can carry one — and it is hidden in **both** renderers, so the two agree on what counts
+  as prose. Nothing else changes: still an ordinary comment, still parsed as one.
+- **A worksheet that names itself is not titled twice.** `nomo html` passes the file stem as a title
+  and emits an `<h1>` above the body. When the worksheet's prose opens with a level-1 heading, that
+  heading names the document — it becomes the `<title>` and the chrome's `<h1>` is dropped. Only the
+  opening block counts; a `# ` further down is a section inside the document, not a second name for
+  it.
+
+#### What it cost, measured against the snapshots
+
+All 17 goldens moved and **nothing else did**. Every removed line is either a regrouped `<p
+class="prose">` or one of the six `nomo 1` lines; every added line is a paragraph, or the `<ol>` that
+`examples/interlock.nomo`'s numbered steps became. No computed value, no unit, no plot and no figure
+changed, and `compare-targets.sh` still reports the 17 worksheets byte-identical between native and
+WebAssembly. The text renderer was deliberately left alone except for the pragma: it is the
+source-faithful format the golden suite diffs, and `# Title` reads as a title in plain text already.
+
+#### What the examples turned out to be already
+
+Every worksheet in `examples/` opened with a title line and a description on the line under it, so
+grouping merged them: *"Cylinder volume The worked example from the design note."* The fix is the
+feature — those sixteen title lines are now `' # Title`, and a level-1 heading at the top of a
+worksheet is what names the document.
+
+`examples/numerics.nomo` is the evidence that this was wanted before it existed. Its title was
+underlined by hand:
+
+```text
+' Numerical methods
+' ==================
+```
+
+A setext heading, written by an author who had no headings, in a file that predates this decision by
+months. The underline is gone and the line above it is a `#`.
+
+`examples/prose.nomo` is new, and is the worked example of the subset: every construct, the three
+exclusions written out as a worksheet writes them, the backslash escape, and `<b>this</b>` arriving
+escaped — with a cable-sizing calculation running through it so the prose has something to be about.
+Its numbered steps have the mathematics between them, which is the `<ol start=n>` case in a real
+document rather than a unit test.
+
+Not decided here, and to be measured on its own: SMath's `Area` regions carry a title, which is a
+section heading in the original document and would translate to `## `. That changes emitted prose,
+so it moves the corpus baselines and belongs in its own commit.
+
 ### 8.8 Strategy: corpus-driven
 
 Build the importer as a separate crate emitting the Nomo document format, then run it across every

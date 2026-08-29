@@ -2,7 +2,6 @@
 # worksheet: globals
 
 === text ===
-nomo 1
 Global definitions are visible everywhere, including above themselves.
 This mirrors SMath's ≡, so imported worksheets keep working.
 The design summary comes first, even though its inputs are defined below.
@@ -16,9 +15,7 @@ m_total = 2500 kg
 A = 0.02 m²
 
 === html ===
-<p class="prose">nomo 1</p>
-<p class="prose">Global definitions are visible everywhere, including above themselves.</p>
-<p class="prose">This mirrors SMath's ≡, so imported worksheets keep working.</p>
+<p class="prose">Global definitions are visible everywhere, including above themselves. This mirrors SMath's ≡, so imported worksheets keep working.</p>
 <p class="prose">The design summary comes first, even though its inputs are defined below.</p>
 <div class="step"><span class="name">W</span><span class="eq">=</span>m_total·g<span class="eq">=</span><span class="subst">2500 kg·(9.81 m·s⁻²)</span><span class="eq">=</span><span class="result">24525 N</span></div>
 <div class="step">W<span class="eq">=</span><span class="result">24.525 kN</span></div>

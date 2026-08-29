@@ -1,4 +1,4 @@
-' Repetition
+' # Repetition
 ' Loops, in the shape a worksheet can have them.
 
 ' A worksheet is a set of definitions with dependencies, not a script. SMath's

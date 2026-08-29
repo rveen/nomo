@@ -19,8 +19,10 @@ pub fn render(sheet: &Sheet, opts: &RenderOptions) -> String {
     for (i, outcome) in sheet.outcomes().iter().enumerate() {
         // The resource trailer is data, not prose. Printing it would put
         // several thousand lines of base64 in front of the reader, and into
-        // every golden snapshot.
-        if sheet.resources().is_hidden(i) {
+        // every golden snapshot. The version pragma is metadata for the same
+        // reason: it says which format the file is in, not anything about the
+        // engineering, and the two renderers agree on what counts as prose.
+        if sheet.resources().is_hidden(i) || sheet.is_version_pragma(i) {
             continue;
         }
         match &outcome.kind {

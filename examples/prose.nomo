@@ -1,0 +1,79 @@
+' nomo 1
+' # Prose in a worksheet
+
+' A comment is Markdown. This worksheet is what pins that: every construct
+' below is in the golden snapshot beside it, so a change to how prose renders
+' shows up here in the diff.
+
+' ## Paragraphs
+
+' Consecutive comment lines are one paragraph. Prose wraps at whatever width
+' the file is written to, and comes out as a paragraph rather than as a stack
+' of one-line ones.
+'
+' A blank line starts the next paragraph, and so does a bare comment marker
+' like the one above this line.
+
+' ## Headings
+
+' `#` through `######`, with a space after the marker. A level-1 heading at the
+' top of a worksheet names the document: `nomo html` takes the page's title
+' from there rather than from the file name.
+
+' ## Lists
+
+' Bullets take `-`, `*` or `+`:
+' - the marker needs a space after it
+' - an item continues onto the lines under it, so a long one wraps
+'   like this rather than becoming a second item
+' - and there is no nesting: indentation is a wrap
+
+' Numbered items take `1.` or `1)` and keep the number they were written with.
+' That matters because a worksheet numbers its steps with the mathematics
+' between them, so each step arrives on its own:
+
+' 1. State the load and the supply.
+P_load = 3.6 kW
+V_line = 230 V
+I_load = P_load/V_line
+
+' 2. Size the conductor from the current. Six amps per square millimetre is
+'    what this installation works to.
+J_max = 6 A/mm^2
+A_min = I_load/J_max
+A_min -> mm^2
+
+' 3. Check the drop over the run at the section actually installed.
+rho = 0.0175 ohm*mm^2/m
+L_run = 35 m
+A_used = 4 mm^2
+V_drop = 2*rho*L_run*I_load/A_used
+drop_ratio = V_drop/V_line
+
+' ## What stays prose
+
+' The subset is closed. Three things are outside it on purpose, and this is
+' what they look like when a worksheet writes them:
+
+' The three dashes on the next line are text, not a rule.
+' ---
+' There are no thematic breaks and no setext headings, because
+' `' --- resources ---` is what opens the resource trailer and a worksheet must
+' not acquire a section break by writing about a range of values.
+
+' Leading whitespace is a wrap and not a code block, so a line
+'     indented like this one joins the line above it.
+
+' #3 is a screw size rather than a heading, because a heading needs a space
+' after its marker.
+
+' A backslash protects a marker that was meant literally, so the line below is
+' prose rather than a one-item list:
+'
+' \- 40 °C is the lower limit of the qualified range.
+
+' ## And none of it is markup
+
+' Prose is escaped on its way into the document. A worksheet may have been
+' written by the SMath importer out of a file nobody here wrote, so <b>this</b>
+' is four characters and a word, not bold text.

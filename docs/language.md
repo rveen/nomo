@@ -26,7 +26,7 @@ V -> dm^3
 
 | Form | Example | Meaning |
 |---|---|---|
-| Comment | `' Shaker specifications` | Prose. Carried to the renderer as documentation, not discarded. |
+| Comment | `' Shaker specifications` | Prose, read as Markdown. Carried to the renderer as documentation, not discarded. |
 | Assignment | `r = 5 cm` | Bind a name. |
 | Query | `V` or `V -> dm^3` | Display an expression with its result. |
 | Unit declaration | `unit kip = 1000 lbf` | Introduce a named unit. |
@@ -178,10 +178,70 @@ because the left side is not a bare name.
 **`x[...]` is always an index**, never multiplication. To multiply by a vector
 literal, write `x*[1, 2]`.
 
-## Comments
+## Comments, and the prose in them
 
 `'` runs to the end of the line. Comments are statements, not whitespace: a
 worksheet's prose is part of its output.
+
+**The text of a comment is Markdown**, in a small closed subset — headings,
+paragraphs and lists. Consecutive comment lines are one block, so prose wraps at
+whatever width the file is written to and still renders as a paragraph. A blank
+line, a bare `'`, a statement or a figure ends the block.
+
+```text
+' # Interlock line monitor
+' A safety interlock is a loop of wire threaded through every connector that
+' has to be mated before a high-voltage bus may energise.
+'
+' The chain measures twice:
+' - the difference across the loop says whether current is flowing
+' - the common-mode level says which rail the loop is shorted to
+```
+
+| Construct | Written | Notes |
+|---|---|---|
+| Heading | `' ## Sizing` | `#` to `######`, and the space is required. |
+| Paragraph | consecutive comment lines | Joined with a space. |
+| Bullet list | `' - item` | `-`, `*` or `+`, space required. |
+| Numbered list | `' 1. item` or `' 1) item` | Keeps the number it was written with. |
+| Literal marker | `' \# not a heading` | A backslash, before a leading marker only. |
+
+A level-1 heading at the top of a worksheet names the document: `nomo html`
+takes the page's title from it rather than from the file name.
+
+**A numbered list keeps its numbering across the mathematics.** A worksheet
+writes step 1, then the lines that compute it, then step 2 — so each step is a
+list of its own, and `2.` renders as 2 rather than restarting.
+
+### What is deliberately not in it
+
+Nothing here is an oversight; each one is refused for a reason, and design note
+§8.41 has the measurement behind it.
+
+- **No thematic breaks (`---`) and no setext headings.** `' --- resources ---`
+  opens the resource trailer, and a paragraph followed by a line of dashes must
+  not become a heading. A bullet requires a space after its marker, which is
+  what leaves `---` as ordinary text.
+- **No indented code blocks.** Leading whitespace is a wrap: of the prose the
+  SMath importer emits across both corpora, 227 lines are indented and 224 of
+  them are continuations of the line above. There is no nesting either, so an
+  indented list marker is an item of the same flat list.
+- **No raw HTML.** Everything is escaped on its way into the document.
+- **No inline emphasis yet, and `_` never.** Worksheet prose is full of
+  identifiers like `V_drop`, and underscore emphasis would eat them.
+
+A comment is still an ordinary comment: nothing about parsing, evaluation or
+the dependency graph knows any of this, and a build that renders prose as flat
+lines still opens every worksheet.
+
+**`' nomo 1` is not prose.** The version pragma is metadata, and neither
+renderer shows it. See *File format and versions*.
+
+**Images keep their own line**, `' image <name> <width>x<height>`, rather than
+Markdown's `![…](…)`: the size a figure is drawn at is part of the document and
+Markdown's syntax has nowhere to put it. See *Figures*.
+
+`examples/prose.nomo` is the worked example of all of this.
 
 ---
 
@@ -726,9 +786,11 @@ An optional first-line pragma records the format version:
 ' nomo 1
 ```
 
-It is an ordinary comment, and a file without one reads as version 1. A worksheet
-declaring a *newer* version than the build understands still opens, with a
-warning — refusing outright would leave someone staring at a file they cannot
+It is an ordinary comment, and a file without one reads as version 1. It is not
+prose, though, so no renderer shows it: joined to the line under it — which is
+where a title usually sits — it would open the document with `nomo 1 Cylinder
+volume`. A worksheet declaring a *newer* version than the build understands still
+opens, with a warning — refusing outright would leave someone staring at a file they cannot
 read, when it is probably mostly fine.
 
 **Saving adds the pragma** if the worksheet has none, so a file on disk says what
@@ -806,8 +868,9 @@ the data is what is believed. `png`, `jpeg`, `gif`, `bmp` and `webp` are shown;
 anything else is reported rather than guessed at, as is a reference whose data is
 missing and a payload that is not base64.
 
-**The size on the reference is a different fact**: not how many bytes the image
-is but how large the figure is drawn, in pixels. That is placement rather than
+**A reference is not Markdown's `![…](…)`, and this is why.** The size on the
+reference is a different fact from the one in the header: not how many bytes the
+image is, but how large the figure is drawn, in pixels. That is placement rather than
 content — a photograph 1161 px wide placed at 749 is the author deciding how
 large it reads beside the mathematics, which the pixels alone cannot say — so it
 sits on the line that says where the figure goes, not on the one that says what
@@ -870,6 +933,10 @@ Recorded so the omissions are deliberate rather than forgotten.
 - Strings inside a vector or a matrix, and every function of a string:
   concatenation, length in characters, searching, formatting a number as one. A
   string is a verdict or a key here, and nothing yet builds one out of another.
+- Inline formatting in prose — emphasis, code spans, links. The block level is
+  built; this is the layer above it, and if it is ever added it will be `` ` ``
+  and `**` and never `_`, because worksheet prose is full of names like
+  `V_drop`. Tables, block quotes and fenced code are not planned at all.
 
 ## Reserved
 

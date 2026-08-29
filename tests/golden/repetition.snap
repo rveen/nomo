@@ -2,7 +2,7 @@
 # worksheet: repetition
 
 === text ===
-Repetition
+# Repetition
 Loops, in the shape a worksheet can have them.
 A worksheet is a set of definitions with dependencies, not a script. SMath's
 loops mutate variables inside a statement block, which fights that directly —
@@ -31,33 +31,25 @@ A fixed count rather than a tolerance test, deliberately: it terminates, it
 takes the same number of steps on every machine, and it cannot spin.
 
 === html ===
-<p class="prose">Repetition</p>
+<h1 class="prose">Repetition</h1>
 <p class="prose">Loops, in the shape a worksheet can have them.</p>
-<p class="prose">A worksheet is a set of definitions with dependencies, not a script. SMath's</p>
-<p class="prose">loops mutate variables inside a statement block, which fights that directly —</p>
-<p class="prose">so what this language provides instead is the three things those loops are</p>
-<p class="prose">actually doing in the corpus, none of which mutates anything.</p>
-<p class="prose">A range is a vector. This is the loop counter, and on its own it already</p>
-<p class="prose">replaces the commonest `for` in the corpus.</p>
+<p class="prose">A worksheet is a set of definitions with dependencies, not a script. SMath's loops mutate variables inside a statement block, which fights that directly — so what this language provides instead is the three things those loops are actually doing in the corpus, none of which mutates anything.</p>
+<p class="prose">A range is a vector. This is the loop counter, and on its own it already replaces the commonest `for` in the corpus.</p>
 <div class="step"><span class="name">counts</span><span class="eq">=</span>range(1, 5)<span class="eq">=</span><span class="result">[1, 2, 3, 4, 5]</span></div>
-<p class="prose">The end is included when the step lands on it, because `range(1, 5)` has to</p>
-<p class="prose">index a five-element vector.</p>
+<p class="prose">The end is included when the step lands on it, because `range(1, 5)` has to index a five-element vector.</p>
 <div class="step"><span class="name">odd</span><span class="eq">=</span>range(1, 9, 2)<span class="eq">=</span><span class="result">[1, 3, 5, 7, 9]</span></div>
 <p class="prose">Ranges carry a dimension, so tabulating a physical quantity needs no trick.</p>
 <div class="step"><span class="name">stations</span><span class="eq">=</span>range(0 m, 10 m, 2.5 m)<span class="eq">=</span><span class="result">[0 m, 2.5 m, 5 m, 7.5 m, 10 m]</span></div>
-<p class="prose">`map` applies a function to every element. `for(k, range(1, n), y[k] &lt;- f(x[k]))`</p>
-<p class="prose">is what the corpus writes; this is what it means.</p>
+<p class="prose">`map` applies a function to every element. `for(k, range(1, n), y[k] &lt;- f(x[k]))` is what the corpus writes; this is what it means.</p>
 <div class="step note">fn area defined</div>
 <div class="step"><span class="name">areas</span><span class="eq">=</span>map(area, [2 m, 3 m, 4 m])<span class="eq">=</span><span class="result">[4 m², 9 m², 16 m²]</span></div>
 <p class="prose">Accumulating a total is `map` and then `sum`, not a running variable.</p>
 <div class="step note">fn moment defined</div>
 <div class="step"><span class="name">total</span><span class="eq">=</span>sum(map(moment, stations))<span class="eq">=</span><span class="subst">sum(map(moment, [0 m, 2.5 m, 5 m, 7.5 m, 10 m]))</span><span class="eq">=</span><span class="result">250000 J</span></div>
-<p class="prose">`iterate` applies a function a fixed number of times, which is what a</p>
-<p class="prose">convergence loop is. Newton-Raphson for the square root of two:</p>
+<p class="prose">`iterate` applies a function a fixed number of times, which is what a convergence loop is. Newton-Raphson for the square root of two:</p>
 <div class="step note">fn newton defined</div>
 <div class="step"><span class="name">root</span><span class="eq">=</span>iterate(newton, 1, 5)<span class="eq">=</span><span class="result">1.41421</span></div>
-<p class="prose">A fixed count rather than a tolerance test, deliberately: it terminates, it</p>
-<p class="prose">takes the same number of steps on every machine, and it cannot spin.</p>
+<p class="prose">A fixed count rather than a tolerance test, deliberately: it terminates, it takes the same number of steps on every machine, and it cannot spin.</p>
 
 === values ===
 counts = [1.0 dimensionless, 2.0 dimensionless, 3.0 dimensionless, 4.0 dimensionless, 5.0 dimensionless]

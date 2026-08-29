@@ -1,5 +1,5 @@
 ' nomo 1
-' Complex numbers
+' # Complex numbers
 ' The imaginary unit is `i`, an ordinary constant. Juxtaposition is already
 ' multiplication, so `4i` is `4*i` and needs no special number syntax — the
 ' same reading that makes `2e` mean `2*e`.

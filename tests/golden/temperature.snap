@@ -2,7 +2,7 @@
 # worksheet: temperature
 
 === text ===
-Temperature, and the affine rules
+# Temperature, and the affine rules
 °C and °F are offset scales, so not every operation on them is meaningful.
 
 A reading on an offset scale is a point; every other quantity is an interval, a
@@ -34,12 +34,9 @@ heat = mass·c_steel·margin = 12 kg·(486 m²·s⁻²·K⁻¹)·(5 K) = 29160 J
 heat = 29.16 kJ
 
 === html ===
-<p class="prose">Temperature, and the affine rules</p>
+<h1 class="prose">Temperature, and the affine rules</h1>
 <p class="prose">°C and °F are offset scales, so not every operation on them is meaningful.</p>
-<p class="prose">A reading on an offset scale is a point; every other quantity is an interval, a</p>
-<p class="prose">displacement. Each rule below falls out of that distinction rather than being</p>
-<p class="prose">special-cased, and each is pinned here because getting one wrong produces a</p>
-<p class="prose">plausible-looking number that is silently wrong.</p>
+<p class="prose">A reading on an offset scale is a point; every other quantity is an interval, a displacement. Each rule below falls out of that distinction rather than being special-cased, and each is pinned here because getting one wrong produces a plausible-looking number that is silently wrong.</p>
 <div class="step"><span class="name">ambient</span><span class="eq">=</span>20°C</div>
 <div class="step"><span class="name">rise</span><span class="eq">=</span>5 K</div>
 <p class="prose">A point displaced by an interval is a point.</p>
@@ -51,12 +48,10 @@ heat = 29.16 kJ
 <div class="step">ambient<span class="eq">=</span><span class="result">293.15 K</span></div>
 <div class="step"><span class="name">freezing</span><span class="eq">=</span>32°F</div>
 <div class="step">freezing<span class="eq">=</span><span class="result">0°C</span></div>
-<p class="prose">K and °R are absolute, so they are ordinary linear quantities and carry none of</p>
-<p class="prose">the restrictions above.</p>
+<p class="prose">K and °R are absolute, so they are ordinary linear quantities and carry none of the restrictions above.</p>
 <div class="step"><span class="name">absolute</span><span class="eq">=</span>293.15 K</div>
 <div class="step"><span class="name">doubled</span><span class="eq">=</span>2·absolute<span class="eq">=</span><span class="subst">2·(293.15 K)</span><span class="eq">=</span><span class="result">586.3 K</span></div>
-<p class="prose">Intervals on an offset scale still combine freely: it is points that are</p>
-<p class="prose">restricted, not the degree itself.</p>
+<p class="prose">Intervals on an offset scale still combine freely: it is points that are restricted, not the degree itself.</p>
 <div class="step"><span class="name">span</span><span class="eq">=</span>40 K - 10 K<span class="eq">=</span><span class="result">30 K</span></div>
 <p class="prose">A thermal calculation, to show the rules are not merely academic.</p>
 <div class="step"><span class="name">c_steel</span><span class="eq">=</span>486 J/(kg·K)</div>

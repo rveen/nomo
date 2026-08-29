@@ -2,8 +2,7 @@
 # worksheet: interlock
 
 === text ===
-nomo 1
-Interlock line monitor — sense chain and its four states
+# Interlock line monitor — sense chain and its four states
 
 A safety interlock is a loop of wire threaded through every connector that has
 to be mated before a high-voltage bus may energise. Unplug one and the loop
@@ -117,40 +116,24 @@ resolved = counts > margin_needed = 523.672 > 100 = 1
 verdict = if within_range and resolved then "four states resolved" else "sense chain needs rework" = if 1 and 1 then "four states resolved" else "sense chain needs rework" = "four states resolved"
 
 === html ===
-<p class="prose">nomo 1</p>
-<p class="prose">Interlock line monitor — sense chain and its four states</p>
-<p class="prose">A safety interlock is a loop of wire threaded through every connector that has</p>
-<p class="prose">to be mated before a high-voltage bus may energise. Unplug one and the loop</p>
-<p class="prose">opens. The monitor has to tell four conditions apart — loop closed, loop open,</p>
-<p class="prose">loop shorted to ground, loop shorted to the supply — and one measurement</p>
-<p class="prose">cannot do it: a difference amplifier across the loop reads nearly zero for</p>
-<p class="prose">closed, for a short to ground and for a short to the supply alike, because in</p>
-<p class="prose">all three the two ends sit at the same potential.</p>
-<p class="prose">So the chain measures twice. The difference across the loop says whether</p>
-<p class="prose">current is flowing, and the common-mode level says which rail the loop is</p>
-<p class="prose">sitting on. Neither alone separates the four states; together they do, and</p>
-<p class="prose">the worksheet exists to show that they do with margin.</p>
-<p class="prose">It is here for its shape as much as its circuit: a page of prose around short</p>
-<p class="prose">arithmetic, the same names redefined once per scenario, divider ratios, and a</p>
-<p class="prose">table of computed points plotted against each other.</p>
+<h1 class="prose">Interlock line monitor — sense chain and its four states</h1>
+<p class="prose">A safety interlock is a loop of wire threaded through every connector that has to be mated before a high-voltage bus may energise. Unplug one and the loop opens. The monitor has to tell four conditions apart — loop closed, loop open, loop shorted to ground, loop shorted to the supply — and one measurement cannot do it: a difference amplifier across the loop reads nearly zero for closed, for a short to ground and for a short to the supply alike, because in all three the two ends sit at the same potential.</p>
+<p class="prose">So the chain measures twice. The difference across the loop says whether current is flowing, and the common-mode level says which rail the loop is sitting on. Neither alone separates the four states; together they do, and the worksheet exists to show that they do with margin.</p>
+<p class="prose">It is here for its shape as much as its circuit: a page of prose around short arithmetic, the same names redefined once per scenario, divider ratios, and a table of computed points plotted against each other.</p>
 <p class="prose">The rails and the converter this feeds.</p>
 <div class="step"><span class="name">V_supply</span><span class="eq">=</span>5 V</div>
 <div class="step"><span class="name">V_adc_max</span><span class="eq">=</span>3 V</div>
 <div class="step"><span class="name">adc_bits</span><span class="eq">=</span>12</div>
-<p class="prose">The loop is driven from the supply through a series resistor and returns</p>
-<p class="prose">through a shunt to ground, so the two ends can be probed either side of the</p>
-<p class="prose">wire that leaves the box.</p>
+<p class="prose">The loop is driven from the supply through a series resistor and returns through a shunt to ground, so the two ends can be probed either side of the wire that leaves the box.</p>
 <figure><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAADcCAIAAABF+guPAAACgklEQVR42u3csY2EMBRFUZeCCBBlUCURIbXQFsTE2NjfPkcvnWR3ruRkfrqBqpI/AYgQRAiIEEQIiBBECIgQRAiIEEQIiBBECIgQRAiIEEQIiBBECIgQRAiIEEQIiBBECIgQRAiIEEQIiBBECIgQRAiIEEQIiBBECIgQRAgEinCaF7MqE6EITYSeo4xKhCBCESJCEYIIRYgIRQgiFCEiFCGIUISIUIQgQhEiQhGCCP1jEKEIQYQgQhGCCEGEIgQRQvTAIt6/ECEiFCE089QUIYgQRChCECGIUIQgQhChCEGEIEIRgghBhCIEEYIIRQgiBBGKEEQIIhQhiBBEKEIQIYhQhCBCEKEIQYQgQhGCCEGEIgQRgghFCCIEEYoQEYoQRChCRChCEKEIEaEIQYQiZNwIs6yfCPfj/DLfKkQoQjxZu4jwzw+CCEWICEUIIhQhIhQhiFCEiFCEIEIRIkIRwtu1rRUnQhChCPEcFSEiFKEIEaEIEaEIRYgIRYgIRShCROiX9YhQhCLEjRnX1hChCMHdUREiQhGCCEGEIgQRgghFCCIEEYoQRAgiFCGIEEQoQhAhiFCEIEIQoQhBhCBCEYIIQYQiBBGCCEUIIgQRihBECCIUIYgQRChCECGIUIQgQhChCEGEIEIRgghBhCIEEUITEWaZCEGE4MkqQhAhiFCEIEIQoQhBhCBCEYIIQYQiBBGCCEUIIgQRihBECCIUIYgQRChCECGIMHqEGS+CmLV8QkaEZiIERAgiBEQIIgRECCIERAgiBEQIIgRECCIERAgiBEQIIgQRAiIEEQIiBBECIgQRAiIEEQIiBBECIgQRAiIEEQIiBBECIgQRAiIEEQIlPFEPqo8YhZhLAAAAAElFTkSuQmCC" width="300" height="220" alt="divider"></figure>
 <div class="step"><span class="name">R_series</span><span class="eq">=</span>160 ohm</div>
 <div class="step"><span class="name">R_shunt</span><span class="eq">=</span>910 ohm</div>
 <div class="step"><span class="name">R_loop</span><span class="eq">=</span>12 ohm</div>
-<p class="prose">Healthy loop: one series circuit, and the drop across the wire itself is what</p>
-<p class="prose">the differential channel is there to see.</p>
+<p class="prose">Healthy loop: one series circuit, and the drop across the wire itself is what the differential channel is there to see.</p>
 <div class="step"><span class="name">I_loop</span><span class="eq">=</span>V_supply/(R_series + R_loop + R_shunt)<span class="eq">=</span><span class="subst">5 V/(160 ohm + 12 ohm + 910 ohm)</span><span class="eq">=</span><span class="result">4.62107 mA</span></div>
 <div class="step"><span class="name">V_drop</span><span class="eq">=</span>I_loop·R_loop<span class="eq">=</span><span class="subst">4.62107 mA·(12 ohm)</span><span class="eq">=</span><span class="result">55.4529 mV</span></div>
 <div class="step"><span class="name">P_series</span><span class="eq">=</span>I_loop²·R_series<span class="eq">=</span><span class="subst">(4.62107 mA)²·(160 ohm)</span><span class="eq">=</span><span class="result">3.41669 mW</span></div>
-<p class="prose">The differential channel. Gain below unity on purpose: an open loop puts the</p>
-<p class="prose">whole supply across the amplifier's inputs, and the converter takes 3 V.</p>
+<p class="prose">The differential channel. Gain below unity on purpose: an open loop puts the whole supply across the amplifier's inputs, and the converter takes 3 V.</p>
 <div class="step"><span class="name">R_in_n</span><span class="eq">=</span>20 kohm</div>
 <div class="step"><span class="name">R_fb</span><span class="eq">=</span>10 kohm</div>
 <div class="step"><span class="name">R_in_p</span><span class="eq">=</span>20 kohm</div>
@@ -163,46 +146,45 @@ verdict = if within_range and resolved then "four states resolved" else "sense c
 <div class="step"><span class="name">R_cm_bot</span><span class="eq">=</span>2.2 kohm</div>
 <div class="step"><span class="name">k_cm</span><span class="eq">=</span>R_cm_bot/(R_cm_top + R_cm_bot)<span class="eq">=</span><span class="subst">2.2 kohm/(2.2 kohm + 2.2 kohm)</span><span class="eq">=</span><span class="result">0.5</span></div>
 <div class="step note">fn ch_cm defined</div>
-<p class="prose">An RC on each channel ahead of the converter. The corner sits far above the</p>
-<p class="prose">rate the loop is polled at and far below the switching noise it rejects.</p>
+<p class="prose">An RC on each channel ahead of the converter. The corner sits far above the rate the loop is polled at and far below the switching noise it rejects.</p>
 <figure><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAACgCAIAAAA5GsY1AAACCUlEQVR42u3dyw3DIBREUUpBXtB/h89NID7DOXIBo5greZE4rYCtmo8ARAgiBEQIIgRECCIERAgiBEQIIgRECCIERAgiBEQIIgRECCIERAgiBEQIIgRECCIERAgiBEQIIgRECCIERAgiBES4TP/GjZcbJ0IRihARTo3QYEToTItQhCI0GBE60yIUoQgNRoTOtAhFKEKDEaEzLUIRitBgROhMi1CEIjQYETrTIhShCA1GhM60CEUY8cOfpF8Gpd6CsLsvQhG6ciP0OGqw52QRilCEIhShwSIUoQgNE6EIDRahCEVomAhFaLAIRShCw0QoQoNFKEIRGiZCERosQhGK0DARitBgEYrQvzKJUIQiFKEIRYgIRYgIESEiFCEiRISIUISIUIQgQhEiQhGCCEWICEUIIhQhIhQhiFCEIEJAhCBCQIQgQkCEIEJAhCBCQIQgQkCE1GuvKhchiFCEIEJAhCBCQIQgQkCEIEJAhCBCQISUr62JEEQoQrwGX4QgQhEiQhGCCEWICEUIIhQhIhQhiFCEiFCEIEIRIkIRgghFiAhFCCIUISIUIYhQhIhQhCBCESJCEYIIRYgIRQgiFCEiFCGIUITetOs6933EIhShS4TgcRQQIYgQECGIEBAhiBAQIYgQECGIEBAhiBAQIYgQECGIEBAhiBAQIYgQECGIEBAhiBAQIYgQmOQHf1uq9zn7cxkAAAAASUVORK5CYII=" width="300" height="160" alt="filter"></figure>
 <div class="step"><span class="name">R_filter</span><span class="eq">=</span>10 kohm</div>
 <div class="step"><span class="name">C_filter</span><span class="eq">=</span>1 nF</div>
 <div class="step"><span class="name">f_corner</span><span class="eq">=</span>1/(2·π·R_filter·C_filter)<span class="eq">=</span><span class="subst">1/(2·π·(10 kohm)·(1 nF))</span><span class="eq">=</span><span class="result">15.9155 kHz</span></div>
 <div class="step"><span class="name">tau</span><span class="eq">=</span>R_filter·C_filter<span class="eq">=</span><span class="subst">10 kohm·(1 nF)</span><span class="eq">=</span><span class="result">10 µs</span></div>
-<p class="prose">The four states. Each redefines the same two node voltages and reads both</p>
-<p class="prose">channels through, which is what makes them comparable — the names mean the</p>
-<p class="prose">same thing every time and only the conditions above them change. Nothing</p>
-<p class="prose">mutates: each block is read by the lines below it and by nothing else.</p>
+<p class="prose">The four states. Each redefines the same two node voltages and reads both channels through, which is what makes them comparable — the names mean the same thing every time and only the conditions above them change. Nothing mutates: each block is read by the lines below it and by nothing else.</p>
 <figure><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAACWCAIAAAB8aIVfAAAC60lEQVR42u3UwQ2EIBRFUUoxLohlUKUrltRCW1iDmJBPPDc08Gb8Jw1JelnyE0gChyRwSAKHJHBIAockgUMSOKTQ9XLFeeCQwAEOCRzgkAQOSeAAhwQOcEjgAIcEDnBI4ACHJHCAQwIHOCRwgEMCBzgkcIBDEjjAIYEDHBI4wCGBAxwSOMAhCRySwAEOCRzgkMABDgkc4JAEDkngAMfyjjPHef4OcIADHOAABzjAAQ5wgEPgAAc4BA6BAxzgEDjAAQ5wgAMc4AAHOMABDnCAAxwCh8ABDnAIHOAABzjAAQ5wgAMc4AAHOMABDoFD4BA4BA5wgAMc4AAHOMABDnCAAxzgAIfAIXAIHAIHOMAhcIADHOAABzjAAQ5wgEPgAAc4BA6BAxzgEDjAAQ5wgAMc4AAHOMABDnCAAxwCh8ABDnAIHOAABzjAAQ5wgAMc4AAHOMABDoFD4BA4bAcHOMABDnCAAxzgAAc4wAEOcIBDjsd2cMjx2A4OcDge28EBDnCAAxzgAAc4wAEOgQMc4JDjsR0c4HA8toMDHOAABzjAAQ5wgAMc4AAHOMAhx2M7OMDheGwHBzjAAQ5wgAMc4AAHOMABDnCAQ47HdnDI8dgODnCAAxzgAAc4wAEOcIADHOAAhxwPOMAhx2M7OMDheGwHBzjAAQ5wgAMc4AAHOMABDnCAQ47HdnAsgcPx2A4OcPiAbLcdHOBwPLaDAxyOx3ZwgMPx2A4OcDge28EBDh+Q7baDwwdku+3gAIfjsR0c4HA8toMDHI7HdnCAwwdku+3g8AHZbjs4wOF4bAcHOByP7eAAh+OxHRzg8AHZDg5w+IBstx0c4HA8toMDHI7HdnCAw/HYDg5wOB7bwQEOH5DttoMDHLbbDg5wOB7bwQEOx2M7OMDheGwHBzh8QLbbDo6Z7to8z9v6gcPzvB3gkPTPwCEJHJLAIQkcksAhCRySBA5J4JAEDkngkAQOSQKHJHBIAockcEgChySBQ9KHHhs/0nCwxuWbAAAAAElFTkSuQmCC" width="360" height="150" alt="states"></figure>
-<p class="prose">1. Loop closed. Current flows; both ends sit high, a wire's drop apart.</p>
+<ol class="prose">
+<li>Loop closed. Current flows; both ends sit high, a wire's drop apart.</li>
+</ol>
 <div class="step"><span class="name">V_a</span><span class="eq">=</span>V_supply - I_loop·R_series<span class="eq">=</span><span class="subst">5 V - 4.62107 mA·(160 ohm)</span><span class="eq">=</span><span class="result">4.26063 V</span></div>
 <div class="step"><span class="name">V_b</span><span class="eq">=</span>I_loop·R_shunt<span class="eq">=</span><span class="subst">4.62107 mA·(910 ohm)</span><span class="eq">=</span><span class="result">4.20518 V</span></div>
 <div class="step"><span class="name">closed_diff</span><span class="eq">=</span>ch_diff(V_a, V_b)<span class="eq">=</span><span class="subst">ch_diff(4.26063 V, 4.20518 V)</span><span class="eq">=</span><span class="result">0.0277264 V</span></div>
 <div class="step"><span class="name">closed_cm</span><span class="eq">=</span>ch_cm(V_a, V_b)<span class="eq">=</span><span class="subst">ch_cm(4.26063 V, 4.20518 V)</span><span class="eq">=</span><span class="result">2.11645 V</span></div>
-<p class="prose">2. Loop open. No current: the near end is pulled to the supply through the</p>
-<p class="prose">series resistor and the far end to ground through the shunt.</p>
+<ol class="prose" start="2">
+<li>Loop open. No current: the near end is pulled to the supply through the series resistor and the far end to ground through the shunt.</li>
+</ol>
 <div class="step"><span class="name">V_a</span><span class="eq">=</span>V_supply<span class="eq">=</span><span class="result">5 V</span></div>
 <div class="step"><span class="name">V_b</span><span class="eq">=</span>0 V</div>
 <div class="step"><span class="name">open_diff</span><span class="eq">=</span>ch_diff(V_a, V_b)<span class="eq">=</span><span class="subst">ch_diff(5 V, 0 V)</span><span class="eq">=</span><span class="result">2.5 V</span></div>
 <div class="step"><span class="name">open_cm</span><span class="eq">=</span>ch_cm(V_a, V_b)<span class="eq">=</span><span class="subst">ch_cm(5 V, 0 V)</span><span class="eq">=</span><span class="result">1.25 V</span></div>
-<p class="prose">3. Short to ground. Both ends are held down, and the series resistor takes the</p>
-<p class="prose">whole supply — which is the dissipation that sizes it.</p>
+<ol class="prose" start="3">
+<li>Short to ground. Both ends are held down, and the series resistor takes the whole supply — which is the dissipation that sizes it.</li>
+</ol>
 <div class="step"><span class="name">V_a</span><span class="eq">=</span>0 V</div>
 <div class="step"><span class="name">V_b</span><span class="eq">=</span>0 V</div>
 <div class="step"><span class="name">gnd_diff</span><span class="eq">=</span>ch_diff(V_a, V_b)<span class="eq">=</span><span class="subst">ch_diff(0 V, 0 V)</span><span class="eq">=</span><span class="result">0 V</span></div>
 <div class="step"><span class="name">gnd_cm</span><span class="eq">=</span>ch_cm(V_a, V_b)<span class="eq">=</span><span class="subst">ch_cm(0 V, 0 V)</span><span class="eq">=</span><span class="result">0 V</span></div>
 <div class="step"><span class="name">I_short</span><span class="eq">=</span>V_supply/R_series<span class="eq">=</span><span class="subst">5 V/(160 ohm)</span><span class="eq">=</span><span class="result">31.25 mA</span></div>
 <div class="step"><span class="name">P_short</span><span class="eq">=</span>V_supply²/R_series<span class="eq">=</span><span class="subst">(5 V)²/(160 ohm)</span><span class="eq">=</span><span class="result">156.25 mW</span></div>
-<p class="prose">4. Short to the supply. Both ends are held up, so the differential channel</p>
-<p class="prose">reads what state 1 and state 3 read and only the common mode tells them apart.</p>
+<ol class="prose" start="4">
+<li>Short to the supply. Both ends are held up, so the differential channel reads what state 1 and state 3 read and only the common mode tells them apart.</li>
+</ol>
 <div class="step"><span class="name">V_a</span><span class="eq">=</span>V_supply<span class="eq">=</span><span class="result">5 V</span></div>
 <div class="step"><span class="name">V_b</span><span class="eq">=</span>V_supply<span class="eq">=</span><span class="result">5 V</span></div>
 <div class="step"><span class="name">sup_diff</span><span class="eq">=</span>ch_diff(V_a, V_b)<span class="eq">=</span><span class="subst">ch_diff(5 V, 5 V)</span><span class="eq">=</span><span class="result">0 V</span></div>
 <div class="step"><span class="name">sup_cm</span><span class="eq">=</span>ch_cm(V_a, V_b)<span class="eq">=</span><span class="subst">ch_cm(5 V, 5 V)</span><span class="eq">=</span><span class="result">2.5 V</span></div>
-<p class="prose">The four readings as a table, differential against common mode. A state is a</p>
-<p class="prose">point on this plane, and the design works exactly when no two points are</p>
-<p class="prose">closer together than the converter can resolve.</p>
+<p class="prose">The four readings as a table, differential against common mode. A state is a point on this plane, and the design works exactly when no two points are closer together than the converter can resolve.</p>
 <div class="step"><span class="name">states</span><span class="eq">=</span>[[closed_diff, closed_cm], [open_diff, open_cm], [gnd_diff, gnd_cm], [sup_diff, sup_cm]]<span class="eq">=</span><span class="result">[[0.0277264 V, 2.11645 V], [2.5 V, 1.25 V], [0 V, 0 V], [0 V, 2.5 V]]</span></div>
 <div class="step">plot(states)</div>
 <figure class="plot"><svg viewBox="0 0 640 380" role="img" aria-label="plot of measured points: states">
@@ -247,18 +229,14 @@ verdict = if within_range and resolved then "four states resolved" else "sense c
 <div class="step"><span class="name">lowest</span><span class="eq">=</span>min([min(diffs), min(cms)])<span class="eq">=</span><span class="subst">min([min([0.0277264 V, 2.5 V, 0 V, 0 V]), min([2.11645 V, 1.25 V, 0 V, 2.5 V])])</span><span class="eq">=</span><span class="result">0 V</span></div>
 <div class="step"><span class="name">within_range</span><span class="eq">=</span>highest &lt; V_adc_max and lowest ≥ 0 V<span class="eq">=</span><span class="subst">2.5 V &lt; 3 V and 0 V ≥ 0 V</span><span class="eq">=</span><span class="result">1</span></div>
 <div class="step"><span class="name">headroom</span><span class="eq">=</span>V_adc_max - highest<span class="eq">=</span><span class="subst">3 V - 2.5 V</span><span class="eq">=</span><span class="result">0.5 V</span></div>
-<p class="prose">The differential channel separates the open loop from everything else; the</p>
-<p class="prose">common-mode channel separates the other three from each other. The tightest</p>
-<p class="prose">of those four gaps is what the design is judged on.</p>
+<p class="prose">The differential channel separates the open loop from everything else; the common-mode channel separates the other three from each other. The tightest of those four gaps is what the design is judged on.</p>
 <div class="step"><span class="name">lsb</span><span class="eq">=</span>V_adc_max/2^adc_bits<span class="eq">=</span><span class="subst">3 V/2^12</span><span class="eq">=</span><span class="result">0.732422 mV</span></div>
 <div class="step"><span class="name">gap_open</span><span class="eq">=</span>abs(open_diff - closed_diff)<span class="eq">=</span><span class="subst">abs(2.5 V - 0.0277264 V)</span><span class="eq">=</span><span class="result">2.47227 V</span></div>
 <div class="step"><span class="name">gap_gnd</span><span class="eq">=</span>abs(closed_cm - gnd_cm)<span class="eq">=</span><span class="subst">abs(2.11645 V - 0 V)</span><span class="eq">=</span><span class="result">2.11645 V</span></div>
 <div class="step"><span class="name">gap_sup</span><span class="eq">=</span>abs(sup_cm - closed_cm)<span class="eq">=</span><span class="subst">abs(2.5 V - 2.11645 V)</span><span class="eq">=</span><span class="result">0.383549 V</span></div>
 <div class="step"><span class="name">tightest</span><span class="eq">=</span>min([gap_open, gap_gnd, gap_sup])<span class="eq">=</span><span class="subst">min([2.47227 V, 2.11645 V, 0.383549 V])</span><span class="eq">=</span><span class="result">0.383549 V</span></div>
 <div class="step"><span class="name">counts</span><span class="eq">=</span>tightest/lsb<span class="eq">=</span><span class="subst">0.383549 V/(0.732422 mV)</span><span class="eq">=</span><span class="result">523.672</span></div>
-<p class="prose">A hundred converter steps between neighbouring states leaves room for the</p>
-<p class="prose">resistor tolerances and the amplifier's offset, neither of which this</p>
-<p class="prose">worksheet has sized yet.</p>
+<p class="prose">A hundred converter steps between neighbouring states leaves room for the resistor tolerances and the amplifier's offset, neither of which this worksheet has sized yet.</p>
 <div class="step"><span class="name">margin_needed</span><span class="eq">=</span>100</div>
 <div class="step"><span class="name">resolved</span><span class="eq">=</span>counts &gt; margin_needed<span class="eq">=</span><span class="subst">523.672 &gt; 100</span><span class="eq">=</span><span class="result">1</span></div>
 <div class="step"><span class="name">verdict</span><span class="eq">=</span>if within_range and resolved then &quot;four states resolved&quot; else &quot;sense chain needs rework&quot;<span class="eq">=</span><span class="subst">if 1 and 1 then &quot;four states resolved&quot; else &quot;sense chain needs rework&quot;</span><span class="eq">=</span><span class="result">&quot;four states resolved&quot;</span></div>

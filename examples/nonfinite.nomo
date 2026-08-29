@@ -1,4 +1,4 @@
-' Non-finite results
+' # Non-finite results
 ' NaN, the infinities, and signed zero.
 '
 ' These are in the corpus for the cross-target comparison rather than for the

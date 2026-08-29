@@ -1,6 +1,6 @@
 ' nomo 1
 
-' LLC resonant converter — first-harmonic design
+' # LLC resonant converter — first-harmonic design
 '
 ' A worked design for a half-bridge LLC stage, carried out the way the
 ' textbooks do it: replace the square wave by its first harmonic, replace the

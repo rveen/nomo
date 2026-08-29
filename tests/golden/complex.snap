@@ -2,8 +2,7 @@
 # worksheet: complex
 
 === text ===
-nomo 1
-Complex numbers
+# Complex numbers
 The imaginary unit is `i`, an ordinary constant. Juxtaposition is already
 multiplication, so `4i` is `4*i` and needs no special number syntax — the
 same reading that makes `2e` mean `2*e`.
@@ -54,15 +53,11 @@ abs(Zrlc) = abs((32.3383 + 1.79395e-5i) Ω) = 32.3383 Ω
 arg(Zrlc)·180/π = arg((32.3383 + 1.79395e-5i) Ω)·180/π = 3.17844e-5
 
 === html ===
-<p class="prose">nomo 1</p>
-<p class="prose">Complex numbers</p>
-<p class="prose">The imaginary unit is `i`, an ordinary constant. Juxtaposition is already</p>
-<p class="prose">multiplication, so `4i` is `4*i` and needs no special number syntax — the</p>
-<p class="prose">same reading that makes `2e` mean `2*e`.</p>
+<h1 class="prose">Complex numbers</h1>
+<p class="prose">The imaginary unit is `i`, an ordinary constant. Juxtaposition is already multiplication, so `4i` is `4*i` and needs no special number syntax — the same reading that makes `2e` mean `2*e`.</p>
 <div class="step"><span class="name">z</span><span class="eq">=</span>3 + 4 i<span class="eq">=</span><span class="result">3 + 4i</span></div>
 <div class="step"><span class="name">w</span><span class="eq">=</span>1 - 2 i<span class="eq">=</span><span class="result">1 - 2i</span></div>
-<p class="prose">Arithmetic. Any operation with a complex operand on either side answers</p>
-<p class="prose">complex, promoting the real one.</p>
+<p class="prose">Arithmetic. Any operation with a complex operand on either side answers complex, promoting the real one.</p>
 <div class="step"><span class="name">sum</span><span class="eq">=</span>z + w<span class="eq">=</span><span class="subst">3 + 4i + (1 - 2i)</span><span class="eq">=</span><span class="result">4 + 2i</span></div>
 <div class="step"><span class="name">difference</span><span class="eq">=</span>z - w<span class="eq">=</span><span class="subst">3 + 4i - (1 - 2i)</span><span class="eq">=</span><span class="result">2 + 6i</span></div>
 <div class="step"><span class="name">product</span><span class="eq">=</span>z·w<span class="eq">=</span><span class="subst">(3 + 4i)·(1 - 2i)</span><span class="eq">=</span><span class="result">11 - 2i</span></div>
@@ -71,32 +66,27 @@ arg(Zrlc)·180/π = arg((32.3383 + 1.79395e-5i) Ω)·180/π = 3.17844e-5
 <div class="step"><span class="name">negated</span><span class="eq">=</span>0 - z<span class="eq">=</span><span class="subst">0 - (3 + 4i)</span><span class="eq">=</span><span class="result">-3 - 4i</span></div>
 <p class="prose">`i` squared is where the whole thing comes from.</p>
 <div class="step">i²<span class="eq">=</span><span class="result">-1 + 0i</span></div>
-<p class="prose">Taking a value apart. `Re` and `Im` give real numbers; `Im` is the</p>
-<p class="prose">coefficient of `i`, so `Re(z) + Im(z)*i` rebuilds `z`.</p>
+<p class="prose">Taking a value apart. `Re` and `Im` give real numbers; `Im` is the coefficient of `i`, so `Re(z) + Im(z)*i` rebuilds `z`.</p>
 <div class="step">Re(z)<span class="eq">=</span><span class="subst">Re(3 + 4i)</span><span class="eq">=</span><span class="result">3</span></div>
 <div class="step">Im(z)<span class="eq">=</span><span class="subst">Im(3 + 4i)</span><span class="eq">=</span><span class="result">4</span></div>
 <div class="step">conj(z)<span class="eq">=</span><span class="subst">conj(3 + 4i)</span><span class="eq">=</span><span class="result">3 - 4i</span></div>
 <div class="step">abs(z)<span class="eq">=</span><span class="subst">abs(3 + 4i)</span><span class="eq">=</span><span class="result">5</span></div>
 <div class="step">arg(z)<span class="eq">=</span><span class="subst">arg(3 + 4i)</span><span class="eq">=</span><span class="result">0.927295</span></div>
-<p class="prose">Whole powers only, by repeated multiplication. A fractional power of a</p>
-<p class="prose">complex number needs a branch cut, which this language does not choose.</p>
+<p class="prose">Whole powers only, by repeated multiplication. A fractional power of a complex number needs a branch cut, which this language does not choose.</p>
 <div class="step">z²<span class="eq">=</span><span class="subst">(3 + 4i)²</span><span class="eq">=</span><span class="result">-7 + 24i</span></div>
 <div class="step">z³<span class="eq">=</span><span class="subst">(3 + 4i)³</span><span class="eq">=</span><span class="result">-117 + 44i</span></div>
 <div class="step">z⁰<span class="eq">=</span><span class="subst">(3 + 4i)⁰</span><span class="eq">=</span><span class="result">1 + 0i</span></div>
 <div class="step">z^(0 - 1)<span class="eq">=</span><span class="subst">(3 + 4i)^(0 - 1)</span><span class="eq">=</span><span class="result">0.12 - 0.16i</span></div>
-<p class="prose">A complex value stays complex. Nothing demotes when the imaginary part</p>
-<p class="prose">happens to be zero, so a result's type never depends on its value.</p>
+<p class="prose">A complex value stays complex. Nothing demotes when the imaginary part happens to be zero, so a result's type never depends on its value.</p>
 <div class="step"><span class="name">real_again</span><span class="eq">=</span>z - 4 i<span class="eq">=</span><span class="subst">3 + 4i - 4 i</span><span class="eq">=</span><span class="result">3 + 0i</span></div>
-<p class="prose">Units. Both parts share one dimension, because they are components of one</p>
-<p class="prose">measurement rather than two measurements.</p>
+<p class="prose">Units. Both parts share one dimension, because they are components of one measurement rather than two measurements.</p>
 <div class="step"><span class="name">Z</span><span class="eq">=</span>(3 + 4 i) Ω<span class="eq">=</span><span class="result">(3 + 4i) Ω</span></div>
 <div class="step">Z<span class="eq">=</span><span class="result">(0.003 + 0.004i) kΩ</span></div>
 <div class="step">abs(Z)<span class="eq">=</span><span class="subst">abs((3 + 4i) Ω)</span><span class="eq">=</span><span class="result">5 Ω</span></div>
 <div class="step">Re(Z)<span class="eq">=</span><span class="subst">Re((3 + 4i) Ω)</span><span class="eq">=</span><span class="result">3 Ω</span></div>
 <p class="prose">The argument is an angle, so it is dimensionless whatever Z is measured in.</p>
 <div class="step">arg(Z)<span class="eq">=</span><span class="subst">arg((3 + 4i) Ω)</span><span class="eq">=</span><span class="result">0.927295</span></div>
-<p class="prose">The impedance of a series RLC branch at one frequency, which is what the</p>
-<p class="prose">corpus uses complex arithmetic for.</p>
+<p class="prose">The impedance of a series RLC branch at one frequency, which is what the corpus uses complex arithmetic for.</p>
 <div class="step"><span class="name">R</span><span class="eq">=</span>32.3383 Ω</div>
 <div class="step"><span class="name">L</span><span class="eq">=</span>4.58533e-5 H</div>
 <div class="step"><span class="name">C</span><span class="eq">=</span>4.56546e-8 F</div>

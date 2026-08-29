@@ -16,6 +16,7 @@
 use super::{plot, RenderOptions, Renderer};
 use crate::doc::Sheet;
 use crate::eval::OutcomeKind;
+use crate::prose::{self, Block};
 use crate::resource::{self, Reference, Resources};
 use crate::value::Value;
 
@@ -26,7 +27,20 @@ body {
   max-width: 46rem; margin: 2rem auto; padding: 0 1.5rem; line-height: 1.6;
 }
 h1 { font-size: 1.4rem; font-weight: 600; margin: 0 0 1.5rem; }
-.prose { margin: 1.2rem 0 0.4rem; }
+p.prose { margin: 1.2rem 0 0.4rem; }
+/* Headings the worksheet wrote itself. The document's own title is the `h1`
+   above, set once; these are sections inside it, so what they need is space
+   before them rather than the title's margins. Sizes stay close together on
+   purpose — an engineering worksheet is a few pages, not a manual, and a
+   heading three times the size of the mathematics under it reads as a poster. */
+h1.prose, h2.prose, h3.prose, h4.prose, h5.prose, h6.prose {
+  margin: 1.8rem 0 0.5rem; line-height: 1.3; font-weight: 600;
+}
+h2.prose { font-size: 1.2rem; }
+h3.prose { font-size: 1.05rem; }
+h4.prose, h5.prose, h6.prose { font-size: 1rem; }
+ul.prose, ol.prose { margin: 0.8rem 0; padding-left: 1.6rem; }
+ul.prose li, ol.prose li { margin: 0.2rem 0; }
 .step {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
   font-size: 0.95rem; margin: 0.15rem 0; padding: 0.15rem 0;
@@ -80,6 +94,8 @@ figcaption { font-size: 0.8rem; opacity: 0.55; margin-top: 0.3rem; }
   body { max-width: none; margin: 0; font-size: 10pt; }
   .step { overflow-x: visible; white-space: pre-wrap; }
   figure { break-inside: avoid; }
+  /* A heading at the foot of a page is a heading in the wrong place. */
+  h1.prose, h2.prose, h3.prose, h4.prose, h5.prose, h6.prose { break-after: avoid; }
 }
 "#;
 
@@ -98,17 +114,63 @@ fn escape(s: &str) -> String {
 }
 
 /// Render an evaluated worksheet as a standalone HTML document.
+///
+/// `title` is what the caller knows the worksheet as — the file's name, for
+/// `nomo html`. A worksheet that opens with a level-1 heading has said what it
+/// is called itself, and that wins: it names the document, and the chrome's own
+/// `<h1>` is dropped rather than printed above it. Two titles on one page, one
+/// of them a file name, is what showing both would mean.
 pub fn render(sheet: &Sheet, opts: &RenderOptions, title: &str) -> String {
+    let body = body(sheet, opts);
+    let (title, heading) = match opening_heading(sheet) {
+        Some(own) => (own, String::new()),
+        None => (title.to_string(), format!("<h1>{}</h1>\n", escape(title))),
+    };
     format!(
         "<!doctype html>\n<html lang=\"en\">\n<head>\n\
          <meta charset=\"utf-8\">\n\
          <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\
          <title>{}</title>\n<style>{STYLE}</style>\n</head>\n<body>\n\
-         <h1>{}</h1>\n{}</body>\n</html>\n",
-        escape(title),
-        escape(title),
-        body(sheet, opts)
+         {heading}{}</body>\n</html>\n",
+        escape(&title),
+        body
     )
+}
+
+/// The worksheet's own title: a level-1 heading opening its first run of prose.
+///
+/// Only the first run, and only its first block. A `# ` further down is a
+/// section inside the document, not a second name for it.
+fn opening_heading(sheet: &Sheet) -> Option<String> {
+    let source = sheet.source();
+    let mut run: Vec<&str> = Vec::new();
+    let mut run_end: Option<u32> = None;
+
+    for (i, outcome) in sheet.outcomes().iter().enumerate() {
+        if sheet.resources().is_hidden(i) || sheet.is_version_pragma(i) {
+            // The pragma stands above the title in most worksheets, so skipping
+            // it is the point; anything hidden after the prose has begun ends it.
+            if run.is_empty() {
+                continue;
+            }
+            break;
+        }
+        match &outcome.kind {
+            OutcomeKind::Comment(text)
+                if resource::reference(text).is_none()
+                    && adjacent(source, run_end, outcome.span.start) =>
+            {
+                run.push(text);
+                run_end = Some(outcome.span.end);
+            }
+            _ => break,
+        }
+    }
+
+    match prose::blocks(&run).first() {
+        Some(Block::Heading { level: 1, text }) => Some(text.clone()),
+        _ => None,
+    }
 }
 
 /// The worksheet's markup on its own, without the document chrome.
@@ -125,18 +187,43 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
     let mut body = String::new();
     let eq = r#"<span class="eq">=</span>"#;
 
+    // The prose run currently being collected, and where its last line ended.
+    // Comments arrive one per line; a paragraph is a run of them, so they are
+    // held until something that is not the next line of the same prose arrives.
+    let mut run: Vec<&str> = Vec::new();
+    let mut run_end: Option<u32> = None;
+
     for (i, outcome) in sheet.outcomes().iter().enumerate() {
         // The resource trailer is data. Rendered as prose it is several
-        // thousand paragraphs of base64 ahead of the figures themselves.
-        if sheet.resources().is_hidden(i) {
+        // thousand paragraphs of base64 ahead of the figures themselves. The
+        // version pragma is metadata, and a paragraph beginning `nomo 1` is
+        // what showing it would now produce.
+        let hidden = sheet.resources().is_hidden(i) || sheet.is_version_pragma(i);
+
+        // A run of prose ends at anything that is not its next line: a
+        // statement, a figure, a blank source line, the trailer or the pragma.
+        let continues = !hidden
+            && match &outcome.kind {
+                OutcomeKind::Comment(text) => {
+                    resource::reference(text).is_none()
+                        && adjacent(&source, run_end, outcome.span.start)
+                }
+                _ => false,
+            };
+        if !continues {
+            body.push_str(&flush(&mut run));
+            run_end = None;
+        }
+        if hidden {
             continue;
         }
         match &outcome.kind {
             OutcomeKind::Comment(text) => {
                 if let Some(reference) = resource::reference(text) {
                     body.push_str(&figure(sheet.resources(), &reference));
-                } else if !text.is_empty() {
-                    body.push_str(&format!("<p class=\"prose\">{}</p>\n", escape(text)));
+                } else {
+                    run.push(text);
+                    run_end = Some(outcome.span.end);
                 }
             }
 
@@ -220,7 +307,81 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
         }
     }
 
+    body.push_str(&flush(&mut run));
     body
+}
+
+/// Whether a comment starting at `start` is the next line of the run that ended
+/// at `end`.
+///
+/// A comment's span runs from its `'` to the end of the line and stops short of
+/// the newline, so two comments on consecutive lines have exactly one newline
+/// between them. Two of them with a blank line between have two, and that blank
+/// line is what separates one paragraph from the next — Markdown's own rule,
+/// and what an empty `'` has always looked like on the page.
+///
+/// Byte arithmetic rather than line numbers: `Span::line_col` walks the source
+/// from the top, and calling it once per outcome would make rendering quadratic
+/// in the length of the worksheet.
+fn adjacent(source: &str, end: Option<u32>, start: u32) -> bool {
+    let Some(end) = end else {
+        return true;
+    };
+    let gap = source.get(end as usize..start as usize).unwrap_or_default();
+    gap.matches('\n').count() == 1
+}
+
+/// Render the collected run as prose and empty it.
+fn flush(run: &mut Vec<&str>) -> String {
+    if run.is_empty() {
+        return String::new();
+    }
+    let html = prose_html(&prose::blocks(run));
+    run.clear();
+    html
+}
+
+/// Markdown blocks as markup.
+///
+/// Every string that arrives here is worksheet text on its way into a document
+/// somebody is about to open, so all of it is escaped: the subset in
+/// `crate::prose` has no raw HTML in it, deliberately, and this is the half of
+/// that decision that has to hold.
+fn prose_html(blocks: &[Block]) -> String {
+    let mut out = String::new();
+    for block in blocks {
+        match block {
+            Block::Heading { level, text } => {
+                out.push_str(&format!(
+                    "<h{level} class=\"prose\">{}</h{level}>\n",
+                    escape(text)
+                ));
+            }
+            Block::Paragraph { text } => {
+                out.push_str(&format!("<p class=\"prose\">{}</p>\n", escape(text)));
+            }
+            Block::List {
+                ordered,
+                start,
+                items,
+            } => {
+                let tag = if *ordered { "ol" } else { "ul" };
+                // A worksheet numbers steps with the mathematics between them,
+                // so an item can be its own list. `start` is what keeps the
+                // second step numbered 2 instead of renumbering the document.
+                let from = match (*ordered, *start) {
+                    (true, n) if n != 1 => format!(" start=\"{n}\""),
+                    _ => String::new(),
+                };
+                out.push_str(&format!("<{tag} class=\"prose\"{from}>\n"));
+                for item in items {
+                    out.push_str(&format!("<li>{}</li>\n", escape(item)));
+                }
+                out.push_str(&format!("</{tag}>\n"));
+            }
+        }
+    }
+    out
 }
 
 fn result_span(trace: &crate::trace::Trace, result: &str) -> String {
@@ -305,6 +466,129 @@ mod tests {
     }
 
     const GAUGE: &str = "' image gauge\n\n' --- resources ---\n' image gauge png 6\n'   SGVsbG8h\n";
+
+    #[test]
+    fn a_wrapped_paragraph_is_one_paragraph() {
+        // What the block model is for: prose wrapped at 80 columns used to
+        // render as a stack of one-line paragraphs.
+        let html = body_of("' A worked design for a half-bridge LLC stage,\n' carried out the way the textbooks do it.\n");
+        assert_eq!(
+            html,
+            "<p class=\"prose\">A worked design for a half-bridge LLC stage, carried out the way the textbooks do it.</p>\n"
+        );
+    }
+
+    #[test]
+    fn a_blank_line_starts_a_new_paragraph() {
+        let html = body_of("' first\n\n' second\n");
+        assert_eq!(
+            html,
+            "<p class=\"prose\">first</p>\n<p class=\"prose\">second</p>\n"
+        );
+    }
+
+    #[test]
+    fn an_empty_comment_starts_a_new_paragraph_too() {
+        // `'` on its own is how a worksheet already writes a paragraph break,
+        // and it is Markdown's blank line.
+        let html = body_of("' first\n'\n' second\n");
+        assert_eq!(
+            html,
+            "<p class=\"prose\">first</p>\n<p class=\"prose\">second</p>\n"
+        );
+    }
+
+    #[test]
+    fn a_statement_between_two_comments_ends_the_paragraph() {
+        let html = body_of("' before\nx = 1\n' after\n");
+        assert!(
+            html.starts_with("<p class=\"prose\">before</p>\n"),
+            "{html}"
+        );
+        assert!(html.ends_with("<p class=\"prose\">after</p>\n"), "{html}");
+    }
+
+    #[test]
+    fn a_figure_between_two_comments_ends_the_paragraph() {
+        // A figure is a block of its own, and prose either side of it is either
+        // side of it.
+        let html = body_of(
+            "' above\n' image gauge\n' below\n\n' --- resources ---\n' image gauge png 6\n'   SGVsbG8h\n",
+        );
+        assert!(
+            html.starts_with("<p class=\"prose\">above</p>\n<figure>"),
+            "{html}"
+        );
+        assert!(html.ends_with("<p class=\"prose\">below</p>\n"), "{html}");
+    }
+
+    #[test]
+    fn the_version_pragma_is_not_prose() {
+        // It is metadata, and joined to the line under it it would open the
+        // document with `nomo 1 Complex numbers`.
+        let html = body_of("' nomo 1\n' Complex numbers\n");
+        assert_eq!(html, "<p class=\"prose\">Complex numbers</p>\n");
+    }
+
+    #[test]
+    fn headings_and_lists_are_rendered_as_such() {
+        let html = body_of("' # Design\n' The method has three steps.\n\n' - one\n' - two\n");
+        assert_eq!(
+            html,
+            "<h1 class=\"prose\">Design</h1>\n\
+             <p class=\"prose\">The method has three steps.</p>\n\
+             <ul class=\"prose\">\n<li>one</li>\n<li>two</li>\n</ul>\n"
+        );
+    }
+
+    #[test]
+    fn an_ordered_list_keeps_the_number_the_worksheet_wrote() {
+        // A worksheet numbers its steps with the mathematics between them, so
+        // the second step arrives as a list of its own.
+        let html = body_of("' 2. Loop open.\n");
+        assert_eq!(
+            html,
+            "<ol class=\"prose\" start=\"2\">\n<li>Loop open.</li>\n</ol>\n"
+        );
+        assert!(body_of("' 1. Loop closed.\n").contains("<ol class=\"prose\">"));
+    }
+
+    #[test]
+    fn prose_is_escaped_and_the_subset_has_no_raw_html() {
+        // A `.nomo` file may have been written by the importer out of a
+        // third-party worksheet, and this output is assigned to `innerHTML` by
+        // the browser front end.
+        let html = body_of("' # <script>alert(1)</script>\n' - <img onerror=x>\n");
+        assert!(!html.contains("<script>"), "{html}");
+        assert!(!html.contains("<img"), "{html}");
+        assert!(html.contains("&lt;script&gt;"), "{html}");
+    }
+
+    #[test]
+    fn a_worksheet_that_names_itself_is_not_titled_twice() {
+        let sheet = Sheet::new("' nomo 1\n' # LLC converter\n' A worked design.\n");
+        let doc = super::render(&sheet, &RenderOptions::default(), "llc");
+        assert!(doc.contains("<title>LLC converter</title>"), "{doc}");
+        assert!(!doc.contains("<h1>llc</h1>"), "{doc}");
+        assert_eq!(doc.matches("<h1").count(), 1, "{doc}");
+    }
+
+    #[test]
+    fn a_worksheet_with_no_heading_keeps_the_name_it_was_given() {
+        let sheet = Sheet::new("' Cylinder volume\nr = 5 cm\n");
+        let doc = super::render(&sheet, &RenderOptions::default(), "cylinder");
+        assert!(doc.contains("<title>cylinder</title>"), "{doc}");
+        assert!(doc.contains("<h1>cylinder</h1>"), "{doc}");
+    }
+
+    #[test]
+    fn only_the_opening_block_names_the_document() {
+        // A `# ` further down is a section inside the worksheet, not a second
+        // name for it.
+        let sheet = Sheet::new("' Cylinder volume\n\n' # Method\n");
+        let doc = super::render(&sheet, &RenderOptions::default(), "cylinder");
+        assert!(doc.contains("<h1>cylinder</h1>"), "{doc}");
+    }
 
     #[test]
     fn an_image_is_embedded_where_it_was_referenced() {

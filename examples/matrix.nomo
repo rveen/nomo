@@ -1,4 +1,4 @@
-' Vectors and matrices
+' # Vectors and matrices
 ' Element-wise against matrix arithmetic, indexing, and the aggregates.
 
 v = [3, 4, 12]

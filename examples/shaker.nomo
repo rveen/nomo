@@ -1,4 +1,4 @@
-' Shaker specifications
+' # Shaker specifications
 ' Adapted from the SMath corpus (ling.sm) to exercise units and vectors.
 
 unit kip = 1000 lbf

@@ -1,5 +1,4 @@
-' Numerical methods
-' ==================
+' # Numerical methods
 ' Two things a worksheet reaches for that have no closed form: where a function
 ' crosses zero, and the area under it. Both take the *name* of a function, the
 ' way `map` and `iterate` do, and both do a fixed amount of work rather than

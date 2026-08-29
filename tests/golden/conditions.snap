@@ -2,7 +2,7 @@
 # worksheet: conditions
 
 === text ===
-Conditions
+# Conditions
 Comparisons, logic, and the conditional expression.
 A comparison answers 1 or 0. There is no separate boolean type: SMath
 worksheets compute with comparisons as numbers, and this language has to be
@@ -46,43 +46,33 @@ timber = "C24"
 is_c24 = timber == "C24" = "C24" == "C24" = 1
 
 === html ===
-<p class="prose">Conditions</p>
+<h1 class="prose">Conditions</h1>
 <p class="prose">Comparisons, logic, and the conditional expression.</p>
-<p class="prose">A comparison answers 1 or 0. There is no separate boolean type: SMath</p>
-<p class="prose">worksheets compute with comparisons as numbers, and this language has to be</p>
-<p class="prose">able to receive them.</p>
+<p class="prose">A comparison answers 1 or 0. There is no separate boolean type: SMath worksheets compute with comparisons as numbers, and this language has to be able to receive them.</p>
 <div class="step"><span class="name">span</span><span class="eq">=</span>6 m</div>
 <div class="step"><span class="name">allowed</span><span class="eq">=</span>4 m</div>
 <div class="step"><span class="name">too_long</span><span class="eq">=</span>span &gt; allowed<span class="eq">=</span><span class="subst">6 m &gt; 4 m</span><span class="eq">=</span><span class="result">1</span></div>
-<p class="prose">Both sides are held in base SI, so a comparison converts before it compares.</p>
-<p class="prose">Neither of these needs a conversion written into it.</p>
+<p class="prose">Both sides are held in base SI, so a comparison converts before it compares. Neither of these needs a conversion written into it.</p>
 <div class="step"><span class="name">imperial</span><span class="eq">=</span>1 in &lt; 1 m<span class="eq">=</span><span class="result">1</span></div>
 <div class="step"><span class="name">strong</span><span class="eq">=</span>1 kip &gt; 1 lbf<span class="eq">=</span><span class="result">1</span></div>
-<p class="prose">`and`, `or` and `not` are words. `!` is factorial to anyone who has met SMath</p>
-<p class="prose">and `&amp;` is bitwise to anyone who has met C, so neither is borrowed here.</p>
+<p class="prose">`and`, `or` and `not` are words. `!` is factorial to anyone who has met SMath and `&amp;` is bitwise to anyone who has met C, so neither is borrowed here.</p>
 <div class="step"><span class="name">in_range</span><span class="eq">=</span>span &gt; 1 m and span &lt; 10 m<span class="eq">=</span><span class="subst">6 m &gt; 1 m and 6 m &lt; 10 m</span><span class="eq">=</span><span class="result">1</span></div>
 <div class="step"><span class="name">outside</span><span class="eq">=</span>not in_range<span class="eq">=</span><span class="subst">not 1</span><span class="eq">=</span><span class="result">0</span></div>
-<p class="prose">The conditional is an expression, so it composes with arithmetic and needs no</p>
-<p class="prose">statement form of its own.</p>
+<p class="prose">The conditional is an expression, so it composes with arithmetic and needs no statement form of its own.</p>
 <div class="step"><span class="name">overhang</span><span class="eq">=</span>if span &gt; allowed then span - allowed else 0 m<span class="eq">=</span><span class="subst">if 6 m &gt; 4 m then 6 m - 4 m else 0 m</span><span class="eq">=</span><span class="result">2 m</span></div>
-<p class="prose">Only the arm that is taken is evaluated, which is what lets a conditional</p>
-<p class="prose">guard something that would otherwise fail. `bay[0]` would be out of bounds.</p>
+<p class="prose">Only the arm that is taken is evaluated, which is what lets a conditional guard something that would otherwise fail. `bay[0]` would be out of bounds.</p>
 <div class="step"><span class="name">bay</span><span class="eq">=</span>[3 m, 4 m, 5 m]</div>
 <div class="step"><span class="name">n</span><span class="eq">=</span>0</div>
 <div class="step"><span class="name">chosen</span><span class="eq">=</span>if n &gt; 0 then bay[n] else 0 m<span class="eq">=</span><span class="subst">if 0 &gt; 0 then bay[n] else 0 m</span><span class="eq">=</span><span class="result">0 m</span></div>
-<p class="prose">Chained without brackets: the `else` arm reaches as far as it can, so `else</p>
-<p class="prose">if` is just another conditional inside it.</p>
+<p class="prose">Chained without brackets: the `else` arm reaches as far as it can, so `else if` is just another conditional inside it.</p>
 <div class="step"><span class="name">load</span><span class="eq">=</span>7 kN</div>
 <div class="step"><span class="name">grade</span><span class="eq">=</span>if load &lt; 5 kN then 1 else if load &lt; 10 kN then 2 else 3<span class="eq">=</span><span class="subst">if 7 kN &lt; 5 kN then 1 else if 7 kN &lt; 10 kN then 2 else 3</span><span class="eq">=</span><span class="result">2</span></div>
 <p class="prose">A function body can be piecewise.</p>
 <div class="step note">fn stress defined</div>
 <div class="step"><span class="name">sigma</span><span class="eq">=</span>stress(10 kN, 2 m²)<span class="eq">=</span><span class="result">5000 Pa</span></div>
-<p class="prose">Substitution shows which way the worksheet went. The arm that did not run is</p>
-<p class="prose">shown as it was written, because it has no values to show.</p>
+<p class="prose">Substitution shows which way the worksheet went. The arm that did not run is shown as it was written, because it has no values to show.</p>
 <div class="step"><span class="name">margin</span><span class="eq">=</span>if too_long then span - allowed else allowed - span<span class="eq">=</span><span class="subst">if 1 then 6 m - 4 m else allowed - span</span><span class="eq">=</span><span class="result">2 m</span></div>
-<p class="prose">A verdict in words. A string is a value like any other — it binds to a name,</p>
-<p class="prose">an `if` chooses between two, and `==` compares them — and it has no arithmetic</p>
-<p class="prose">at all, which is the whole of what a worksheet does with one.</p>
+<p class="prose">A verdict in words. A string is a value like any other — it binds to a name, an `if` chooses between two, and `==` compares them — and it has no arithmetic at all, which is the whole of what a worksheet does with one.</p>
 <div class="step"><span class="name">a</span><span class="eq">=</span>3 m</div>
 <div class="step"><span class="name">a_max</span><span class="eq">=</span>4 m</div>
 <div class="step"><span class="name">verdict</span><span class="eq">=</span>if a ≤ a_max then &quot;singly reinforced&quot; else &quot;doubly reinforced&quot;<span class="eq">=</span><span class="subst">if 3 m ≤ 4 m then &quot;singly reinforced&quot; else &quot;doubly reinforced&quot;</span><span class="eq">=</span><span class="result">&quot;singly reinforced&quot;</span></div>

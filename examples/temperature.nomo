@@ -1,4 +1,4 @@
-' Temperature, and the affine rules
+' # Temperature, and the affine rules
 ' °C and °F are offset scales, so not every operation on them is meaningful.
 '
 ' A reading on an offset scale is a point; every other quantity is an interval, a

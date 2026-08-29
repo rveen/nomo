@@ -28,8 +28,9 @@ function of `x`, in that order.
 | — Root finding | **done** | `root(f, a, b)` bisects a bracket; `roots(f, a, b)` scans a window — 200 intervals, every sign change bisected — and answers with one root or a vector of them. The second exists because SMath's `solve` is a search rather than a bracket, which was settled by reading `SpecialFunctions.dll` (design note §8.24) |
 | — Strings | **first phase done** | A literal, bindable, choosable by `if`, comparable with `==`. No arithmetic, no order, none inside a collection — which is what the 41 corpus markers for them needed and no more (§8.32) |
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
+| — Prose as Markdown | **block level done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline formatting is not built and `_` emphasis never will be. Design note §8.41, `examples/prose.nomo` |
 
-549 tests and 17 golden snapshots. `git log` is one commit per phase, and each
+581 tests and 18 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -64,7 +65,7 @@ does not survive it, and then:
 
 ```bash
 cd /files/work/nomo
-cargo test --workspace                                  # 549 tests
+cargo test --workspace                                  # 581 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ./scripts/check-no-host-math.sh                         # determinism guard

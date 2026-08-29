@@ -1,6 +1,6 @@
 ' nomo 1
 
-' Interlock line monitor — sense chain and its four states
+' # Interlock line monitor — sense chain and its four states
 '
 ' A safety interlock is a loop of wire threaded through every connector that has
 ' to be mated before a high-voltage bus may energise. Unplug one and the loop

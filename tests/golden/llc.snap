@@ -2,8 +2,7 @@
 # worksheet: llc
 
 === text ===
-nomo 1
-LLC resonant converter — first-harmonic design
+# LLC resonant converter — first-harmonic design
 
 A worked design for a half-bridge LLC stage, carried out the way the
 textbooks do it: replace the square wave by its first harmonic, replace the
@@ -118,18 +117,9 @@ V_Cr_rating = 630 V
 capacitor_ok = V_Cr_pk < V_Cr_rating = 458.366 V < 630 V = 1
 
 === html ===
-<p class="prose">nomo 1</p>
-<p class="prose">LLC resonant converter — first-harmonic design</p>
-<p class="prose">A worked design for a half-bridge LLC stage, carried out the way the</p>
-<p class="prose">textbooks do it: replace the square wave by its first harmonic, replace the</p>
-<p class="prose">rectifier and its load by the equivalent resistance they present at that</p>
-<p class="prose">frequency, and what is left is a linear network that can be written down.</p>
-<p class="prose">Steigerwald's 1988 comparison of resonant topologies is where the method comes</p>
-<p class="prose">from, and every converter application note since repeats it.</p>
-<p class="prose">It is here because it is the shape a real engineering worksheet has: a page of</p>
-<p class="prose">stated inputs, a chain of definitions that never mutates anything, a complex</p>
-<p class="prose">impedance, three gain curves that have to be compared against each other, and</p>
-<p class="prose">a verdict at the end that says whether the design meets the specification.</p>
+<h1 class="prose">LLC resonant converter — first-harmonic design</h1>
+<p class="prose">A worked design for a half-bridge LLC stage, carried out the way the textbooks do it: replace the square wave by its first harmonic, replace the rectifier and its load by the equivalent resistance they present at that frequency, and what is left is a linear network that can be written down. Steigerwald's 1988 comparison of resonant topologies is where the method comes from, and every converter application note since repeats it.</p>
+<p class="prose">It is here because it is the shape a real engineering worksheet has: a page of stated inputs, a chain of definitions that never mutates anything, a complex impedance, three gain curves that have to be compared against each other, and a verdict at the end that says whether the design meets the specification.</p>
 <figure><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAggAAAEECAIAAADCtFvSAAAFxklEQVR42u3dQU7sOBCA4T4KYtHiGJySFUvO0tcCpGxY0MFpu0yq/H3KZmbAkp1Ufr0exLt8AsAPF0cAgDAAIAwACAMAwgCAMAAgDAAIAwDCAIAwACAMAAgDAMIAgDAAIAwACAMAwgCAMAAgDAAIAwAIAwDCAIAwACAMAAgDAMIAgDAAIAwACAMAwgCAMAAgDAAIAwDCAIAwACAMAAgDAMIAgDAAIAwAIAwACAMAwgCAMAAgDAAIAwDCAIAwACAMAAgDAMIAgDAAIAwACAMAwgCAMHAKT8/XncuagDBIQtcrcuU1AWEolYTHvsaagDAUrMKQL155zZPc0P1/A8JA08tu1HetvKYwgDCsWIX97115TWEAYVi3CvdWWHlNYQBhqBOGgYusvKYwgDCoQuBP7KRbUxhAGIRBGIQBhEEV5n7gnm5NYQBhEAZhEAYQhlphsOaZ1xQGhAFhsKYwIAw5f3lcpctLvPbz4wk3v8IgDMIgDMJgfoWh7kcB4KMk81tpv8IAwmB+7VcYQBjMr/0KAwiD+bVfYQBhML/2KwwgDObXfoUBhMH82q8wCAPC4EVpv8IgDAiDF6X9CoMHC2HworRfYfBgIQzCYL/C4MECvy3YfoXBgwXCYL/C4KABYRAGBw2YX2Fw0ID5FQYHDZhfYXDQgPkVBgcNmF9hcNCA+RUGBw2YX/sVBsD82q8wAObXfoUBML/2KwyA+bVfYQDMr/0KA2B+7VcYhAG8KO1XGIQBvCjtVxg8WOBFab/C4MECL0r7FQYPFgiD/QqDBwuEQRiEwUEDZeb39vpy6Nr2e+hbhEEYQBiEQRiEAYQheRgyLi4MgPkVBmEAzK8wlAzD9tAMuUwgCIMwCIMwgDAIQ9Ew+KwJhEEYhEEYQBiEQRiEAYRBGIRBGEAYhEEYhAFoHc+InygZu6YwCAMwacYjfuAwYk1hEAYgfMZbXtNHX+VxawqDMACxM97zuu/8ssfWFAZhAAJnvP8DoqP/tX9NYRAGIGrGe/4P8L3vnbCmMAgDEP5rb/rX6a9C+5rCIAxAbBiGLPXrPwatKQzCAASG4Tx//mhfUxiEARAGYRAGYEoYzlmaP9cUBmEAhEEYhAHI9kv0Zq4pDMIACIMwCAMgDMIgDIAwCIMwAP6iHn9RjzAAwiAMwgAIgzAIgzCAMAiDMAgDCIMwCIMwgDAIgzAIAwiDMAiDMIAwCIMwCAMIgzAIgzCAMAiDMAgDCIMwCIMwAMIgDMIACIMwCAMgDMIgDIAwCIMwAMIgDMIACIMw/ONDM+QygSAMwiAMwgDCIAzlwuCTIhAGYRAGYQBhEAZhEAYQBmEQBg8WUCYMoZcwCAMIQ+UwbPsVBg8WYH4T71cYAPNrv8IAmF/7FQbA/NqvMADm136FATC/9isMgPm1X2EQBvCitF9hEAbworRfYfBggRel/QqDBwu8KO1XGDxYIAz2KwweLBAG+xUGBw0IgzA4aMD8CoODBsyvMDhowPwKg4MGzK8wOGjA/AqDgwbMrzA4aMD82q8wAObXfoUBML/2KwyA+bVfYQDMr/0KA2B+7VcYAPNrv8IgDOBFab/CIAzgRWm/wuDBAi9K+xUGDxZ4UdqvMHiwQBjsVxg8WCAMwiAMDhoQBmGYcdAul8uV5RIGYXC5XC5hAKAKYQBAGAAQBgCEAQBhAEAYABAGAISBDN7eP74v5+DcyH5/hQEvOOeG+ysMGADnhvsrDBgA54b7KwwYAOeG+ysMGADnhvsrDBgA54b7KwwYAOeG+ysMGADnhvsrDBgA54b7KwwACAMAwgCAMAAgDAAIAwDCAIAwACAMAAgDAMIAAMIAgDAAIAwACAMAwgCAMAAgDAAIAwDCAIAwACAMAAgDAMIAgDAAIAwACAMAwgCAMAAgDAAIAwAIAwDCAIAwACAMAAgDAMIAgDAAIAwACAMAwgCAMAAgDAAIAwDCAIAwACAMAAgDAMIAgDAAsLAvSnTNSZxobdkAAAAASUVORK5CYII=" width="520" height="260" alt="tank"></figure>
 <p class="prose">The specification.</p>
 <div class="step"><span class="name">V_bus</span><span class="eq">=</span>400 V</div>
@@ -137,40 +127,30 @@ capacitor_ok = V_Cr_pk < V_Cr_rating = 458.366 V < 630 V = 1
 <div class="step"><span class="name">P_out</span><span class="eq">=</span>1000 W</div>
 <div class="step"><span class="name">f_sw_min</span><span class="eq">=</span>60 kHz</div>
 <div class="step"><span class="name">f_sw_max</span><span class="eq">=</span>200 kHz</div>
-<p class="prose">The bridge drives a square wave between 0 and V_bus. Only its first harmonic</p>
-<p class="prose">is kept: peak 4/π of the half-swing, and the network sees the rms of that.</p>
+<p class="prose">The bridge drives a square wave between 0 and V_bus. Only its first harmonic is kept: peak 4/π of the half-swing, and the network sees the rms of that.</p>
 <div class="step"><span class="name">V_sq_pk</span><span class="eq">=</span>4/π·(V_bus/2)<span class="eq">=</span><span class="subst">4/π·(400 V/2)</span><span class="eq">=</span><span class="result">254.648 V</span></div>
 <div class="step"><span class="name">V_sq_rms</span><span class="eq">=</span>V_sq_pk/sqrt(2)<span class="eq">=</span><span class="subst">254.648 V/sqrt(2)</span><span class="eq">=</span><span class="result">180.063 V</span></div>
-<p class="prose">The rectifier and the output load together look resistive to that harmonic.</p>
-<p class="prose">The 8/π² is the same 4/π twice over — once for the voltage the bridge applies</p>
-<p class="prose">and once for the current the rectifier draws.</p>
+<p class="prose">The rectifier and the output load together look resistive to that harmonic. The 8/π² is the same 4/π twice over — once for the voltage the bridge applies and once for the current the rectifier draws.</p>
 <div class="step"><span class="name">R_load</span><span class="eq">=</span>V_out²/P_out<span class="eq">=</span><span class="subst">(48 V)²/(1000 W)</span><span class="eq">=</span><span class="result">2.304 Ω</span></div>
 <div class="step"><span class="name">I_out</span><span class="eq">=</span>P_out/V_out<span class="eq">=</span><span class="subst">1000 W/(48 V)</span><span class="eq">=</span><span class="result">20.8333 A</span></div>
 <div class="step"><span class="name">n</span><span class="eq">=</span>V_bus/V_out<span class="eq">=</span><span class="subst">400 V/(48 V)</span><span class="eq">=</span><span class="result">8.33333</span></div>
 <div class="step"><span class="name">R_ac</span><span class="eq">=</span>8/π²·n²·R_load<span class="eq">=</span><span class="subst">8/π²·8.33333²·(2.304 Ω)</span><span class="eq">=</span><span class="result">129.691 Ω</span></div>
-<p class="prose">The tank is chosen from three numbers: where it resonates, how heavily it is</p>
-<p class="prose">damped at full load, and how much magnetising inductance sits across it.</p>
+<p class="prose">The tank is chosen from three numbers: where it resonates, how heavily it is damped at full load, and how much magnetising inductance sits across it.</p>
 <div class="step"><span class="name">f0</span><span class="eq">=</span>100 kHz</div>
 <div class="step"><span class="name">Q_nom</span><span class="eq">=</span>0.45</div>
 <div class="step"><span class="name">Ln</span><span class="eq">=</span>4</div>
-<p class="prose">Everything else follows. Z0 is the characteristic impedance the chosen Q asks</p>
-<p class="prose">for at this load; the resonant frequency then fixes the two components.</p>
+<p class="prose">Everything else follows. Z0 is the characteristic impedance the chosen Q asks for at this load; the resonant frequency then fixes the two components.</p>
 <div class="step"><span class="name">Z0</span><span class="eq">=</span>Q_nom·R_ac<span class="eq">=</span><span class="subst">0.45·(129.691 Ω)</span><span class="eq">=</span><span class="result">58.361 Ω</span></div>
 <div class="step"><span class="name">T0</span><span class="eq">=</span>1/(2·π·f0)<span class="eq">=</span><span class="subst">1/(2·π·(100 kHz))</span><span class="eq">=</span><span class="result">1.59155e-6 s</span></div>
 <div class="step"><span class="name">Lr</span><span class="eq">=</span>Z0·T0<span class="eq">=</span><span class="subst">58.361 Ω·(1.59155e-6 s)</span><span class="eq">=</span><span class="result">92.8844 µH</span></div>
 <div class="step"><span class="name">Cr</span><span class="eq">=</span>T0/Z0<span class="eq">=</span><span class="subst">1.59155e-6 s/(58.361 Ω)</span><span class="eq">=</span><span class="result">27.2708 nF</span></div>
 <div class="step"><span class="name">Lm</span><span class="eq">=</span>Ln·Lr<span class="eq">=</span><span class="subst">4·(92.8844 µH)</span><span class="eq">=</span><span class="result">371.538 µH</span></div>
-<p class="prose">Worth checking that the parts that came out reproduce the numbers they were</p>
-<p class="prose">derived from, since a slip in the algebra above would not show up anywhere</p>
-<p class="prose">else on the page.</p>
+<p class="prose">Worth checking that the parts that came out reproduce the numbers they were derived from, since a slip in the algebra above would not show up anywhere else on the page.</p>
 <div class="step"><span class="name">f0_check</span><span class="eq">=</span>1/(2·π·sqrt(Lr·Cr))<span class="eq">=</span><span class="subst">1/(2·π·sqrt(92.8844 µH·(27.2708 nF)))</span><span class="eq">=</span><span class="result">100 kHz</span></div>
 <div class="step"><span class="name">Q_check</span><span class="eq">=</span>sqrt(Lr/Cr)/R_ac<span class="eq">=</span><span class="subst">sqrt(92.8844 µH/(27.2708 nF))/(129.691 Ω)</span><span class="eq">=</span><span class="result">0.45</span></div>
-<p class="prose">The second resonance, with the magnetising inductance in series. The converter</p>
-<p class="prose">cannot be operated below it, so it is the floor on the sweep.</p>
+<p class="prose">The second resonance, with the magnetising inductance in series. The converter cannot be operated below it, so it is the floor on the sweep.</p>
 <div class="step"><span class="name">f_min_res</span><span class="eq">=</span>1/(2·π·sqrt(Cr·(Lr + Lm)))<span class="eq">=</span><span class="subst">1/(2·π·sqrt(27.2708 nF·(92.8844 µH + 371.538 µH)))</span><span class="eq">=</span><span class="result">44.7214 kHz</span></div>
-<p class="prose">The tank impedance seen by the bridge: Lr and Cr in series with Lm in</p>
-<p class="prose">parallel with the reflected load. Complex, because the phase is the whole</p>
-<p class="prose">point — the bridge has to see an inductive load to switch softly.</p>
+<p class="prose">The tank impedance seen by the bridge: Lr and Cr in series with Lm in parallel with the reflected load. Complex, because the phase is the whole point — the bridge has to see an inductive load to switch softly.</p>
 <div class="step note">fn X_Lr defined</div>
 <div class="step note">fn X_Lm defined</div>
 <div class="step note">fn X_Cr defined</div>
@@ -185,11 +165,9 @@ capacitor_ok = V_Cr_pk < V_Cr_rating = 458.366 V < 630 V = 1
 <p class="prose">Positive is inductive, which is the half of the plane the bridge must stay in.</p>
 <div class="step note">fn phase_deg defined</div>
 <div class="step"><span class="name">soft_switching</span><span class="eq">=</span>phase_deg(f_sw_min) &gt; 0<span class="eq">=</span><span class="subst">phase_deg(60 kHz) &gt; 0</span><span class="eq">=</span><span class="result">1</span></div>
-<p class="prose">The gain, normalised to the resonant frequency. This is the expression the</p>
-<p class="prose">whole first-harmonic method exists to produce.</p>
+<p class="prose">The gain, normalised to the resonant frequency. This is the expression the whole first-harmonic method exists to produce.</p>
 <div class="step note">fn gain defined</div>
-<p class="prose">A family of curves is written by naming its members, so the load each one</p>
-<p class="prose">stands for has a name on the page rather than a number in a call.</p>
+<p class="prose">A family of curves is written by naming its members, so the load each one stands for has a name on the page rather than a number in a call.</p>
 <div class="step note">fn light defined</div>
 <div class="step note">fn nominal defined</div>
 <div class="step note">fn heavy defined</div>
@@ -225,14 +203,11 @@ capacitor_ok = V_Cr_pk < V_Cr_rating = 458.366 V < 630 V = 1
 <text class="plot-label plot-legend" x="255.80" y="395.00">heavy</text>
 </svg></figure>
 <figure><img src="data:image/png;base64,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" width="480" height="240" alt="gain"></figure>
-<p class="prose">Unity at resonance, whatever the load — the property that makes f0 the design</p>
-<p class="prose">point. Below it the converter boosts, above it it bucks.</p>
+<p class="prose">Unity at resonance, whatever the load — the property that makes f0 the design point. Below it the converter boosts, above it it bucks.</p>
 <div class="step">nominal(f0)<span class="eq">=</span><span class="subst">nominal(100 kHz)</span><span class="eq">=</span><span class="result">1</span></div>
 <div class="step">light(f0)<span class="eq">=</span><span class="subst">light(100 kHz)</span><span class="eq">=</span><span class="result">1</span></div>
 <div class="step">heavy(f0)<span class="eq">=</span><span class="subst">heavy(100 kHz)</span><span class="eq">=</span><span class="result">1</span></div>
-<p class="prose">Where the nominal curve peaks, and how much gain is there. The slope is exact</p>
-<p class="prose">rather than a difference quotient, so the peak is found by asking where the</p>
-<p class="prose">slope crosses zero.</p>
+<p class="prose">Where the nominal curve peaks, and how much gain is there. The slope is exact rather than a difference quotient, so the peak is found by asking where the slope crosses zero.</p>
 <div class="step note">fn slope defined</div>
 <div class="step"><span class="name">f_peak</span><span class="eq">=</span>roots(slope, f_min_res, f0)<span class="eq">=</span><span class="subst">roots(slope, 44.7214 kHz, 100 kHz)</span><span class="eq">=</span><span class="result">56.0867 kHz</span></div>
 <div class="step"><span class="name">M_peak</span><span class="eq">=</span>nominal(f_peak)<span class="eq">=</span><span class="subst">nominal(56.0867 kHz)</span><span class="eq">=</span><span class="result">1.62792</span></div>
@@ -267,8 +242,7 @@ capacitor_ok = V_Cr_pk < V_Cr_rating = 458.366 V < 630 V = 1
 <text class="plot-unit plot-end" x="622.00" y="374.00">Hz</text>
 <polyline class="plot-curve plot-curve-1" points="74.00,295.09 76.14,293.72 78.28,292.33 80.42,290.92 82.56,289.50 84.70,288.06 86.84,286.61 88.98,285.15 91.13,283.68 93.27,282.20 95.41,280.72 97.55,279.24 99.69,277.75 101.83,276.27 103.97,274.78 106.11,273.30 108.25,271.82 110.39,270.34 112.53,268.86 114.67,267.39 116.81,265.93 118.95,264.47 121.09,263.02 123.23,261.58 125.38,260.14 127.52,258.72 129.66,257.30 131.80,255.88 133.94,254.48 136.08,253.09 138.22,251.70 140.36,250.33 142.50,248.96 144.64,247.61 146.78,246.26 148.92,244.93 151.06,243.60 153.20,242.29 155.34,240.98 157.48,239.68 159.63,238.40 161.77,237.12 163.91,235.86 166.05,234.60 168.19,233.36 170.33,232.12 172.47,230.90 174.61,229.68 176.75,228.47 178.89,227.28 181.03,226.09 183.17,224.91 185.31,223.75 187.45,222.59 189.59,221.44 191.73,220.30 193.88,219.17 196.02,218.05 198.16,216.94 200.30,215.83 202.44,214.74 204.58,213.65 206.72,212.58 208.86,211.51 211.00,210.45 213.14,209.40 215.28,208.35 217.42,207.31 219.56,206.29 221.70,205.27 223.84,204.25 225.98,203.25 228.13,202.25 230.27,201.26 232.41,200.28 234.55,199.30 236.69,198.33 238.83,197.37 240.97,196.42 243.11,195.47 245.25,194.53 247.39,193.59 249.53,192.67 251.67,191.74 253.81,190.83 255.95,189.92 258.09,189.02 260.23,188.12 262.38,187.23 264.52,186.34 266.66,185.46 268.80,184.59 270.94,183.72 273.08,182.86 275.22,182.00 277.36,181.15 279.50,180.30 281.64,179.46 283.78,178.62 285.92,177.79 288.06,176.97 290.20,176.14 292.34,175.33 294.48,174.51 296.63,173.71 298.77,172.90 300.91,172.10 303.05,171.31 305.19,170.52 307.33,169.73 309.47,168.95 311.61,168.17 313.75,167.40 315.89,166.63 318.03,165.86 320.17,165.10 322.31,164.34 324.45,163.59 326.59,162.84 328.73,162.09 330.88,161.35 333.02,160.61 335.16,159.87 337.30,159.14 339.44,158.41 341.58,157.68 343.72,156.96 345.86,156.24 348.00,155.52 350.14,154.81 352.28,154.09 354.42,153.39 356.56,152.68 358.70,151.98 360.84,151.28 362.98,150.58 365.13,149.89 367.27,149.20 369.41,148.51 371.55,147.82 373.69,147.14 375.83,146.45 377.97,145.78 380.11,145.10 382.25,144.43 384.39,143.75 386.53,143.08 388.67,142.42 390.81,141.75 392.95,141.09 395.09,140.43 397.23,139.77 399.38,139.11 401.52,138.46 403.66,137.81 405.80,137.15 407.94,136.51 410.08,135.86 412.22,135.21 414.36,134.57 416.50,133.93 418.64,133.29 420.78,132.65 422.92,132.02 425.06,131.38 427.20,130.75 429.34,130.12 431.48,129.49 433.63,128.86 435.77,128.23 437.91,127.61 440.05,126.98 442.19,126.36 444.33,125.74 446.47,125.12 448.61,124.50 450.75,123.89 452.89,123.27 455.03,122.66 457.17,122.05 459.31,121.43 461.45,120.82 463.59,120.22 465.73,119.61 467.88,119.00 470.02,118.40 472.16,117.79 474.30,117.19 476.44,116.59 478.58,115.98 480.72,115.38 482.86,114.79 485.00,114.19 487.14,113.59 489.28,112.99 491.42,112.40 493.56,111.81 495.70,111.21 497.84,110.62 499.98,110.03 502.13,109.44 504.27,108.85 506.41,108.26 508.55,107.67 510.69,107.08 512.83,106.50 514.97,105.91 517.11,105.33 519.25,104.74 521.39,104.16 523.53,103.58 525.67,102.99 527.81,102.41 529.95,101.83 532.09,101.25 534.23,100.67 536.38,100.09 538.52,99.51 540.66,98.94 542.80,98.36 544.94,97.78 547.08,97.21 549.22,96.63 551.36,96.06 553.50,95.48 555.64,94.91 557.78,94.33 559.92,93.76 562.06,93.19 564.20,92.62 566.34,92.05 568.48,91.47 570.63,90.90 572.77,90.33 574.91,89.76 577.05,89.19 579.19,88.63 581.33,88.06 583.47,87.49 585.61,86.92 587.75,86.35 589.89,85.79 592.03,85.22 594.17,84.65 596.31,84.09 598.45,83.52 600.59,82.96 602.73,82.39 604.88,81.83 607.02,81.26 609.16,80.70 611.30,80.13 613.44,79.57 615.58,79.01 617.72,78.44 619.86,77.88 622.00,77.32"/>
 </svg></figure>
-<p class="prose">The lowest impedance across the operating range bounds the tank current, and</p>
-<p class="prose">`min` over a sampled vector is how a worksheet asks that without a loop.</p>
+<p class="prose">The lowest impedance across the operating range bounds the tank current, and `min` over a sampled vector is how a worksheet asks that without a loop.</p>
 <div class="step"><span class="name">sweep</span><span class="eq">=</span>range(f_sw_min, f_sw_max, 10 kHz)<span class="eq">=</span><span class="subst">range(60 kHz, 200 kHz, 10 kHz)</span><span class="eq">=</span><span class="result">[60000 Hz, 70000 Hz, 80000 Hz, 90000 Hz, 100000 Hz, 110000 Hz, 120000 Hz, 130000 Hz, 140000 Hz, 150000 Hz, 160000 Hz, 170000 Hz, 180000 Hz, 190000 Hz, 200000 Hz]</span></div>
 <div class="step"><span class="name">Z_sweep</span><span class="eq">=</span>map(Z_ohm, sweep)<span class="eq">=</span><span class="subst">map(Z_ohm, [60000 Hz, 70000 Hz, 80000 Hz, 90000 Hz, 100000 Hz, 110000 Hz, 120000 Hz, 130000 Hz, 140000 Hz, 150000 Hz, 160000 Hz, 170000 Hz, 180000 Hz, 190000 Hz, 200000 Hz])</span><span class="eq">=</span><span class="result">[69.8676, 82.2021, 94.0515, 104.415, 113.37, 121.196, 128.16, 134.482, 140.327, 145.824, 151.067, 156.128, 161.059, 165.902, 170.687]</span></div>
 <div class="step"><span class="name">Z_low</span><span class="eq">=</span>min(Z_sweep)<span class="eq">=</span><span class="subst">min([69.8676, 82.2021, 94.0515, 104.415, 113.37, 121.196, 128.16, 134.482, 140.327, 145.824, 151.067, 156.128, 161.059, 165.902, 170.687])</span><span class="eq">=</span><span class="result">69.8676</span></div>

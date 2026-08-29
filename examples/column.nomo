@@ -13,6 +13,9 @@
 
 use steel
 
+' Four significant figures.
+digits 4
+
 d = 50 mm
 L = 2 m
 P = 40 kN
@@ -24,12 +27,9 @@ K_eff = 1
 
 ' ## The section
 
-A = pi*d^2/4
-I = pi*d^4/64
-r_gyr = sqrt(I/A)
-
-A -> mm^2
-r_gyr -> mm
+A = pi*d^2/4 -> mm^2
+I = pi*d^4/64 -> mm^4
+r_gyr = sqrt(I/A) -> mm
 
 ' ## Slenderness, and the transition
 '
@@ -51,8 +51,7 @@ sigma_cr = if is_long then pi^2*E_steel/lambda^2 else Fy_S355 - (Fy_S355*lambda/
 
 sigma_cr -> MPa
 
-P_cr = sigma_cr*A
-P_cr -> kN
+P_cr = sigma_cr*A -> kN
 
 ' ## The check
 '

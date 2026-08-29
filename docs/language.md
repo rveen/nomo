@@ -34,6 +34,7 @@ V -> dm^3
 | Function definition | `fn area(d) = pi*d^2/4` | Define a function. |
 | Check | `check sigma <= sigma_allow` | State a limit and report a verdict on it. |
 | Pack | `use steel` | Bring in a curated set of definitions. |
+| Digits | `digits 4` | Significant figures for results, from that line down. |
 
 Only a bare name may appear on the left of `=`. `x + 1 = 2` is an error, not an
 equation to solve.
@@ -924,6 +925,32 @@ since `in^3` has an unambiguous typeset form: it displays as `in³`.
 Numbers are rounded to significant figures (six by default) at render time only.
 Arithmetic stays in binary; presentation is decimal.
 
+`digits n` changes that count from the line it appears on downwards, between 1
+and 17 — one is the fewest that says anything and 17 is where binary64 runs out.
+It is presentation and nothing else: nothing is recomputed, the dependency graph
+does not see it, and the full-precision values a snapshot records are untouched.
+
+Four is what most of the worksheets here use. A stress is not known to six
+figures and a page of six-digit numbers invites a reader to believe the last
+two.
+
+**A conversion in an assignment is remembered.** `A_s = pi/4*d^2 -> mm^2` binds
+the value *and* records that this name is written in mm², so every later use of
+it substitutes as `84.27 mm²` rather than `8.427e-5 m²`. Compound targets carry
+as well as named ones — `mm^2`, `MN/m`, `N*m` — which matters because those are
+what engineering units mostly are. It is how a worksheet gets its verdict lines
+to read in the units the reader thinks in:
+
+```nomo
+sigma = M/S -> ksi
+sigma_allow = 0.6*Fy_A992 -> ksi
+check sigma <= sigma_allow          ' 10 ksi ≤ 30 ksi — pass
+```
+
+A unit that does not fit the value is ignored rather than applied: `M = 500 N*m`
+offers `m` as the unit it was written in, and a moment shown as `500 m` would be
+worse than one shown in base units.
+
 The worksheets under `examples/` are drawn from this document, and their rendered
 output is committed in `tests/golden/` and compared byte for byte on every build
 (`cargo run -p nomo-cli -- test`). A rule stated here that no example
@@ -1095,5 +1122,5 @@ Recorded so the omissions are deliberate rather than forgotten.
 
 ## Reserved
 
-`unit`, `fn`, `global`, `check`, `use`, `if`, `then`, `else`, `and`, `or` and
-`not` are keywords and cannot be used as names.
+`unit`, `fn`, `global`, `check`, `use`, `digits`, `if`, `then`, `else`, `and`,
+`or` and `not` are keywords and cannot be used as names.

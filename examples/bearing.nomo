@@ -12,6 +12,10 @@
 
 unit rpm = 1/min
 
+' Four significant figures. A life figure with six would be a claim nobody
+' can support — see the opening paragraph.
+digits 4
+
 ' The basic dynamic load rating comes from the manufacturer's catalogue for the
 ' bearing being considered — it is a measured property of that part, not
 ' something a calculation can produce. This is a 6208.
@@ -29,9 +33,7 @@ speed = 1500 rpm
 p_exp = 3
 
 L_10 = (C_dyn/P_load)^p_exp
-L_10_hours = L_10*1e6/speed
-
-L_10_hours -> h
+L_10_hours = L_10*1e6/speed -> h
 
 ' ## Against what is wanted
 
@@ -46,8 +48,7 @@ check L_10_hours >= wanted
 ' rating required for a wanted life inverts the same relation — and this is the
 ' number to take back to the catalogue.
 
-C_required = P_load*nthroot(wanted*speed/1e6, p_exp)
-C_required -> kN
+C_required = P_load*nthroot(wanted*speed/1e6, p_exp) -> kN
 
 ' A rating half again as large is one or two sizes up in the same bore, or the
 ' same bearing in a heavier series. It is also worth asking whether the load is

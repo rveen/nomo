@@ -14,10 +14,12 @@ side, so the approximation is checked rather than assumed.
 
 The vessel: a 600 mm bore receiver at 2 MPa, 12 mm wall, S355.
 use steel
+Four significant figures.
+digits 4
 r_i = 300 mm
 t_wall = 12 mm
 p = 2 MPa
-r_o = r_i + t_wall = 300 mm + 12 mm = 0.312 m
+r_o = r_i + t_wall = 300 mm + 12 mm = 312 mm
 ## Is it thin?
 
 The usual rule is that the wall is thin below a tenth of the radius. It is a
@@ -30,41 +32,36 @@ check ratio ≤ 0.1 = 0.04 ≤ 0.1 — pass
 Hoop stress from a cut along the axis, longitudinal from a cut across it. The
 factor of two between them is why a cylinder that fails from internal pressure
 splits along its length rather than round its circumference.
-sigma_hoop_thin = p·r_i/t_wall = 2 MPa·(300 mm)/(12 mm) = 50000000 Pa
-sigma_long_thin = p·r_i/(2·t_wall) = 2 MPa·(300 mm)/(2·(12 mm)) = 25000000 Pa
-sigma_hoop_thin = 50 MPa
-sigma_long_thin = 25 MPa
+sigma_hoop_thin = p·r_i/t_wall = 2 MPa·(300 mm)/(12 mm) = 50 MPa
+sigma_long_thin = p·r_i/(2·t_wall) = 2 MPa·(300 mm)/(2·(12 mm)) = 25 MPa
 ## Thick wall
 
 Lamé's solution, evaluated at the bore where the hoop stress is largest. It
 makes no assumption about the wall being thin and is what the thin-wall
 formula approaches as the wall gets thinner.
-sigma_hoop_bore = p·(r_o² + r_i²)/(r_o² - r_i²) = 2 MPa·((0.312 m)² + (300 mm)²)/((0.312 m)² - (300 mm)²) = 51019600 Pa
-sigma_hoop_bore = 51.0196 MPa
+sigma_hoop_bore = p·(r_o² + r_i²)/(r_o² - r_i²) = 2 MPa·((312 mm)² + (300 mm)²)/((312 mm)² - (300 mm)²) = 51.02 MPa
 The radial stress at the bore is not zero — it is the pressure itself, in
 compression — and the thin-wall treatment drops it. At this wall it is 4% of
 the hoop stress; at a quarter-radius wall it is not negligible at all.
-sigma_radial_bore = -p = -(2 MPa) = -2000000 Pa
+sigma_radial_bore = -p = -(2 MPa) = -2 MPa
 How much the approximation is out by, which is the number this worksheet
 exists to produce.
-error_thin = (sigma_hoop_thin - sigma_hoop_bore)/sigma_hoop_bore = (50000000 Pa - 51019600 Pa)/(51019600 Pa) = -0.0199846
-error_thin = -1.99846%
+error_thin = (sigma_hoop_thin - sigma_hoop_bore)/sigma_hoop_bore = (50 MPa - 51.02 MPa)/(51.02 MPa) = -0.01998
+error_thin = -1.998%
 ## The check
 
 Against the thick-wall stress, because it is the true one, and on the
 distortion-energy criterion with all three principal stresses — hoop, radial
 and longitudinal. Dropping the radial term is the same approximation again and
 this worksheet has just finished measuring it.
-sigma_long = p·r_i/(2·t_wall) = 2 MPa·(300 mm)/(2·(12 mm)) = 25000000 Pa
-s1 = sigma_hoop_bore = 51019600 Pa
-s2 = sigma_long = 25000000 Pa
-s3 = sigma_radial_bore = -2000000 Pa
-sigma_vm = sqrt(((s1 - s2)² + (s2 - s3)² + (s3 - s1)²)/2) = sqrt(((51019600 Pa - 25000000 Pa)² + (25000000 Pa - -2000000 Pa)² + (-2000000 Pa - 51019600 Pa)²)/2) = 45918900 Pa
-sigma_vm = 45.9189 MPa
+sigma_long = p·r_i/(2·t_wall) = 2 MPa·(300 mm)/(2·(12 mm)) = 25 MPa
+s1 = sigma_hoop_bore = 51.02 MPa
+s2 = sigma_long = 25 MPa
+s3 = sigma_radial_bore = -2 MPa
+sigma_vm = sqrt(((s1 - s2)² + (s2 - s3)² + (s3 - s1)²)/2) = sqrt(((51.02 MPa - 25 MPa)² + (25 MPa - -2 MPa)² + (-2 MPa - 51.02 MPa)²)/2) = 45.92 MPa
 n_design = 1.5
-sigma_allow = Fy_S355/n_design = 355 MPa/1.5 = 236667000 Pa
-sigma_allow = 236.667 MPa
-check sigma_vm ≤ sigma_allow = 45918900 Pa ≤ 236667000 Pa — pass
+sigma_allow = Fy_S355/n_design = 355 MPa/1.5 = 236.7 MPa
+check sigma_vm ≤ sigma_allow = 45.92 MPa ≤ 236.7 MPa — pass
 ## Where the approximation goes wrong
 
 Hoop stress at the bore against wall thickness, both ways, on one plot. They
@@ -72,7 +69,7 @@ agree while the wall is thin and part company as it thickens — and the
 thin-wall line is the lower of the two, which is the dangerous direction.
 fn thin defined
 fn thick defined
-plot(thin, thick, 5, 120) = [plot thin, thick: 5 to 120, 257 points, 5 to 121.008]
+plot(thin, thick, 5, 120) = [plot thin, thick: 5 to 120, 257 points, 5 to 121]
 ## What this leaves out
 
 A plain cylinder, away from its ends. The heads, the nozzles and the joints
@@ -88,41 +85,38 @@ the page.
 <p class="prose">This worksheet works a cylinder both ways and puts the two answers side by side, so the approximation is checked rather than assumed.</p>
 <p class="prose">The vessel: a 600 mm bore receiver at 2 MPa, 12 mm wall, S355.</p>
 <div class="step note">use steel</div>
+<p class="prose">Four significant figures.</p>
+<div class="step note">digits 4</div>
 <div class="step"><span class="name">r_i</span><span class="eq">=</span>300 mm</div>
 <div class="step"><span class="name">t_wall</span><span class="eq">=</span>12 mm</div>
 <div class="step"><span class="name">p</span><span class="eq">=</span>2 MPa</div>
-<div class="step"><span class="name">r_o</span><span class="eq">=</span>r_i + t_wall<span class="eq">=</span><span class="subst">300 mm + 12 mm</span><span class="eq">=</span><span class="result">0.312 m</span></div>
+<div class="step"><span class="name">r_o</span><span class="eq">=</span>r_i + t_wall<span class="eq">=</span><span class="subst">300 mm + 12 mm</span><span class="eq">=</span><span class="result">312 mm</span></div>
 <h2 class="prose">Is it thin?</h2>
 <p class="prose">The usual rule is that the wall is thin below a tenth of the radius. It is a rule about the answer rather than about the geometry: what it really says is that the through-thickness variation of hoop stress is small enough to ignore.</p>
 <div class="step"><span class="name">ratio</span><span class="eq">=</span>t_wall/r_i<span class="eq">=</span><span class="subst">12 mm/(300 mm)</span><span class="eq">=</span><span class="result">0.04</span></div>
 <div class="step check pass"><span class="name">check</span>ratio ≤ 0.1<span class="eq">=</span><span class="subst">0.04 ≤ 0.1</span><span class="verdict">pass</span></div>
 <h2 class="prose">Thin wall</h2>
 <p class="prose">Hoop stress from a cut along the axis, longitudinal from a cut across it. The factor of two between them is why a cylinder that fails from internal pressure splits along its length rather than round its circumference.</p>
-<div class="step"><span class="name">sigma_hoop_thin</span><span class="eq">=</span>p·r_i/t_wall<span class="eq">=</span><span class="subst">2 MPa·(300 mm)/(12 mm)</span><span class="eq">=</span><span class="result">50000000 Pa</span></div>
-<div class="step"><span class="name">sigma_long_thin</span><span class="eq">=</span>p·r_i/(2·t_wall)<span class="eq">=</span><span class="subst">2 MPa·(300 mm)/(2·(12 mm))</span><span class="eq">=</span><span class="result">25000000 Pa</span></div>
-<div class="step">sigma_hoop_thin<span class="eq">=</span><span class="result">50 MPa</span></div>
-<div class="step">sigma_long_thin<span class="eq">=</span><span class="result">25 MPa</span></div>
+<div class="step"><span class="name">sigma_hoop_thin</span><span class="eq">=</span>p·r_i/t_wall<span class="eq">=</span><span class="subst">2 MPa·(300 mm)/(12 mm)</span><span class="eq">=</span><span class="result">50 MPa</span></div>
+<div class="step"><span class="name">sigma_long_thin</span><span class="eq">=</span>p·r_i/(2·t_wall)<span class="eq">=</span><span class="subst">2 MPa·(300 mm)/(2·(12 mm))</span><span class="eq">=</span><span class="result">25 MPa</span></div>
 <h2 class="prose">Thick wall</h2>
 <p class="prose">Lamé's solution, evaluated at the bore where the hoop stress is largest. It makes no assumption about the wall being thin and is what the thin-wall formula approaches as the wall gets thinner.</p>
-<div class="step"><span class="name">sigma_hoop_bore</span><span class="eq">=</span>p·(r_o² + r_i²)/(r_o² - r_i²)<span class="eq">=</span><span class="subst">2 MPa·((0.312 m)² + (300 mm)²)/((0.312 m)² - (300 mm)²)</span><span class="eq">=</span><span class="result">51019600 Pa</span></div>
-<div class="step">sigma_hoop_bore<span class="eq">=</span><span class="result">51.0196 MPa</span></div>
+<div class="step"><span class="name">sigma_hoop_bore</span><span class="eq">=</span>p·(r_o² + r_i²)/(r_o² - r_i²)<span class="eq">=</span><span class="subst">2 MPa·((312 mm)² + (300 mm)²)/((312 mm)² - (300 mm)²)</span><span class="eq">=</span><span class="result">51.02 MPa</span></div>
 <p class="prose">The radial stress at the bore is not zero — it is the pressure itself, in compression — and the thin-wall treatment drops it. At this wall it is 4% of the hoop stress; at a quarter-radius wall it is not negligible at all.</p>
-<div class="step"><span class="name">sigma_radial_bore</span><span class="eq">=</span>-p<span class="eq">=</span><span class="subst">-(2 MPa)</span><span class="eq">=</span><span class="result">-2000000 Pa</span></div>
+<div class="step"><span class="name">sigma_radial_bore</span><span class="eq">=</span>-p<span class="eq">=</span><span class="subst">-(2 MPa)</span><span class="eq">=</span><span class="result">-2 MPa</span></div>
 <p class="prose">How much the approximation is out by, which is the number this worksheet exists to produce.</p>
-<div class="step"><span class="name">error_thin</span><span class="eq">=</span>(sigma_hoop_thin - sigma_hoop_bore)/sigma_hoop_bore<span class="eq">=</span><span class="subst">(50000000 Pa - 51019600 Pa)/(51019600 Pa)</span><span class="eq">=</span><span class="result">-0.0199846</span></div>
-<div class="step">error_thin<span class="eq">=</span><span class="result">-1.99846%</span></div>
+<div class="step"><span class="name">error_thin</span><span class="eq">=</span>(sigma_hoop_thin - sigma_hoop_bore)/sigma_hoop_bore<span class="eq">=</span><span class="subst">(50 MPa - 51.02 MPa)/(51.02 MPa)</span><span class="eq">=</span><span class="result">-0.01998</span></div>
+<div class="step">error_thin<span class="eq">=</span><span class="result">-1.998%</span></div>
 <h2 class="prose">The check</h2>
 <p class="prose">Against the thick-wall stress, because it is the true one, and on the distortion-energy criterion with all three principal stresses — hoop, radial and longitudinal. Dropping the radial term is the same approximation again and this worksheet has just finished measuring it.</p>
-<div class="step"><span class="name">sigma_long</span><span class="eq">=</span>p·r_i/(2·t_wall)<span class="eq">=</span><span class="subst">2 MPa·(300 mm)/(2·(12 mm))</span><span class="eq">=</span><span class="result">25000000 Pa</span></div>
-<div class="step"><span class="name">s1</span><span class="eq">=</span>sigma_hoop_bore<span class="eq">=</span><span class="result">51019600 Pa</span></div>
-<div class="step"><span class="name">s2</span><span class="eq">=</span>sigma_long<span class="eq">=</span><span class="result">25000000 Pa</span></div>
-<div class="step"><span class="name">s3</span><span class="eq">=</span>sigma_radial_bore<span class="eq">=</span><span class="result">-2000000 Pa</span></div>
-<div class="step"><span class="name">sigma_vm</span><span class="eq">=</span>sqrt(((s1 - s2)² + (s2 - s3)² + (s3 - s1)²)/2)<span class="eq">=</span><span class="subst">sqrt(((51019600 Pa - 25000000 Pa)² + (25000000 Pa - -2000000 Pa)² + (-2000000 Pa - 51019600 Pa)²)/2)</span><span class="eq">=</span><span class="result">45918900 Pa</span></div>
-<div class="step">sigma_vm<span class="eq">=</span><span class="result">45.9189 MPa</span></div>
+<div class="step"><span class="name">sigma_long</span><span class="eq">=</span>p·r_i/(2·t_wall)<span class="eq">=</span><span class="subst">2 MPa·(300 mm)/(2·(12 mm))</span><span class="eq">=</span><span class="result">25 MPa</span></div>
+<div class="step"><span class="name">s1</span><span class="eq">=</span>sigma_hoop_bore<span class="eq">=</span><span class="result">51.02 MPa</span></div>
+<div class="step"><span class="name">s2</span><span class="eq">=</span>sigma_long<span class="eq">=</span><span class="result">25 MPa</span></div>
+<div class="step"><span class="name">s3</span><span class="eq">=</span>sigma_radial_bore<span class="eq">=</span><span class="result">-2 MPa</span></div>
+<div class="step"><span class="name">sigma_vm</span><span class="eq">=</span>sqrt(((s1 - s2)² + (s2 - s3)² + (s3 - s1)²)/2)<span class="eq">=</span><span class="subst">sqrt(((51.02 MPa - 25 MPa)² + (25 MPa - -2 MPa)² + (-2 MPa - 51.02 MPa)²)/2)</span><span class="eq">=</span><span class="result">45.92 MPa</span></div>
 <div class="step"><span class="name">n_design</span><span class="eq">=</span>1.5</div>
-<div class="step"><span class="name">sigma_allow</span><span class="eq">=</span>Fy_S355/n_design<span class="eq">=</span><span class="subst">355 MPa/1.5</span><span class="eq">=</span><span class="result">236667000 Pa</span></div>
-<div class="step">sigma_allow<span class="eq">=</span><span class="result">236.667 MPa</span></div>
-<div class="step check pass"><span class="name">check</span>sigma_vm ≤ sigma_allow<span class="eq">=</span><span class="subst">45918900 Pa ≤ 236667000 Pa</span><span class="verdict">pass</span></div>
+<div class="step"><span class="name">sigma_allow</span><span class="eq">=</span>Fy_S355/n_design<span class="eq">=</span><span class="subst">355 MPa/1.5</span><span class="eq">=</span><span class="result">236.7 MPa</span></div>
+<div class="step check pass"><span class="name">check</span>sigma_vm ≤ sigma_allow<span class="eq">=</span><span class="subst">45.92 MPa ≤ 236.7 MPa</span><span class="verdict">pass</span></div>
 <h2 class="prose">Where the approximation goes wrong</h2>
 <p class="prose">Hoop stress at the bore against wall thickness, both ways, on one plot. They agree while the wall is thin and part company as it thickens — and the thin-wall line is the lower of the two, which is the dangerous direction.</p>
 <div class="step note">fn thin defined</div>
@@ -170,10 +164,7 @@ r_o = 0.312 m
 ratio = 0.04 dimensionless
 sigma_hoop_thin = 50000000.0 m^-1·kg·s^-2
 sigma_long_thin = 25000000.0 m^-1·kg·s^-2
-? = 50000000.0 m^-1·kg·s^-2
-? = 25000000.0 m^-1·kg·s^-2
 sigma_hoop_bore = 51019607.843137234 m^-1·kg·s^-2
-? = 51019607.843137234 m^-1·kg·s^-2
 sigma_radial_bore = -2000000.0 m^-1·kg·s^-2
 error_thin = -0.019984627209838193 dimensionless
 ? = -0.019984627209838193 dimensionless
@@ -182,10 +173,8 @@ s1 = 51019607.843137234 m^-1·kg·s^-2
 s2 = 25000000.0 m^-1·kg·s^-2
 s3 = -2000000.0 m^-1·kg·s^-2
 sigma_vm = 45918943.84755985 m^-1·kg·s^-2
-? = 45918943.84755985 m^-1·kg·s^-2
 n_design = 1.5 dimensionless
 sigma_allow = 236666666.66666666 m^-1·kg·s^-2
-? = 236666666.66666666 m^-1·kg·s^-2
 ? = plot 5.0..120.0 (chosen) dimensionless over dimensionless {thin: [120.0, 110.10752688172042, 101.72185430463577, 94.52307692307693, 88.27586206896552, 82.8032345013477, 77.96954314720813, 73.66906474820145, 69.81818181818181, 66.34989200863932, 63.20987654320987, 60.353634577603145, 57.744360902255636, 55.35135135135135, 53.14878892733564, 51.11480865224626, 49.23076923076923, 47.480680061823804, 45.850746268656714, 44.329004329004334, 42.90502793296089, 41.56968876860622, 40.31496062992126, 39.13375796178344, 38.01980198019802, 36.96750902527075, 35.97189695550351, 35.028506271379705, 34.13333333333333, 33.2827735644637, 32.473572938689216, 31.70278637770898, 30.967741935483872, 30.266009852216747, 29.595375722543352, 28.953817153628655, 28.339483394833948, 27.750677506775066, 27.185840707964598, 26.643538594969645, 26.122448979591837, 25.621351125938283, 25.13911620294599, 24.67469879518072, 24.227129337539434, 23.795507358636716, 23.378995433789953, 22.976813762154077, 22.58823529411765, 22.212581344902386, 21.84921763869132, 21.497550734779566, 21.15702479338843, 20.8271186440678, 20.507343124165555, 20.197238658777117, 19.89637305699482, 19.604339502233568, 19.32075471698113, 19.045257284562926, 18.77750611246944, 18.517179023508138, 18.26397146254459, 18.01759530791789, 17.777777777777775, 17.544260422615647, 17.316798196166854, 17.095158597662774, 16.87912087912088, 16.66847531199132, 16.463022508038588, 16.26257278983589, 16.06694560669456, 15.87596899224806, 15.689479060265576, 15.507319535588088, 15.32934131736527, 15.155402072027627, 14.985365853658536, 14.819102749638205, 14.65648854961832, 14.497404436054742, 14.34173669467787, 14.189376443418013, 14.040219378427789, 13.89416553595658, 13.751119068934647, 13.610988037217544, 13.473684210526315, 13.33912288319583, 13.207222699914015, 13.077905491698594, 12.951096121416526, 12.826722338204592, 12.704714640198512, 12.585006145022533, 12.467532467532466, 12.352231604342581, 12.239043824701193, 12.127911567311488, 12.018779342723004, 11.911593640946103, 11.806302843966181, 11.702857142857143, 11.6012084592145, 11.501310370647698, 11.403118040089085, 11.306588148693411, 11.211678832116789, 11.118349619978284, 11.026561378320173, 10.936276254894981, 10.847457627118644, 10.760070052539405, 10.674079221681723, 10.589451913133402, 10.506155950752392, 10.424160162877504, 10.343434343434343, 10.263949214834614, 10.185676392572946, 10.108588351431392, 10.032658393207054, 9.957860615883305, 9.884169884169884, 9.811561801341425, 9.74001268230818, 9.66949952785647, 9.6, 9.531492398386595, 9.463955637707949, 9.397369226063017, 9.331713244228432, 9.266968325791856, 9.20311563810665, 9.140136864028564, 9.078014184397162, 9.016730261226884, 8.956268221574344, 8.896611642050392, 8.837744533947065, 8.779651328951127, 8.722316865417376, 8.665726375176304, 8.609865470852018, 8.5547201336675, 8.500276701715551, 8.446521858674734, 8.39344262295082, 8.341026337225088, 8.289260658391797, 8.238133547868062, 8.187633262260126, 8.137748344370861, 8.088467614533965, 8.039780162261188, 7.991675338189387, 7.944142746314973, 7.897172236503856, 7.850753897265524, 7.804878048780488, 7.759535236170749, 7.714716223003516, 7.670411985018726, 7.6266137040715, 7.583312762280919, 7.540500736377025, 7.498169392238223, 7.456310679611651, 7.414916727009413, 7.373979836773883, 7.333492480305562, 7.2934472934472945, 7.253837072018889, 7.214654767496477, 7.175893482831114, 7.137546468401487, 7.099607118095677, 7.062068965517241, 7.024925680310999, 6.9881710646041855, 6.9517990495587245, 6.915803692030617, 6.880179171332586, 6.8449197860962565, 6.810019951230326, 6.775474194971328, 6.7412771560237, 6.707423580786025, 6.673908320660439, 6.640726329442283, 6.607872660787265, 6.575342465753425, 6.543130990415334, 6.511233573548114, 6.479645644378822, 6.448362720403022, 6.4173804052642565, 6.386694386694386, 6.356300434512725, 6.326194398682043, 6.2963722074195525, 6.266829865361077, 6.23756345177665, 6.208569118835893, 6.179843089921545, 6.151381657989588, 6.123181183974487, 6.095238095238095, 6.067548884060834, 6.0401101061738105, 6.012918379330592, 5.98597038191738, 5.959262851600387, 5.93279258400927, 5.906556431455489, 5.880551301684532, 5.854774156660949, 5.829222011385198, 5.803891932741356, 5.778781038374717, 5.753886495598427, 5.729205520328235, 5.704735376044567, 5.680473372781066, 5.656416866138833, 5.632563256325632, 5.60890998721928, 5.585454545454546, 5.562194459532862, 5.539127298954201, 5.516250673370444, 5.493562231759657, 5.471059661620659, 5.4487406881873, 5.426603073661897, 5.404644616467277, 5.382863150516909, 5.361256544502618, 5.339822701199374, 5.3185595567867034, 5.297465080186239, 5.276537272414978, 5.255774165953807, 5.23517382413088, 5.214734340519436, 5.194453838349679, 5.17433046993431, 5.154362416107382, 5.134547885676082, 5.114885114885115, 5.095372366893349, 5.076007931262392, 5.05679012345679, 5.037717284355526, 5.018787779774547, 5.0]; thick: [121.00826446280992, 111.11652717205276, 102.73158933139074, 95.53354559758186, 89.2870633049644, 83.81516721499476, 78.98220625706227, 74.68245717521776, 70.83230248570425, 67.36473984239504, 64.22545047130046, 61.36993353049943, 58.76138381278946, 56.36909715470853, 54.167256561050294, 52.133997056192555, 50.25067734715512, 48.50130683518437, 46.87209064584703, 45.35106525919244, 43.92780436762182, 42.59317966151437, 41.339164937144425, 40.15867464167555, 39.04542999339258, 37.99384733467458, 36.998944526289634, 36.05626207098089, 35.16179633143581, 34.31194273300024, 33.503447251832625, 32.733364811865954, 31.99902346928815, 31.297993466522712, 30.628060400419823, 29.987201880352217, 29.373567157882626, 28.78545929582214, 28.221319514871958, 27.679713413781794, 27.159318806529402, 26.658914959391705, 26.177373043469444, 25.71364764548578, 25.266769202488778, 24.835837245238217, 24.4200143511902, 24.018520721632505, 23.630629309080252, 23.25566143087564, 22.892982813316237, 22.542000017805485, 22.202157206667053, 21.87293321154721, 21.553838871884246, 21.24441461485788, 20.944228251639014, 20.652872967715048, 20.369965487640364, 20.095144396801203, 19.828068604742914, 19.568415936321994, 19.31588183844732, 19.07017819149537, 18.8310322156476, 18.5981854634213, 18.371392890571972, 18.150421998345493, 17.9350520407681, 17.72507329129298, 17.520286363682118, 17.32050158250048, 17.12553839904562, 16.935224848931576, 16.749397047902512, 16.567898722768906, 16.39058077464434, 16.21730087191769, 16.047923070625277, 15.882317460094711, 15.720359831919632, 15.56193137049246, 15.40691836347467, 15.255211930722254, 15.106707770308185, 14.961305920396788, 14.818910535827893, 14.67942967836138, 14.542775119617218, 14.408862155824, 14.277609433558034, 14.148938785720185, 14.02277507705535, 13.899046058573012, 13.777682230276367, 13.65861671165201, 13.541785119412886, 13.427125452025297, 13.314577980584437, 13.204085145635243, 13.09559145956397, 12.989043414212574, 12.884389393392983, 12.781579590000643, 12.680565927447544, 12.581301985154598, 12.48374292786068, 12.387845438522053, 12.293567654591383, 12.200869107479406, 12.109710665015099, 12.020054476732792, 11.93186392182537, 11.845103559613115, 11.759739082387721, 11.67573727049934, 11.593065949563469, 11.511693949671695, 11.431591066497573, 11.352728024195986, 11.275076440000031, 11.198608790425434, 11.123298378998303, 11.049119305426276, 10.976046436138665, 10.904055376125037, 10.833122442005886, 10.763224636273142, 10.694339622641508, 10.626445702455188, 10.559521792097629, 10.493547401355025, 10.428502612686625, 10.364368061358183, 10.30112491639663, 10.23875486232674, 10.177240081652618, 10.116563238048759, 10.056707460227342, 9.997656326450356, 9.93939384965651, 9.881904463174806, 9.825173006997893, 9.769184714589697, 9.713925200203393, 9.65938044668665, 9.605536793752593, 9.552380926695806, 9.499899865533719, 9.448080954554971, 9.396911852256897, 9.3463805216554, 9.296475220951237, 9.247184494537553, 9.198497164334073, 9.150402321434346, 9.102889318052828, 9.055947759759334, 9.009567497988975, 8.963738622816303, 8.918451455982705, 8.873696544166943, 8.829464652488852, 8.785746758236867, 8.742534044810535, 8.699817895869257, 8.657589889679317, 8.615841793651327, 8.57456555906056, 8.533753315943237, 8.493397368161833, 8.453490188632927, 8.414024414711465, 8.374992843725371, 8.336388428654919, 8.298204273951368, 8.260433631489656, 8.22306989665019, 8.18610660452494, 8.149537426243237, 8.113356165412933, 8.0775567546727, 8.04213325235142, 8.007079839230839, 7.9723908154077785, 7.938060597252297, 7.904083714458479, 7.870454807184514, 7.837168623278943, 7.804220015590088, 7.771603939355712, 7.739315449670186, 7.707349699026481, 7.67570193493037, 7.64436749758446, 7.613341817639589, 7.582620414011408, 7.552198891759876, 7.522072940029599, 7.492238330048966, 7.4626909131862025, 7.43342661906033, 7.404441453705359, 7.3757314977859085, 7.347292904862585, 7.3191218997055225, 7.291214776654538, 7.263567898024353, 7.2361776925535315, 7.209040653895672, 7.182153339151527, 7.1555123674407834, 7.129114418512271, 7.102956231391328, 7.077034603063256, 7.051346387191691, 7.025888492870822, 7.000657883410469, 6.97565157515291, 6.950866636320619, 6.926300185893866, 6.9019493925173645, 6.877811473435048, 6.85388369345213, 6.830163363923669, 6.806647841768829, 6.783334528510075, 6.760220869336582, 6.737304352191154, 6.714582506879939, 6.692052904204298, 6.669713155114224, 6.647560909882591, 6.625593857299755, 6.603809723887834, 6.58220627313415, 6.56078130474329, 6.539532653907251, 6.518458190593152, 6.4975558188480464, 6.476823476120331, 6.456259132597313, 6.4358607905584835, 6.415626483744042, 6.395554276738291, 6.37564226436746, 6.355888571111591, 6.336291350530104, 6.316848784700622, 6.297559083670796, 6.27842048492269, 6.259431252849431, 6.240589678243791, 6.221894077798412, 6.203342793617302, 6.184934192738363, 6.166666666666667]}
 
 === diagnostics ===

@@ -294,6 +294,7 @@ fn binding_of(stmt: &Stmt) -> Binding {
         | Stmt::Query { .. }
         | Stmt::Check { .. }
         | Stmt::Use { .. }
+        | Stmt::Digits { .. }
         | Stmt::Error { .. } => Binding::None,
     }
 }
@@ -301,7 +302,7 @@ fn binding_of(stmt: &Stmt) -> Binding {
 fn uses_of(stmt: &Stmt) -> BTreeSet<String> {
     let mut out = BTreeSet::new();
     match stmt {
-        Stmt::Comment { .. } | Stmt::Use { .. } | Stmt::Error { .. } => {}
+        Stmt::Comment { .. } | Stmt::Use { .. } | Stmt::Digits { .. } | Stmt::Error { .. } => {}
         Stmt::Assign { value, .. }
         | Stmt::GlobalDef { value, .. }
         | Stmt::UnitDecl { value, .. } => collect_names(value, &mut out),

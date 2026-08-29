@@ -193,7 +193,7 @@ fn opening_heading(sheet: &Sheet) -> Option<String> {
 pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
     let source = sheet.source().to_string();
     let units = sheet.units().clone();
-    let r = Renderer::new(opts, &units, &source);
+    let mut r = Renderer::new(opts, &units, &source);
 
     let mut body = String::new();
     let eq = r#"<span class="eq">=</span>"#;
@@ -246,7 +246,7 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                         escape(name),
                         escape(&r.symbolic(trace))
                     ));
-                    body.push_str(&plot::svg(p, r.units, &r.opts.numbers));
+                    body.push_str(&plot::svg(p, r.units, &r.numbers));
                     continue;
                 }
                 let mut line = format!(
@@ -268,6 +268,13 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                 }
                 line.push_str("</div>\n");
                 body.push_str(&line);
+            }
+
+            OutcomeKind::Digits(figures) => {
+                r.set_significant_figures(*figures);
+                body.push_str(&format!(
+                    "<div class=\"step note\">digits {figures}</div>\n"
+                ));
             }
 
             OutcomeKind::Use(name) => {
@@ -307,7 +314,7 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                         "<div class=\"step\">{}</div>\n",
                         escape(&r.symbolic(trace))
                     ));
-                    body.push_str(&plot::svg(p, r.units, &r.opts.numbers));
+                    body.push_str(&plot::svg(p, r.units, &r.numbers));
                     continue;
                 }
                 let mut line = format!("<div class=\"step\">{}", escape(&r.symbolic(trace)));

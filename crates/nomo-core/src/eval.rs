@@ -58,7 +58,7 @@ pub struct Env {
     /// which is how it was found.
     failed: BTreeSet<String>,
     /// The unit each binding was written in, for the substituted column.
-    hints: BTreeMap<String, Unit>,
+    hints: BTreeMap<String, crate::trace::DisplayTarget>,
     funcs: BTreeMap<String, Function>,
     units: UnitTable,
     /// How many user functions are on the stack below this one. See
@@ -348,7 +348,7 @@ impl Env {
                 span,
                 TraceNode::Variable {
                     name: name.into(),
-                    unit: self.hints.get(name).cloned(),
+                    unit: self.hints.get(name).cloned().map(Box::new),
                 },
                 Ok(v.clone()),
             );
@@ -404,13 +404,52 @@ impl Env {
     /// applied to a unit (`5 cm`), and an explicit conversion (`... -> dm^3`).
     /// Anything more involved has no single answer, so nothing is recorded and
     /// the renderer falls back to a coherent SI unit.
-    fn unit_written_in(&self, expr: &Expr) -> Option<Unit> {
+    fn unit_written_in(&self, expr: &Expr) -> Option<crate::trace::DisplayTarget> {
         match expr {
-            Expr::Convert { unit, .. } => self.named_unit(unit),
-            Expr::Binary { op, rhs, .. } if op.is_mul() => self.named_unit(rhs),
+            Expr::Convert { unit, .. } => self.display_target(unit),
+            Expr::Binary { op, rhs, .. } if op.is_mul() => {
+                let u = self.named_unit(rhs)?;
+                Some(crate::trace::DisplayTarget {
+                    span: rhs.span(),
+                    factor: u.factor,
+                    dim: u.dim,
+                    unit: Some(u),
+                })
+            }
             Expr::Paren { inner, .. } => self.unit_written_in(inner),
             _ => None,
         }
+    }
+
+    /// The conversion target `expr` names, named or compound.
+    ///
+    /// A bare name resolves in the unit table and can carry an offset scale. A
+    /// compound target — `mm^2`, `MN/m`, `N*m` — is not a name and never will
+    /// be, so it is evaluated: what it is worth in base SI is its factor, and
+    /// the renderer reproduces the text from the span. Without this branch the
+    /// most ordinary engineering units in the language are the ones that do not
+    /// propagate.
+    fn display_target(&self, expr: &Expr) -> Option<crate::trace::DisplayTarget> {
+        if let Some(u) = self.named_unit(expr) {
+            return Some(crate::trace::DisplayTarget {
+                span: expr.span(),
+                factor: u.factor,
+                dim: u.dim,
+                unit: Some(u),
+            });
+        }
+        let q = self.eval(expr).value.ok()?.as_scalar()?;
+        // A magnitude of zero would divide the world by nothing, and an offset
+        // scale cannot be reached this way in any case.
+        if q.value == 0.0 || q.is_point() {
+            return None;
+        }
+        Some(crate::trace::DisplayTarget {
+            span: expr.span(),
+            factor: q.value,
+            dim: q.dim,
+            unit: None,
+        })
     }
 
     /// The unit a bare identifier names, if it names one and is not shadowed.
@@ -2501,11 +2540,12 @@ impl Env {
                     }),
                 },
             };
-            let target = DisplayTarget {
+            let target = Box::new(DisplayTarget {
                 span: unit.span(),
                 factor: u.factor,
+                dim: u.dim,
                 unit: Some(u),
-            };
+            });
             return Trace::new(
                 span,
                 TraceNode::Convert {
@@ -2542,11 +2582,12 @@ impl Env {
                         ),
                         _ => (
                             Ok(v.clone()),
-                            Some(DisplayTarget {
+                            Some(Box::new(DisplayTarget {
                                 span: unit_trace.span,
                                 unit: None,
                                 factor: uq.value,
-                            }),
+                                dim: uq.dim,
+                            })),
                         ),
                     }
                 }
@@ -2603,7 +2644,14 @@ impl Env {
                     Ok(v) => {
                         self.vars.insert(name.text.clone(), v.clone());
                         self.failed.remove(&name.text);
-                        match self.unit_written_in(value) {
+                        // Only when it fits: `M = 500 N*m` offers `m` as the
+                        // unit it was written in, which is a length where the
+                        // value is a moment, and showing `500 m` for it would
+                        // be worse than showing base units.
+                        let fits = |t: &crate::trace::DisplayTarget| {
+                            v.elements().first().is_none_or(|q| q.dim == t.dim)
+                        };
+                        match self.unit_written_in(value).filter(fits) {
                             Some(u) => self.hints.insert(name.text.clone(), u),
                             None => self.hints.remove(&name.text),
                         };
@@ -2643,6 +2691,13 @@ impl Env {
             Stmt::Use { name, span } => Outcome {
                 span: *span,
                 kind: OutcomeKind::Use(name.text.clone()),
+                diagnostics: vec![],
+            },
+
+            // Presentation only: nothing is computed and nothing depends on it.
+            Stmt::Digits { figures, span } => Outcome {
+                span: *span,
+                kind: OutcomeKind::Digits(*figures),
                 diagnostics: vec![],
             },
 
@@ -2773,6 +2828,8 @@ pub enum OutcomeKind {
     Query(Trace),
     /// `use steel` — the pack's name.
     Use(String),
+    /// `digits 3` — significant figures, from here down.
+    Digits(u32),
     /// `check …` — the condition, and whether it held.
     ///
     /// `passed` is `None` when the condition could not be evaluated at all, or
@@ -2895,7 +2952,15 @@ pub const MAX_DEPTH: usize = 64;
 /// 120, and 16 of 64 all fail together. 512 is half of that, which is the
 /// margin available rather than a generous one: the ceiling is pressed from
 /// below as well, since [`MAX_DEPTH`] recursion of an ordinary definition costs
-/// four or five nested evaluations per call and must keep working. A worksheet
+/// four or five nested evaluations per call and must keep working.
+///
+/// The margin has since widened without the number moving. Boxing the display
+/// target took a `TraceNode` from 208 bytes to 48 and a `Trace` from 336 to
+/// 176, and evaluation returns one of those by value at every level — so the
+/// same 512 now sits further from the cliff than it did when it was measured.
+/// It stays where it is: this is a limit on what a worksheet may ask for, and
+/// moving it because an implementation detail improved would make the language
+/// depend on the implementation. A worksheet
 /// hits this only by combining deep brackets with deep recursion, and the
 /// deepest expression in either SMath corpus is 14 with call chains under ten.
 pub const MAX_EVAL_NEST: usize = 512;

@@ -33,6 +33,8 @@ pub enum TokenKind {
     KwCheck,
     /// `use` — bring in a pack of definitions.
     KwUse,
+    /// `digits` — how many significant figures results are shown to.
+    KwDigits,
     /// `if`, `then`, `else` — a conditional expression.
     KwIf,
     KwThen,
@@ -275,6 +277,7 @@ pub fn lex(source: &str) -> Lexed {
                 "global" => TokenKind::KwGlobal,
                 "check" => TokenKind::KwCheck,
                 "use" => TokenKind::KwUse,
+                "digits" => TokenKind::KwDigits,
                 "if" => TokenKind::KwIf,
                 "then" => TokenKind::KwThen,
                 "else" => TokenKind::KwElse,

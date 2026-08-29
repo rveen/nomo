@@ -43,6 +43,14 @@ pub struct DisplayTarget {
     pub unit: Option<Unit>,
     /// Base-SI magnitude of one of the target unit, so a renderer divides by it.
     pub factor: f64,
+    /// What the target measures.
+    ///
+    /// Carried so that a *hint* can be checked against the value it would
+    /// describe. `M = 500 N*m` records `m` as the unit the binding was written
+    /// in — the right operand of the multiplication — and that is a length
+    /// where the value is a moment. Dividing by it anyway printed `500 m`,
+    /// which is the quietly-wrong kind of answer this engine exists to avoid.
+    pub dim: crate::dim::Dimension,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -59,7 +67,19 @@ pub enum TraceNode {
     /// not the base-SI values the engine happens to store.
     Variable {
         name: String,
-        unit: Option<Unit>,
+        /// How the binding was written, when that says something the base units
+        /// do not: `A_s = … -> mm^2` should substitute as `84.27 mm²` wherever
+        /// `A_s` is used, not as `8.427e-5 m²`.
+        ///
+        /// A [`DisplayTarget`] rather than a [`Unit`] so that a *compound*
+        /// target carries too. `mm^2`, `MN/m` and `N*m` are not names in the
+        /// unit table and cannot become a `Unit`; they are a span and a factor,
+        /// which is exactly what this already holds for `->`.
+        /// Boxed: a `DisplayTarget` is the largest thing a `TraceNode` can
+        /// hold, and evaluation returns a `Trace` by value at every level of a
+        /// recursion — so its size is stack the engine spends on every node,
+        /// including the great majority that carry no target at all.
+        unit: Option<Box<DisplayTarget>>,
     },
     /// A name that resolved to a unit.
     UnitRef(String),
@@ -107,7 +127,7 @@ pub enum TraceNode {
     },
     Convert {
         value: Box<Trace>,
-        target: Option<DisplayTarget>,
+        target: Option<Box<DisplayTarget>>,
     },
     /// The syntax tree had an error here.
     Malformed,

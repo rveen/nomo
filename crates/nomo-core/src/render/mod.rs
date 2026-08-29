@@ -123,6 +123,12 @@ impl Piece {
 
 pub struct Renderer<'a> {
     pub opts: &'a RenderOptions,
+    /// How numbers are shown *now*.
+    ///
+    /// Owned and mutable rather than read from `opts`, because `digits n` moves
+    /// it part way down a worksheet: the options say where the document starts
+    /// and this says where the renderer has got to.
+    pub numbers: NumberFormat,
     pub units: &'a UnitTable,
     /// The worksheet text. A conversion target is recorded as a span rather than
     /// a copied string, because the engine never sees a file and should not
@@ -134,9 +140,15 @@ impl<'a> Renderer<'a> {
     pub fn new(opts: &'a RenderOptions, units: &'a UnitTable, source: &'a str) -> Renderer<'a> {
         Renderer {
             opts,
+            numbers: opts.numbers,
             units,
             source,
         }
+    }
+
+    /// Show results to `figures` significant figures from here down.
+    pub fn set_significant_figures(&mut self, figures: u32) {
+        self.numbers.significant_figures = figures as usize;
     }
 
     /// The expression as written.
@@ -206,7 +218,7 @@ impl<'a> Renderer<'a> {
 
     fn value_in_unit(&self, value: &Value, unit: &crate::unit::Unit) -> String {
         let one = |q: &Quantity| match q.to_unit(unit) {
-            Ok(m) => join(number::format(m, &self.opts.numbers), &unit.symbol),
+            Ok(m) => join(number::format(m, &self.numbers), &unit.symbol),
             Err(_) => self.quantity(q, None),
         };
         match value {
@@ -224,8 +236,8 @@ impl<'a> Renderer<'a> {
                         join(
                             format!(
                                 "({} {sign} {}i)",
-                                number::format(re, &self.opts.numbers),
-                                number::format(math::abs(im), &self.opts.numbers)
+                                number::format(re, &self.numbers),
+                                number::format(math::abs(im), &self.numbers)
                             ),
                             &unit.symbol,
                         )
@@ -274,7 +286,7 @@ impl<'a> Renderer<'a> {
 
     fn target_of<'t>(&self, trace: &'t Trace) -> Option<&'t DisplayTarget> {
         match &trace.node {
-            TraceNode::Convert { target, .. } => target.as_ref(),
+            TraceNode::Convert { target, .. } => target.as_deref(),
             _ => None,
         }
     }
@@ -333,7 +345,7 @@ impl<'a> Renderer<'a> {
                 }
             }
         };
-        let n = |x: f64| number::format(x, &self.opts.numbers);
+        let n = |x: f64| number::format(x, &self.numbers);
         let extent = match p.y_range() {
             Some((lo, hi)) => format!("{} to {}{}", n(lo), n(hi), unit_of(&p.y_dim)),
             None => String::from("nothing finite"),
@@ -397,8 +409,8 @@ impl<'a> Renderer<'a> {
         let sign = if im.is_sign_negative() { "-" } else { "+" };
         let parts = format!(
             "{} {sign} {}i",
-            number::format(re, &self.opts.numbers),
-            number::format(math::abs(im), &self.opts.numbers)
+            number::format(re, &self.numbers),
+            number::format(math::abs(im), &self.numbers)
         );
         match symbol {
             // Bracketed so the unit plainly applies to the whole value.
@@ -420,27 +432,24 @@ impl<'a> Renderer<'a> {
                 || t.span.text(self.source).to_string(),
                 |u| u.symbol.clone(),
             );
-            return join(number::format(magnitude, &self.opts.numbers), &symbol);
+            return join(number::format(magnitude, &self.numbers), &symbol);
         }
 
         if q.is_dimensionless() {
-            return number::format(q.value, &self.opts.numbers);
+            return number::format(q.value, &self.numbers);
         }
         // No unit was requested, so fall back to a coherent SI name if one
         // exists, and to raw base dimensions otherwise.
         match self.units.preferred_for(&q.dim) {
-            Some(u) => join(number::format(q.value, &self.opts.numbers), &u.symbol),
-            None => join(
-                number::format(q.value, &self.opts.numbers),
-                &q.dim.to_string(),
-            ),
+            Some(u) => join(number::format(q.value, &self.numbers), &u.symbol),
+            None => join(number::format(q.value, &self.numbers), &q.dim.to_string()),
         }
     }
 
     fn walk(&self, trace: &Trace, mode: Mode) -> Piece {
         match &trace.node {
             TraceNode::Number => match &trace.value {
-                Ok(Value::Scalar(q)) => Piece::atom(number::format(q.value, &self.opts.numbers)),
+                Ok(Value::Scalar(q)) => Piece::atom(number::format(q.value, &self.numbers)),
                 _ => Piece::atom("?"),
             },
 
@@ -463,12 +472,21 @@ impl<'a> Renderer<'a> {
                     // Shown in the unit the binding was written in, so the reader
                     // sees the numbers they typed.
                     let text = match (unit, v.as_scalar()) {
-                        (Some(u), Some(q)) => match q.to_unit(u) {
-                            Ok(magnitude) => {
-                                join(number::format(magnitude, &self.opts.numbers), &u.symbol)
-                            }
-                            Err(_) => self.value(v, None),
-                        },
+                        (Some(t), Some(q)) => {
+                            // A named target converts through the unit table,
+                            // which is the only route that can carry an offset
+                            // scale; a compound one — `mm^2`, `MN/m` — is a
+                            // factor and the text that was written.
+                            let symbol = t.unit.as_ref().map_or_else(
+                                || t.span.text(self.source).to_string(),
+                                |u| u.symbol.clone(),
+                            );
+                            let magnitude = match &t.unit {
+                                Some(u) => q.to_unit(u).unwrap_or(q.value / t.factor),
+                                None => q.value / t.factor,
+                            };
+                            join(number::format(magnitude, &self.numbers), &symbol)
+                        }
                         _ => self.value(v, None),
                     };
                     // A substituted value may itself be a product ("5 cm"), so
@@ -527,7 +545,7 @@ impl<'a> Renderer<'a> {
             }
 
             TraceNode::AffineLiteral { magnitude, unit } => Piece {
-                text: join(number::format(*magnitude, &self.opts.numbers), unit),
+                text: join(number::format(*magnitude, &self.numbers), unit),
                 prec: prec::PRODUCT,
             },
 

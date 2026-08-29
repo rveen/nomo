@@ -206,6 +206,7 @@ fn set_span(stmt: &mut Stmt, span: Span) {
         | Stmt::UnitDecl { span: s, .. }
         | Stmt::Check { span: s, .. }
         | Stmt::Use { span: s, .. }
+        | Stmt::Digits { span: s, .. }
         | Stmt::FnDef { span: s, .. }
         | Stmt::Error { span: s } => *s = span,
     }
@@ -227,7 +228,7 @@ fn set_span(stmt: &mut Stmt, span: Span) {
         }
         Stmt::Query { expr, .. } | Stmt::Check { expr, .. } => set_expr_span(expr, span),
         Stmt::Use { name, .. } => name.span = span,
-        Stmt::Comment { .. } | Stmt::Error { .. } => {}
+        Stmt::Comment { .. } | Stmt::Digits { .. } | Stmt::Error { .. } => {}
     }
 }
 

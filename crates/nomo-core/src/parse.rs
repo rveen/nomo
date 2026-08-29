@@ -225,6 +225,7 @@ impl<'s> Parser<'s> {
             TokenKind::KwGlobal => self.parse_global_def(),
             TokenKind::KwCheck => self.parse_check(),
             TokenKind::KwUse => self.parse_use(),
+            TokenKind::KwDigits => self.parse_digits(),
             _ => self.parse_assign_or_query(),
         }
     }
@@ -291,6 +292,38 @@ impl<'s> Parser<'s> {
         let span = kw.span.to(value.span());
         self.finish_line();
         Some(Stmt::UnitDecl { name, value, span })
+    }
+
+    /// `digits 3`.
+    ///
+    /// A whole number between 1 and 17: one is the fewest that says anything and
+    /// 17 is where binary64 runs out — past it the extra characters are an
+    /// artefact of the base conversion rather than information.
+    fn parse_digits(&mut self) -> Option<Stmt> {
+        let start = self.bump().span;
+        let token = self.peek_token().clone();
+        let text = token.span.text(self.source).to_string();
+        let figures = if token.kind == TokenKind::Number {
+            self.bump();
+            text.parse::<f64>().ok().filter(|n| n.fract() == 0.0)
+        } else {
+            None
+        };
+        let span = start.to(token.span);
+        let Some(figures) = figures.filter(|n| (1.0..=17.0).contains(n)) else {
+            self.error(
+                codes::EXPECTED_TOKEN,
+                token.span,
+                "expected a whole number of significant figures between 1 and 17 after `digits`",
+            );
+            self.recover_to_line_end();
+            return Some(Stmt::Error { span });
+        };
+        self.finish_line();
+        Some(Stmt::Digits {
+            figures: figures as u32,
+            span,
+        })
     }
 
     /// `use steel`.

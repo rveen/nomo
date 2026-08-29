@@ -217,3 +217,60 @@ fn html_is_self_contained_and_escaped() {
 fn sheet_html(sheet: &Sheet) -> String {
     nomo_core::render::html::render(sheet, &RenderOptions::default(), "test")
 }
+
+#[test]
+fn digits_changes_what_is_shown_from_that_line_down() {
+    let text = render("x = 2/3 m\ndigits 3\ny = 2/3 m\ndigits 8\nz = 2/3 m\n");
+    assert!(text.contains("0.666667 m"), "the default is six: {text}");
+    assert!(text.contains("0.667 m"), "three after `digits 3`: {text}");
+    assert!(
+        text.contains("0.66666667 m"),
+        "eight after `digits 8`: {text}"
+    );
+}
+
+#[test]
+fn digits_is_presentation_and_nothing_else() {
+    // The values section of a snapshot is full precision by design — it is what
+    // the cross-target comparison compares — so a display directive must not
+    // reach it.
+    let snap = nomo_core::golden::snapshot("t", "digits 3\nx = 2/3 m\n");
+    let values = snap
+        .split("=== values ===")
+        .nth(1)
+        .expect("a values section");
+    assert!(
+        values.contains("0.6666666666666666"),
+        "digits reached the values section: {values}"
+    );
+}
+
+#[test]
+fn a_compound_conversion_target_substitutes_as_written() {
+    // `-> mm^2` and `-> MN/m` are not names in the unit table, so they could not
+    // become a hint and every later use of the name read in base units. The
+    // most ordinary engineering units in the language were the ones that did
+    // not propagate.
+    let text = render("A = 3 m*4 m -> mm^2\nq = A*2\n");
+    assert!(
+        text.contains("12000000 mm²·2") || text.contains("1.2e7 mm²·2"),
+        "the substitution should read in mm²: {text}"
+    );
+}
+
+#[test]
+fn a_hint_that_does_not_fit_its_value_is_not_used() {
+    // `M = 500 N*m` offers `m` as the unit it was written in — the right
+    // operand of the multiplication — and that is a length where the value is a
+    // moment. Showing `500 m` for it would be worse than showing base units,
+    // and for a while it did.
+    let text = render("M = 500 N*m\nZ = 2 m^3\nsigma = M/Z\n");
+    assert!(
+        !text.contains("500 m/"),
+        "a moment was shown as a length: {text}"
+    );
+    assert!(
+        text.contains("500 J/"),
+        "expected base units instead: {text}"
+    );
+}

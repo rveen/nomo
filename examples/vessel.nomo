@@ -14,11 +14,14 @@
 
 use steel
 
+' Four significant figures.
+digits 4
+
 r_i = 300 mm
 t_wall = 12 mm
 p = 2 MPa
 
-r_o = r_i + t_wall
+r_o = r_i + t_wall -> mm
 
 ' ## Is it thin?
 '
@@ -36,11 +39,8 @@ check ratio <= 0.1
 ' factor of two between them is why a cylinder that fails from internal pressure
 ' splits along its length rather than round its circumference.
 
-sigma_hoop_thin = p*r_i/t_wall
-sigma_long_thin = p*r_i/(2*t_wall)
-
-sigma_hoop_thin -> MPa
-sigma_long_thin -> MPa
+sigma_hoop_thin = p*r_i/t_wall -> MPa
+sigma_long_thin = p*r_i/(2*t_wall) -> MPa
 
 ' ## Thick wall
 '
@@ -48,14 +48,13 @@ sigma_long_thin -> MPa
 ' makes no assumption about the wall being thin and is what the thin-wall
 ' formula approaches as the wall gets thinner.
 
-sigma_hoop_bore = p*(r_o^2 + r_i^2)/(r_o^2 - r_i^2)
-sigma_hoop_bore -> MPa
+sigma_hoop_bore = p*(r_o^2 + r_i^2)/(r_o^2 - r_i^2) -> MPa
 
 ' The radial stress at the bore is not zero — it is the pressure itself, in
 ' compression — and the thin-wall treatment drops it. At this wall it is 4% of
 ' the hoop stress; at a quarter-radius wall it is not negligible at all.
 
-sigma_radial_bore = -p
+sigma_radial_bore = -p -> MPa
 
 ' How much the approximation is out by, which is the number this worksheet
 ' exists to produce.
@@ -70,17 +69,15 @@ error_thin -> %
 ' and longitudinal. Dropping the radial term is the same approximation again and
 ' this worksheet has just finished measuring it.
 
-sigma_long = p*r_i/(2*t_wall)
-s1 = sigma_hoop_bore
-s2 = sigma_long
-s3 = sigma_radial_bore
+sigma_long = p*r_i/(2*t_wall) -> MPa
+s1 = sigma_hoop_bore -> MPa
+s2 = sigma_long -> MPa
+s3 = sigma_radial_bore -> MPa
 
-sigma_vm = sqrt(((s1 - s2)^2 + (s2 - s3)^2 + (s3 - s1)^2)/2)
-sigma_vm -> MPa
+sigma_vm = sqrt(((s1 - s2)^2 + (s2 - s3)^2 + (s3 - s1)^2)/2) -> MPa
 
 n_design = 1.5
-sigma_allow = Fy_S355/n_design
-sigma_allow -> MPa
+sigma_allow = Fy_S355/n_design -> MPa
 
 check sigma_vm <= sigma_allow
 

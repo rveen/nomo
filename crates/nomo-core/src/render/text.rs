@@ -13,7 +13,7 @@ use crate::resource::{self, Reference, Resources};
 pub fn render(sheet: &Sheet, opts: &RenderOptions) -> String {
     let source = sheet.source().to_string();
     let units = sheet.units().clone();
-    let r = Renderer::new(opts, &units, &source);
+    let mut r = Renderer::new(opts, &units, &source);
     let mut out = String::new();
 
     for (i, outcome) in sheet.outcomes().iter().enumerate() {
@@ -61,6 +61,13 @@ pub fn render(sheet: &Sheet, opts: &RenderOptions) -> String {
                 line.push_str(&format!(" = {}", r.result(trace)));
                 out.push_str(&line);
                 out.push('\n');
+            }
+
+            // Presentation, applied from here down. The line itself is a note:
+            // it is a fact about the page rather than about the engineering.
+            OutcomeKind::Digits(figures) => {
+                r.set_significant_figures(*figures);
+                out.push_str(&format!("digits {figures}\n"));
             }
 
             OutcomeKind::Use(name) => {

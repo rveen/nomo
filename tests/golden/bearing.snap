@@ -12,6 +12,9 @@ wide. A calculated 20 000 hours means half of them are still running at about
 This is a deep-groove ball bearing on a fan shaft: 4 kN of radial load at 1500
 rev/min, wanted for five years of continuous duty.
 unit rpm = 1/min
+Four significant figures. A life figure with six would be a claim nobody
+can support — see the opening paragraph.
+digits 4
 The basic dynamic load rating comes from the manufacturer's catalogue for the
 bearing being considered — it is a measured property of that part, not
 something a calculation can produce. This is a 6208.
@@ -24,20 +27,18 @@ The exponent is 3 for ball bearings and 10/3 for roller bearings, and it is
 the whole character of the calculation: life goes as the cube of the load
 margin, so a 25% overload costs half the life.
 p_exp = 3
-L_10 = (C_dyn/P_load)^p_exp = (32.5 kN/(4 kN))^3 = 536.377
-L_10_hours = L_10·1000000/speed = 536.377·1000000/(1500 rpm) = 21455100 s
-L_10_hours = 5959.74 h
+L_10 = (C_dyn/P_load)^p_exp = (32.5 kN/(4 kN))^3 = 536.4
+L_10_hours = L_10·1000000/speed = 536.4·1000000/(1500 rpm) = 5960 h
 ## Against what is wanted
 years = 5
 wanted = years·8760 h = 5·8760 h = 43800 h
-check L_10_hours ≥ wanted = 21455100 s ≥ 43800 h — FAIL
+check L_10_hours ≥ wanted = 5960 h ≥ 43800 h — FAIL
 ## What rating the duty needs
 
 The check above fails, so the question becomes which bearing to fit. The load
 rating required for a wanted life inverts the same relation — and this is the
 number to take back to the catalogue.
-C_required = P_load·nthroot(wanted·speed/1000000, p_exp) = 4 kN·nthroot(43800 h·(1500 rpm)/1000000, 3) = 63187.6 N
-C_required = 63.1876 kN
+C_required = P_load·nthroot(wanted·speed/1000000, p_exp) = 4 kN·nthroot(43800 h·(1500 rpm)/1000000, 3) = 63.19 kN
 A rating half again as large is one or two sizes up in the same bore, or the
 same bearing in a heavier series. It is also worth asking whether the load is
 really 4 kN: the cube means a 20% overestimate of the load costs 40% of the
@@ -47,7 +48,7 @@ calculated life, and bearing loads are usually estimated rather than measured.
 The cube is the reason this curve falls away so fast, and the reason a bearing
 that is comfortable at its design load is not comfortable at 30% more.
 fn life_hours defined
-plot(life_hours, 2, 8) = [plot life_hours: 2 to 8, 257 points, 744.968 to 47678]
+plot(life_hours, 2, 8) = [plot life_hours: 2 to 8, 257 points, 745 to 47680]
 ## What this leaves out
 
 The basic rating life, and nothing else. It assumes a radial load only — an
@@ -61,6 +62,8 @@ by an order of magnitude in either direction.
 <p class="prose">A bearing's rated life is not how long it lasts. It is the life that nine bearings in ten exceed — the tenth fails earlier, by design, and the spread is wide. A calculated 20 000 hours means half of them are still running at about 100 000 and one in ten has failed before 20 000.</p>
 <p class="prose">This is a deep-groove ball bearing on a fan shaft: 4 kN of radial load at 1500 rev/min, wanted for five years of continuous duty.</p>
 <div class="step note">unit rpm = 1/min</div>
+<p class="prose">Four significant figures. A life figure with six would be a claim nobody can support — see the opening paragraph.</p>
+<div class="step note">digits 4</div>
 <p class="prose">The basic dynamic load rating comes from the manufacturer's catalogue for the bearing being considered — it is a measured property of that part, not something a calculation can produce. This is a 6208.</p>
 <div class="step"><span class="name">C_dyn</span><span class="eq">=</span>32.5 kN</div>
 <div class="step"><span class="name">P_load</span><span class="eq">=</span>4 kN</div>
@@ -68,17 +71,15 @@ by an order of magnitude in either direction.
 <h2 class="prose">Rated life</h2>
 <p class="prose">The exponent is 3 for ball bearings and 10/3 for roller bearings, and it is the whole character of the calculation: life goes as the cube of the load margin, so a 25% overload costs half the life.</p>
 <div class="step"><span class="name">p_exp</span><span class="eq">=</span>3</div>
-<div class="step"><span class="name">L_10</span><span class="eq">=</span>(C_dyn/P_load)^p_exp<span class="eq">=</span><span class="subst">(32.5 kN/(4 kN))^3</span><span class="eq">=</span><span class="result">536.377</span></div>
-<div class="step"><span class="name">L_10_hours</span><span class="eq">=</span>L_10·1000000/speed<span class="eq">=</span><span class="subst">536.377·1000000/(1500 rpm)</span><span class="eq">=</span><span class="result">21455100 s</span></div>
-<div class="step">L_10_hours<span class="eq">=</span><span class="result">5959.74 h</span></div>
+<div class="step"><span class="name">L_10</span><span class="eq">=</span>(C_dyn/P_load)^p_exp<span class="eq">=</span><span class="subst">(32.5 kN/(4 kN))^3</span><span class="eq">=</span><span class="result">536.4</span></div>
+<div class="step"><span class="name">L_10_hours</span><span class="eq">=</span>L_10·1000000/speed<span class="eq">=</span><span class="subst">536.4·1000000/(1500 rpm)</span><span class="eq">=</span><span class="result">5960 h</span></div>
 <h2 class="prose">Against what is wanted</h2>
 <div class="step"><span class="name">years</span><span class="eq">=</span>5</div>
 <div class="step"><span class="name">wanted</span><span class="eq">=</span>years·8760 h<span class="eq">=</span><span class="subst">5·8760 h</span><span class="eq">=</span><span class="result">43800 h</span></div>
-<div class="step check fail"><span class="name">check</span>L_10_hours ≥ wanted<span class="eq">=</span><span class="subst">21455100 s ≥ 43800 h</span><span class="verdict">FAIL</span></div>
+<div class="step check fail"><span class="name">check</span>L_10_hours ≥ wanted<span class="eq">=</span><span class="subst">5960 h ≥ 43800 h</span><span class="verdict">FAIL</span></div>
 <h2 class="prose">What rating the duty needs</h2>
 <p class="prose">The check above fails, so the question becomes which bearing to fit. The load rating required for a wanted life inverts the same relation — and this is the number to take back to the catalogue.</p>
-<div class="step"><span class="name">C_required</span><span class="eq">=</span>P_load·nthroot(wanted·speed/1000000, p_exp)<span class="eq">=</span><span class="subst">4 kN·nthroot(43800 h·(1500 rpm)/1000000, 3)</span><span class="eq">=</span><span class="result">63187.6 N</span></div>
-<div class="step">C_required<span class="eq">=</span><span class="result">63.1876 kN</span></div>
+<div class="step"><span class="name">C_required</span><span class="eq">=</span>P_load·nthroot(wanted·speed/1000000, p_exp)<span class="eq">=</span><span class="subst">4 kN·nthroot(43800 h·(1500 rpm)/1000000, 3)</span><span class="eq">=</span><span class="result">63.19 kN</span></div>
 <p class="prose">A rating half again as large is one or two sizes up in the same bore, or the same bearing in a heavier series. It is also worth asking whether the load is really 4 kN: the cube means a 20% overestimate of the load costs 40% of the calculated life, and bearing loads are usually estimated rather than measured.</p>
 <h2 class="prose">Life against load</h2>
 <p class="prose">The cube is the reason this curve falls away so fast, and the reason a bearing that is comfortable at its design load is not comfortable at 30% more.</p>
@@ -120,11 +121,9 @@ speed = 25.0 s^-1
 p_exp = 3.0 dimensionless
 L_10 = 536.376953125 dimensionless
 L_10_hours = 21455078.125 s
-? = 21455078.125 s
 years = 5.0 dimensionless
 wanted = 157680000.0 s
 C_required = 63187.64913805724 m·kg·s^-2
-? = 63187.64913805724 m·kg·s^-2
 ? = plot 2.0..8.0 (chosen) dimensionless over dimensionless {life_hours: [47677.95138888889, 46040.30480806319, 44476.807705342486, 42983.31045837243, 41555.93902471012, 40191.07382424705, 38885.33045097701, 37635.54203774373, 36438.74311629414, 35292.154831499465, 34193.171383254026, 33139.34758255436, 32128.38741980142, 31158.133553630654, 30226.557637711798, 29331.751411106252, 28471.918485039932, 27645.366765445906, 26850.501456442857, 26085.81859512021, 25349.89907266746, 24641.403101073145, 23959.065088382755, 23301.688888888893, 22668.143397674314, 22057.358461675267, 21468.321081908995, 20900.071883746874, 20351.701834136187, 19822.349186502437, 19311.196635720164, 18817.468667041274, 18340.42908423074, 17879.378703395847, 17433.653200117922, 17002.621098516338, 16585.681891804343, 16182.264284742289, 15791.824549165674, 15413.844984469137, 15047.832475570072, 14693.317141462794, 14349.851068010752, 14017.0071191154, 13694.377820850279, 13381.574313560412, 13078.22536730531, 12783.97645637027, 12498.488888888889, 12221.438987912083, 11952.517320527824, 11691.427971882766, 11437.887861184807, 11191.626096975118, 10952.38336915135, 10719.911375401975, 10493.97227987608, 10274.338202064599, 10060.790734009443, 9853.120484086276, 9651.126645726767, 9454.61658955698, 9263.405477531267, 9077.315897736085, 8896.1775186265, 8719.82676153963, 8548.106490405438, 8380.865717645413, 8217.959325315285, 8059.247800608569, 7904.596984894234, 7753.877835514423, 7606.966199616859, 7463.742599342309, 7324.092027729663, 7187.903754740863, 7055.07114284458, 6925.491471632047, 6799.0657709703355, 6675.698662228447, 6555.298207139366, 6437.775763887475, 6323.045850034955, 6211.026011923808, 6101.636700211282, 5994.80115121659, 5890.445273775406, 5788.497541316209, 5688.888888888889, 5591.5526148914405, 5496.424287254946, 5403.44165386063, 5312.54455697538, 5223.674851504079, 5136.776326868301, 5051.794632331366, 4968.677205599657, 4887.373204539363, 4807.833441856582, 4730.010322596841, 4653.857784327892, 4579.331239876853, 4506.387522499671, 4434.9848333672535, 4365.082691258752, 4296.6418843581605, 4229.624424055848, 4163.9935006616515, 4099.713440941044, 4036.749667390347, 3975.0686591713156, 3914.6379146293702, 3855.4259153236517, 3797.402091500631, 3740.536788946421, 3684.801237156167, 3630.167518761925, 3576.6085401633445, 3524.0980033081564, 3472.610378572098, 3422.1208786902826, 3372.6054336944217, 3324.040666812403, 3276.4038712888882, 3229.6729880874977, 3183.82658443704, 3138.84383318604, 3094.704492931423, 3051.3888888888887, 3008.8778944739547, 2967.1529135641035, 2926.1958634138487, 2885.989158195777, 2846.5156931419197, 2807.7588292608875, 2769.702378607399, 2732.330590081815, 2695.6281357383364, 2659.5800975814477, 2624.1719548311135, 2589.389571638093, 2555.21918523154, 2521.64739448186, 2488.661148862529, 2456.2477377952746, 2424.3947803637197, 2393.0902153812094, 2362.322291799155, 2332.0795594428246, 2302.3508600620603, 2273.1253186849167, 2244.392335262746, 2216.141576595724, 2188.3629685282576, 2161.0466884041894, 2134.183157772092, 2107.763035331373, 2081.7772101102837, 2056.2167948672904, 2031.0731197076102, 2006.337725907053, 1982.0023599356268, 1958.0589676736708, 1934.4996888135552, 1911.3168514402887, 1888.5029667846204, 1866.050724142487, 1843.9529859548948, 1822.2027830425557, 1800.793309989834, 1779.7179206727444, 1758.9701239259805, 1738.543579344118, 1718.4320932123428, 1698.6296145622223, 1679.1302313482201, 1659.9281667408038, 1641.0177755321656, 1622.393540650717, 1604.050069780681, 1585.982092083215, 1568.1844550156466, 1550.652121245557, 1533.3801656564967, 1516.3637724423359, 1499.5982322872628, 1483.0789396286316, 1466.8013899999187, 1450.761177451156, 1434.9539920443187, 1419.3756174212217, 1404.0219284415684, 1388.888888888889, 1373.9725492421758, 1359.2690445111134, 1344.7745921328615, 1330.4854899284323, 1316.3981141167735, 1302.5089173847166, 1288.814427011048, 1275.3112430429878, 1261.9960365234333, 1248.8655477673965, 1235.9165846860908, 1223.1460211571994, 1210.5507954398938, 1198.1279086332245, 1185.8744231765572, 1173.7874613907675, 1161.8642040589452, 1150.1018890454254, 1138.4978099519599, 1127.0493148099372, 1115.753804807547, 1104.6087330508492, 1093.6116033577352, 1082.7599690838022, 1072.0514319791919, 1061.4836410754776, 1051.0542916017205, 1040.7611239288244, 1030.6019225413795, 1020.5745150361723, 1010.6767711466035, 1000.9066017922468, 991.2619581528409, 981.7408307659862, 972.3412486478907, 963.0612784364844, 953.8990235562788, 944.8526234043431, 935.9202525568003, 927.1001199952708, 918.3904683526878, 909.7895731779506, 901.2957422188864, 892.9073147230062, 884.6226607555608, 876.4401805344179, 868.3583037812976, 860.3754890889059, 852.490223303539, 844.7010209227335, 837.0064235075401, 829.4049991090374, 821.8953417086926, 814.4760706721869, 807.1458302163576, 799.9032888888888, 792.7471390604179, 785.6760964287209, 778.6888995346587, 771.7843092895653, 764.9611085137809, 758.2181014860308, 751.5541135033665, 744.9679904513889]}
 
 === diagnostics ===

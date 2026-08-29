@@ -88,6 +88,23 @@ fn assert_close(got: f64, want: f64, what: &str) {
     );
 }
 
+/// Run a case on a thread with room to spare.
+///
+/// A debug test thread gets 2 MiB and frames several times larger than release,
+/// so a worksheet the shipped build refuses cleanly can overflow *here* — and
+/// then the test reports a stack overflow instead of the refusal it was
+/// checking for. The engine's own bound is `MAX_EVAL_NEST`, measured against
+/// the release WebAssembly build, which is the tightest target that ships.
+/// `tests/robustness.rs` carries the same helper for the same reason.
+fn on_a_deep_stack(body: impl FnOnce() + Send + 'static) {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(body)
+        .expect("spawn")
+        .join()
+        .expect("the engine should refuse rather than run out of stack");
+}
+
 // ---- the worked example from the design note ---------------------------
 
 #[test]
@@ -1026,25 +1043,27 @@ fn a_recursion_that_never_ends_is_an_error_and_not_a_crash() {
     // Before the ceiling this aborted the process: no diagnostic, no worksheet,
     // and in the browser a tab that dies with nothing on the page. Three lines
     // anyone can type.
-    let src = "
+    on_a_deep_stack(|| {
+        let src = "
 fn f(x) = f(x)
 f(2)
 ";
-    assert!(errors(src)[0].contains("never reaches an answer"));
+        assert!(errors(src)[0].contains("never reaches an answer"));
 
-    // Recursion itself is not the mistake. The conditional is lazy, so one that
-    // reaches a base case answers, and the ceiling is well above the depth any
-    // worksheet nests.
-    assert_close(
-        last_raw("fn fact(n) = if n <= 1 then 1 else n*fact(n - 1)\nfact(6)"),
-        720.0,
-        "6!",
-    );
-    assert_close(
-        last_raw("fn count(k) = if k <= 0 then 0 else 1 + count(k - 1)\ncount(60)"),
-        60.0,
-        "sixty nested calls",
-    );
+        // Recursion itself is not the mistake. The conditional is lazy, so one
+        // that reaches a base case answers, and the ceiling is well above the
+        // depth any worksheet nests.
+        assert_close(
+            last_raw("fn fact(n) = if n <= 1 then 1 else n*fact(n - 1)\nfact(6)"),
+            720.0,
+            "6!",
+        );
+        assert_close(
+            last_raw("fn count(k) = if k <= 0 then 0 else 1 + count(k - 1)\ncount(60)"),
+            60.0,
+            "sixty nested calls",
+        );
+    });
 }
 
 // ---- packs --------------------------------------------------------------
@@ -1369,24 +1388,14 @@ fn brackets_and_calls_multiply_and_are_bounded_together() {
     // brackets *inside* 64 calls is some 7 700 nested evaluations. The shipped
     // WebAssembly build trapped on it, which in the browser took the editing
     // session with it. `MAX_EVAL_NEST` counts what actually consumes the stack.
-    // On a thread with room, because a *debug* test thread gets 2 MiB and frames
-    // several times larger than release — so it can overflow on the very
-    // worksheet this checks is refused, and report a stack overflow instead of
-    // the refusal. The limit is set from what the release WebAssembly build
-    // carries; see `MAX_EVAL_NEST`.
-    std::thread::Builder::new()
-        .stack_size(64 << 20)
-        .spawn(|| {
-            let deep = format!(
-                "fn f(x) = {}f(x){}\ny = f(1)\n",
-                "(".repeat(120),
-                ")".repeat(120)
-            );
-            assert!(!errors(&deep).is_empty(), "the product must be refused");
-        })
-        .expect("spawn")
-        .join()
-        .expect("refusing must not take the process down");
+    on_a_deep_stack(|| {
+        let deep = format!(
+            "fn f(x) = {}f(x){}\ny = f(1)\n",
+            "(".repeat(120),
+            ")".repeat(120)
+        );
+        assert!(!errors(&deep).is_empty(), "the product must be refused");
+    });
 
     // The other side of the same number: the limit has to leave room for what
     // the language says works. `MAX_DEPTH` recursion of an ordinary definition

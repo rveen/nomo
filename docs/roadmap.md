@@ -242,11 +242,27 @@ factor, the allowable shear of a drawn wire, the estimated bearing load.
 straight line through separation and the first spring plot ran one through solid
 length, both of them a wrong picture of a right equation.
 
-### 11. What the how-tos broke
+### 11. What the how-tos broke — **done**
 
-Whatever Phase 2 turns out to have missed, ranked by how many of the six wanted
-it. Expected: rounding to a preferred size, a fatigue curve wanting
-interpolation on a log axis, and per-line significant figures.
+Measured rather than guessed, which changed the answer. Of the three things
+expected here, **rounding to a preferred size was wanted by none of the six**
+and is not built.
+
+What all six wanted was **fewer significant figures** — every worksheet showed
+`36.4031 kN` where `36.4 kN` is the whole of what is known. `digits n` sets them
+from a line downwards; it is presentation only, so the full-precision values the
+cross-target comparison uses are untouched. The corpus wanted it too, which was
+not part of the original argument: 1279 regions across 34 SMath worksheets carry
+an explicit `decimalPlaces` or `significantDigitsMode`, and Nomo had no way to
+express any of it.
+
+The second thing all six wanted turned out **not to be a missing feature but a
+missing idiom**: a conversion in an assignment — `sigma = M/S -> ksi` — already
+recorded the unit, so verdict lines could have read `10 ksi ≤ 30 ksi` all along
+rather than in pascals. It only half worked: a *compound* target like `mm^2` or
+`MN/m` could not become a hint, which is most engineering units, and that is now
+fixed. Fixing it nearly shipped a much worse bug — see the commit — and the
+guard against it is a test.
 
 ### 12. The gallery, and the migration story shown rather than described
 

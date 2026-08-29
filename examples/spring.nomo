@@ -12,6 +12,9 @@
 
 use steel
 
+' Four significant figures.
+digits 4
+
 d_wire = 3 mm
 D_mean = 20 mm
 n_active = 8
@@ -32,20 +35,17 @@ check C_index >= 4 and C_index <= 12
 
 ' ## Rate and deflection
 
-k_rate = G_spring*d_wire^4/(8*D_mean^3*n_active)
-k_rate -> N/mm
+k_rate = G_spring*d_wire^4/(8*D_mean^3*n_active) -> N/mm
 
 F_work = 50 N
-x_work = F_work/k_rate
-x_work -> mm
+x_work = F_work/k_rate -> mm
 
 ' The requirement was a force at a deflection, so that is what gets checked —
 ' the rate is only the means. A spring is wound to a tolerance on its rate, so
 ' this is a band rather than a number; ±10% is ordinary for a commercial spring.
 
 x_required = 4 mm
-F_at_required = k_rate*x_required
-F_at_required -> N
+F_at_required = k_rate*x_required -> N
 
 check F_at_required >= 0.9*F_work and F_at_required <= 1.1*F_work
 
@@ -58,8 +58,7 @@ check F_at_required >= 0.9*F_work and F_at_required <= 1.1*F_work
 
 K_wahl = (4*C_index - 1)/(4*C_index - 4) + 0.615/C_index
 
-tau_work = K_wahl*8*F_work*D_mean/(pi*d_wire^3)
-tau_work -> MPa
+tau_work = K_wahl*8*F_work*D_mean/(pi*d_wire^3) -> MPa
 
 ' The allowable shear stress belongs to the wire and its diameter — a drawn wire
 ' is stronger in a thin section than a thick one — so it is taken from the
@@ -74,16 +73,14 @@ check tau_work <= tau_allow
 ' Two dead coils at the ends, squared and ground.
 
 n_total = n_active + 2
-L_solid = n_total*d_wire
+L_solid = n_total*d_wire -> mm
 L_free = 40 mm
-
-L_solid -> mm
 
 ' The deflection available before the coils shut, and the working deflection
 ' against it. Working past about 80% of the way to solid is how a spring takes
 ' a set.
 
-x_solid = L_free - L_solid
+x_solid = L_free - L_solid -> mm
 check x_work <= 0.8*x_solid
 
 ' Buckling, which a compression spring does exactly as a column does. For

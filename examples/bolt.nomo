@@ -14,6 +14,10 @@
 
 use steel
 
+' Four significant figures. A preload is not known to six, and a page of six
+' digit numbers invites a reader to believe the last two.
+digits 4
+
 ' ## The bolt
 '
 ' The tensile stress area is the area of a circle whose diameter is the mean of
@@ -23,8 +27,7 @@ use steel
 d = 12 mm
 pitch = 1.75 mm
 
-A_s = pi/4*(d - 0.9382*pitch)^2
-A_s -> mm^2
+A_s = pi/4*(d - 0.9382*pitch)^2 -> mm^2
 
 ' Property class 8.8 states its own strengths: the first digit is the tensile
 ' strength in hundreds of MPa, and the second is ten times the ratio of yield to
@@ -32,13 +35,12 @@ A_s -> mm^2
 ' a table of them.
 
 R_m = 800 MPa
-R_e = 0.8*R_m
+R_e = 0.8*R_m -> MPa
 
 ' The proof stress is where the standard's permanent-set limit sits, close to
 ' nine tenths of yield. ISO 898-1 tabulates 580 MPa for this class up to M16;
 ' this is that number, arrived at rather than quoted.
-S_p = 0.9*R_e
-S_p -> MPa
+S_p = 0.9*R_e -> MPa
 
 ' ## Preload
 '
@@ -46,8 +48,7 @@ S_p -> MPa
 ' joint: high enough that the members stay in compression under load, low enough
 ' that scatter in the tightening method does not take the bolt past proof.
 
-F_i = 0.75*A_s*S_p
-F_i -> kN
+F_i = 0.75*A_s*S_p -> kN
 
 ' The torque that produces it, through the nut factor K — which is not a
 ' friction coefficient but an empirical lumping of thread and face friction and
@@ -57,8 +58,7 @@ F_i -> kN
 
 K_nut = 0.2
 
-T = K_nut*F_i*d
-T -> N*m
+T = K_nut*F_i*d -> N*m
 
 ' ## Stiffness, and how the external load is shared
 '
@@ -75,11 +75,9 @@ T -> N*m
 
 L_g = 30 mm
 
-k_b = A_s*E_steel/L_g
-k_b -> MN/m
+k_b = A_s*E_steel/L_g -> MN/m
 
-k_m = 0.5774*pi*E_steel*d/(2*ln(5*(0.5774*L_g + 0.5*d)/(0.5774*L_g + 2.5*d)))
-k_m -> MN/m
+k_m = 0.5774*pi*E_steel*d/(2*ln(5*(0.5774*L_g + 0.5*d)/(0.5774*L_g + 2.5*d))) -> MN/m
 
 ' The joint constant is the fraction of an external load that reaches the bolt.
 ' It is small — the members are several times stiffer than the bolt — and that
@@ -92,11 +90,9 @@ C = k_b/(k_b + k_m)
 
 P_ext = 10 kN
 
-F_bolt = F_i + C*P_ext
-F_bolt -> kN
+F_bolt = F_i + C*P_ext -> kN
 
-sigma_bolt = F_bolt/A_s
-sigma_bolt -> MPa
+sigma_bolt = F_bolt/A_s -> MPa
 
 ' The bolt must stay below yield with the external load applied.
 check sigma_bolt <= R_e
@@ -107,8 +103,7 @@ check sigma_bolt <= R_e
 ' that point the bolt carries the load directly, the members no longer share it,
 ' and the fatigue argument above stops being true.
 
-P_sep = F_i/(1 - C)
-P_sep -> kN
+P_sep = F_i/(1 - C) -> kN
 
 check P_ext <= 0.75*P_sep
 

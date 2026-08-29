@@ -12,6 +12,8 @@ that came out of the first constraint can be built.
 This one returns a valve: about 50 N at 4 mm of working deflection, in a bore
 24 mm across.
 use steel
+Four significant figures.
+digits 4
 d_wire = 3 mm
 D_mean = 20 mm
 n_active = 8
@@ -23,48 +25,43 @@ G_spring = 79.3 GPa
 The index is the single most useful number about a spring. Below four the
 wire cannot be coiled without cracking; above twelve the coil tangles in
 handling and the spring is slack in its bore. Six to eight is comfortable.
-C_index = D_mean/d_wire = 20 mm/(3 mm) = 6.66667
-check C_index ≥ 4 and C_index ≤ 12 = 6.66667 ≥ 4 and 6.66667 ≤ 12 — pass
+C_index = D_mean/d_wire = 20 mm/(3 mm) = 6.667
+check C_index ≥ 4 and C_index ≤ 12 = 6.667 ≥ 4 and 6.667 ≤ 12 — pass
 ## Rate and deflection
-k_rate = G_spring·d_wire⁴/(8·D_mean³·n_active) = 79.3 GPa·(3 mm)⁴/(8·(20 mm)³·8) = 12545.5 kg·s⁻²
-k_rate = 12.5455 N/mm
+k_rate = G_spring·d_wire⁴/(8·D_mean³·n_active) = 79.3 GPa·(3 mm)⁴/(8·(20 mm)³·8) = 12.55 N/mm
 F_work = 50 N
-x_work = F_work/k_rate = 50 N/(12545.5 kg·s⁻²) = 0.00398549 m
-x_work = 3.98549 mm
+x_work = F_work/k_rate = 50 N/(12.55 N/mm) = 3.985 mm
 The requirement was a force at a deflection, so that is what gets checked —
 the rate is only the means. A spring is wound to a tolerance on its rate, so
 this is a band rather than a number; ±10% is ordinary for a commercial spring.
 x_required = 4 mm
-F_at_required = k_rate·x_required = 12545.5 kg·s⁻²·(4 mm) = 50.182 N
-F_at_required = 50.182 N
-check F_at_required ≥ 0.9·F_work and F_at_required ≤ 1.1·F_work = 50.182 N ≥ 0.9·(50 N) and 50.182 N ≤ 1.1·(50 N) — pass
+F_at_required = k_rate·x_required = 12.55 N/mm·(4 mm) = 50.18 N
+check F_at_required ≥ 0.9·F_work and F_at_required ≤ 1.1·F_work = 50.18 N ≥ 0.9·(50 N) and 50.18 N ≤ 1.1·(50 N) — pass
 ## Shear stress, with the curvature correction
 
 The direct shear formula understates the stress on the inside of the coil,
 where the wire is tighter and the shear from the load adds to the torsional
 shear. The Wahl factor corrects for both, and at this index it is worth a
 quarter of the answer.
-K_wahl = (4·C_index - 1)/(4·C_index - 4) + 0.615/C_index = (4·6.66667 - 1)/(4·6.66667 - 4) + 0.615/6.66667 = 1.2246
-tau_work = K_wahl·8·F_work·D_mean/(π·d_wire³) = 1.2246·8·(50 N)·(20 mm)/(π·(3 mm)³) = 115497000 Pa
-tau_work = 115.497 MPa
+K_wahl = (4·C_index - 1)/(4·C_index - 4) + 0.615/C_index = (4·6.667 - 1)/(4·6.667 - 4) + 0.615/6.667 = 1.225
+tau_work = K_wahl·8·F_work·D_mean/(π·d_wire³) = 1.225·8·(50 N)·(20 mm)/(π·(3 mm)³) = 115.5 MPa
 The allowable shear stress belongs to the wire and its diameter — a drawn wire
 is stronger in a thin section than a thick one — so it is taken from the
 wire's specification rather than computed. This is a music wire value.
 tau_allow = 700 MPa
-check tau_work ≤ tau_allow = 115497000 Pa ≤ 700 MPa — pass
+check tau_work ≤ tau_allow = 115.5 MPa ≤ 700 MPa — pass
 ## Whether it fits
 
 Solid length is where the coils touch and the spring stops being a spring.
 Two dead coils at the ends, squared and ground.
 n_total = n_active + 2 = 8 + 2 = 10
-L_solid = n_total·d_wire = 10·(3 mm) = 0.03 m
+L_solid = n_total·d_wire = 10·(3 mm) = 30 mm
 L_free = 40 mm
-L_solid = 30 mm
 The deflection available before the coils shut, and the working deflection
 against it. Working past about 80% of the way to solid is how a spring takes
 a set.
-x_solid = L_free - L_solid = 40 mm - 0.03 m = 0.01 m
-check x_work ≤ 0.8·x_solid = 0.00398549 m ≤ 0.8·(0.01 m) — pass
+x_solid = L_free - L_solid = 40 mm - 30 mm = 10 mm
+check x_work ≤ 0.8·x_solid = 3.985 mm ≤ 0.8·(10 mm) — pass
 Buckling, which a compression spring does exactly as a column does. For
 squared and ground ends held between flat parallel surfaces, the free length
 must stay under about 2.6 times the mean diameter.
@@ -80,13 +77,15 @@ as the coils allow. Past solid length there is no spring left to plot: the
 stack becomes a short steel column, the force rises without bound, and a line
 continued through that point would be a wrong picture of a right equation.
 fn force defined
-plot(force, 0, 10) = [plot force: 0 to 10, 257 points, 0 to 125.455]
+plot(force, 0, 10) = [plot force: 0 to 10, 257 points, 0 to 125.5]
 
 === html ===
 <h1 class="prose">A helical compression spring</h1>
 <p class="prose">A spring is three constraints at once: it has to give the right force at the right deflection, it has to survive the shear stress that produces, and it has to fit — solid length, free length and buckling all decide whether the rate that came out of the first constraint can be built.</p>
 <p class="prose">This one returns a valve: about 50 N at 4 mm of working deflection, in a bore 24 mm across.</p>
 <div class="step note">use steel</div>
+<p class="prose">Four significant figures.</p>
+<div class="step note">digits 4</div>
 <div class="step"><span class="name">d_wire</span><span class="eq">=</span>3 mm</div>
 <div class="step"><span class="name">D_mean</span><span class="eq">=</span>20 mm</div>
 <div class="step"><span class="name">n_active</span><span class="eq">=</span>8</div>
@@ -94,36 +93,31 @@ plot(force, 0, 10) = [plot force: 0 to 10, 257 points, 0 to 125.455]
 <div class="step"><span class="name">G_spring</span><span class="eq">=</span>79.3 GPa</div>
 <h2 class="prose">The spring index</h2>
 <p class="prose">The index is the single most useful number about a spring. Below four the wire cannot be coiled without cracking; above twelve the coil tangles in handling and the spring is slack in its bore. Six to eight is comfortable.</p>
-<div class="step"><span class="name">C_index</span><span class="eq">=</span>D_mean/d_wire<span class="eq">=</span><span class="subst">20 mm/(3 mm)</span><span class="eq">=</span><span class="result">6.66667</span></div>
-<div class="step check pass"><span class="name">check</span>C_index ≥ 4 and C_index ≤ 12<span class="eq">=</span><span class="subst">6.66667 ≥ 4 and 6.66667 ≤ 12</span><span class="verdict">pass</span></div>
+<div class="step"><span class="name">C_index</span><span class="eq">=</span>D_mean/d_wire<span class="eq">=</span><span class="subst">20 mm/(3 mm)</span><span class="eq">=</span><span class="result">6.667</span></div>
+<div class="step check pass"><span class="name">check</span>C_index ≥ 4 and C_index ≤ 12<span class="eq">=</span><span class="subst">6.667 ≥ 4 and 6.667 ≤ 12</span><span class="verdict">pass</span></div>
 <h2 class="prose">Rate and deflection</h2>
-<div class="step"><span class="name">k_rate</span><span class="eq">=</span>G_spring·d_wire⁴/(8·D_mean³·n_active)<span class="eq">=</span><span class="subst">79.3 GPa·(3 mm)⁴/(8·(20 mm)³·8)</span><span class="eq">=</span><span class="result">12545.5 kg·s⁻²</span></div>
-<div class="step">k_rate<span class="eq">=</span><span class="result">12.5455 N/mm</span></div>
+<div class="step"><span class="name">k_rate</span><span class="eq">=</span>G_spring·d_wire⁴/(8·D_mean³·n_active)<span class="eq">=</span><span class="subst">79.3 GPa·(3 mm)⁴/(8·(20 mm)³·8)</span><span class="eq">=</span><span class="result">12.55 N/mm</span></div>
 <div class="step"><span class="name">F_work</span><span class="eq">=</span>50 N</div>
-<div class="step"><span class="name">x_work</span><span class="eq">=</span>F_work/k_rate<span class="eq">=</span><span class="subst">50 N/(12545.5 kg·s⁻²)</span><span class="eq">=</span><span class="result">0.00398549 m</span></div>
-<div class="step">x_work<span class="eq">=</span><span class="result">3.98549 mm</span></div>
+<div class="step"><span class="name">x_work</span><span class="eq">=</span>F_work/k_rate<span class="eq">=</span><span class="subst">50 N/(12.55 N/mm)</span><span class="eq">=</span><span class="result">3.985 mm</span></div>
 <p class="prose">The requirement was a force at a deflection, so that is what gets checked — the rate is only the means. A spring is wound to a tolerance on its rate, so this is a band rather than a number; ±10% is ordinary for a commercial spring.</p>
 <div class="step"><span class="name">x_required</span><span class="eq">=</span>4 mm</div>
-<div class="step"><span class="name">F_at_required</span><span class="eq">=</span>k_rate·x_required<span class="eq">=</span><span class="subst">12545.5 kg·s⁻²·(4 mm)</span><span class="eq">=</span><span class="result">50.182 N</span></div>
-<div class="step">F_at_required<span class="eq">=</span><span class="result">50.182 N</span></div>
-<div class="step check pass"><span class="name">check</span>F_at_required ≥ 0.9·F_work and F_at_required ≤ 1.1·F_work<span class="eq">=</span><span class="subst">50.182 N ≥ 0.9·(50 N) and 50.182 N ≤ 1.1·(50 N)</span><span class="verdict">pass</span></div>
+<div class="step"><span class="name">F_at_required</span><span class="eq">=</span>k_rate·x_required<span class="eq">=</span><span class="subst">12.55 N/mm·(4 mm)</span><span class="eq">=</span><span class="result">50.18 N</span></div>
+<div class="step check pass"><span class="name">check</span>F_at_required ≥ 0.9·F_work and F_at_required ≤ 1.1·F_work<span class="eq">=</span><span class="subst">50.18 N ≥ 0.9·(50 N) and 50.18 N ≤ 1.1·(50 N)</span><span class="verdict">pass</span></div>
 <h2 class="prose">Shear stress, with the curvature correction</h2>
 <p class="prose">The direct shear formula understates the stress on the inside of the coil, where the wire is tighter and the shear from the load adds to the torsional shear. The Wahl factor corrects for both, and at this index it is worth a quarter of the answer.</p>
-<div class="step"><span class="name">K_wahl</span><span class="eq">=</span>(4·C_index - 1)/(4·C_index - 4) + 0.615/C_index<span class="eq">=</span><span class="subst">(4·6.66667 - 1)/(4·6.66667 - 4) + 0.615/6.66667</span><span class="eq">=</span><span class="result">1.2246</span></div>
-<div class="step"><span class="name">tau_work</span><span class="eq">=</span>K_wahl·8·F_work·D_mean/(π·d_wire³)<span class="eq">=</span><span class="subst">1.2246·8·(50 N)·(20 mm)/(π·(3 mm)³)</span><span class="eq">=</span><span class="result">115497000 Pa</span></div>
-<div class="step">tau_work<span class="eq">=</span><span class="result">115.497 MPa</span></div>
+<div class="step"><span class="name">K_wahl</span><span class="eq">=</span>(4·C_index - 1)/(4·C_index - 4) + 0.615/C_index<span class="eq">=</span><span class="subst">(4·6.667 - 1)/(4·6.667 - 4) + 0.615/6.667</span><span class="eq">=</span><span class="result">1.225</span></div>
+<div class="step"><span class="name">tau_work</span><span class="eq">=</span>K_wahl·8·F_work·D_mean/(π·d_wire³)<span class="eq">=</span><span class="subst">1.225·8·(50 N)·(20 mm)/(π·(3 mm)³)</span><span class="eq">=</span><span class="result">115.5 MPa</span></div>
 <p class="prose">The allowable shear stress belongs to the wire and its diameter — a drawn wire is stronger in a thin section than a thick one — so it is taken from the wire's specification rather than computed. This is a music wire value.</p>
 <div class="step"><span class="name">tau_allow</span><span class="eq">=</span>700 MPa</div>
-<div class="step check pass"><span class="name">check</span>tau_work ≤ tau_allow<span class="eq">=</span><span class="subst">115497000 Pa ≤ 700 MPa</span><span class="verdict">pass</span></div>
+<div class="step check pass"><span class="name">check</span>tau_work ≤ tau_allow<span class="eq">=</span><span class="subst">115.5 MPa ≤ 700 MPa</span><span class="verdict">pass</span></div>
 <h2 class="prose">Whether it fits</h2>
 <p class="prose">Solid length is where the coils touch and the spring stops being a spring. Two dead coils at the ends, squared and ground.</p>
 <div class="step"><span class="name">n_total</span><span class="eq">=</span>n_active + 2<span class="eq">=</span><span class="subst">8 + 2</span><span class="eq">=</span><span class="result">10</span></div>
-<div class="step"><span class="name">L_solid</span><span class="eq">=</span>n_total·d_wire<span class="eq">=</span><span class="subst">10·(3 mm)</span><span class="eq">=</span><span class="result">0.03 m</span></div>
+<div class="step"><span class="name">L_solid</span><span class="eq">=</span>n_total·d_wire<span class="eq">=</span><span class="subst">10·(3 mm)</span><span class="eq">=</span><span class="result">30 mm</span></div>
 <div class="step"><span class="name">L_free</span><span class="eq">=</span>40 mm</div>
-<div class="step">L_solid<span class="eq">=</span><span class="result">30 mm</span></div>
 <p class="prose">The deflection available before the coils shut, and the working deflection against it. Working past about 80% of the way to solid is how a spring takes a set.</p>
-<div class="step"><span class="name">x_solid</span><span class="eq">=</span>L_free - L_solid<span class="eq">=</span><span class="subst">40 mm - 0.03 m</span><span class="eq">=</span><span class="result">0.01 m</span></div>
-<div class="step check pass"><span class="name">check</span>x_work ≤ 0.8·x_solid<span class="eq">=</span><span class="subst">0.00398549 m ≤ 0.8·(0.01 m)</span><span class="verdict">pass</span></div>
+<div class="step"><span class="name">x_solid</span><span class="eq">=</span>L_free - L_solid<span class="eq">=</span><span class="subst">40 mm - 30 mm</span><span class="eq">=</span><span class="result">10 mm</span></div>
+<div class="step check pass"><span class="name">check</span>x_work ≤ 0.8·x_solid<span class="eq">=</span><span class="subst">3.985 mm ≤ 0.8·(10 mm)</span><span class="verdict">pass</span></div>
 <p class="prose">Buckling, which a compression spring does exactly as a column does. For squared and ground ends held between flat parallel surfaces, the free length must stay under about 2.6 times the mean diameter.</p>
 <div class="step check pass"><span class="name">check</span>L_free ≤ 2.6·D_mean<span class="eq">=</span><span class="subst">40 mm ≤ 2.6·(20 mm)</span><span class="verdict">pass</span></div>
 <p class="prose">And it has to go in the bore, with clearance for the coils to spread as it compresses.</p>
@@ -175,21 +169,16 @@ n_active = 8.0 dimensionless
 G_spring = 79300000000.0 m^-1·kg·s^-2
 C_index = 6.666666666666667 dimensionless
 k_rate = 12545.507812499998 kg·s^-2
-? = 12545.507812499998 kg·s^-2
 F_work = 50.0 m·kg·s^-2
 x_work = 0.003985490324288139 m
-? = 0.003985490324288139 m
 x_required = 0.004 m
 F_at_required = 50.182031249999994 m·kg·s^-2
-? = 50.182031249999994 m·kg·s^-2
 K_wahl = 1.2246029411764705 dimensionless
 tau_work = 115497251.20776817 m^-1·kg·s^-2
-? = 115497251.20776817 m^-1·kg·s^-2
 tau_allow = 700000000.0 m^-1·kg·s^-2
 n_total = 10.0 dimensionless
 L_solid = 0.03 m
 L_free = 0.04 m
-? = 0.03 m
 x_solid = 0.010000000000000002 m
 bore = 0.024 m
 ? = plot 0.0..10.0 (chosen) dimensionless over dimensionless {force: [0.0, 0.4900588989257812, 0.9801177978515624, 1.4701766967773435, 1.9602355957031248, 2.450294494628906, 2.940353393554687, 3.4304122924804683, 3.9204711914062496, 4.41053009033203, 4.900588989257812, 5.390647888183593, 5.880706787109374, 6.370765686035155, 6.860824584960937, 7.350883483886718, 7.840942382812499, 8.33100128173828, 8.82106018066406, 9.311119079589842, 9.801177978515623, 10.291236877441404, 10.781295776367186, 11.271354675292967, 11.761413574218748, 12.25147247314453, 12.74153137207031, 13.231590270996092, 13.721649169921873, 14.211708068847654, 14.701766967773436, 15.191825866699217, 15.681884765624998, 16.17194366455078, 16.66200256347656, 17.15206146240234, 17.64212036132812, 18.132179260253903, 18.622238159179684, 19.112297058105465, 19.602355957031246, 20.092414855957028, 20.58247375488281, 21.07253265380859, 21.56259155273437, 22.052650451660153, 22.542709350585934, 23.032768249511715, 23.522827148437496, 24.012886047363278, 24.50294494628906, 24.99300384521484, 25.48306274414062, 25.973121643066403, 26.463180541992184, 26.953239440917965, 27.443298339843746, 27.933357238769528, 28.42341613769531, 28.91347503662109, 29.40353393554687, 29.893592834472653, 30.383651733398434, 30.873710632324215, 31.363769531249996, 31.853828430175778, 32.34388732910156, 32.83394622802734, 33.32400512695312, 33.8140640258789, 34.30412292480468, 34.79418182373046, 35.28424072265624, 35.774299621582024, 36.264358520507805, 36.75441741943359, 37.24447631835937, 37.73453521728515, 38.22459411621093, 38.71465301513671, 39.20471191406249, 39.694770812988274, 40.184829711914055, 40.67488861083984, 41.16494750976562, 41.6550064086914, 42.14506530761718, 42.63512420654296, 43.12518310546874, 43.615242004394524, 44.105300903320305, 44.59535980224609, 45.08541870117187, 45.57547760009765, 46.06553649902343, 46.55559539794921, 47.04565429687499, 47.535713195800774, 48.025772094726555, 48.51583099365234, 49.00588989257812, 49.4959487915039, 49.98600769042968, 50.47606658935546, 50.96612548828124, 51.456184387207024, 51.946243286132805, 52.43630218505859, 52.92636108398437, 53.41641998291015, 53.90647888183593, 54.39653778076171, 54.88659667968749, 55.376655578613274, 55.866714477539055, 56.35677337646484, 56.84683227539062, 57.3368911743164, 57.82695007324218, 58.31700897216796, 58.80706787109374, 59.297126770019524, 59.787185668945305, 60.27724456787109, 60.76730346679687, 61.25736236572265, 61.74742126464843, 62.23748016357421, 62.72753906249999, 63.217597961425774, 63.707656860351555, 64.19771575927734, 64.68777465820313, 65.1778335571289, 65.66789245605467, 66.15795135498045, 66.64801025390624, 67.13806915283202, 67.6281280517578, 68.11818695068358, 68.60824584960936, 69.09830474853514, 69.58836364746092, 70.0784225463867, 70.56848144531249, 71.05854034423827, 71.54859924316405, 72.03865814208983, 72.52871704101561, 73.01877593994139, 73.50883483886717, 73.99889373779295, 74.48895263671874, 74.97901153564452, 75.4690704345703, 75.95912933349608, 76.44918823242186, 76.93924713134764, 77.42930603027342, 77.9193649291992, 78.40942382812499, 78.89948272705077, 79.38954162597655, 79.87960052490233, 80.36965942382811, 80.85971832275389, 81.34977722167967, 81.83983612060545, 82.32989501953124, 82.81995391845702, 83.3100128173828, 83.80007171630858, 84.29013061523436, 84.78018951416014, 85.27024841308592, 85.7603073120117, 86.25036621093749, 86.74042510986327, 87.23048400878905, 87.72054290771483, 88.21060180664061, 88.70066070556639, 89.19071960449217, 89.68077850341795, 90.17083740234374, 90.66089630126952, 91.1509552001953, 91.64101409912108, 92.13107299804686, 92.62113189697264, 93.11119079589842, 93.6012496948242, 94.09130859374999, 94.58136749267577, 95.07142639160155, 95.56148529052733, 96.05154418945311, 96.54160308837889, 97.03166198730467, 97.52172088623045, 98.01177978515624, 98.50183868408202, 98.9918975830078, 99.48195648193358, 99.97201538085936, 100.46207427978514, 100.95213317871092, 101.4421920776367, 101.93225097656249, 102.42230987548827, 102.91236877441405, 103.40242767333983, 103.89248657226561, 104.38254547119139, 104.87260437011717, 105.36266326904295, 105.85272216796874, 106.34278106689452, 106.8328399658203, 107.32289886474608, 107.81295776367186, 108.30301666259764, 108.79307556152342, 109.2831344604492, 109.77319335937499, 110.26325225830077, 110.75331115722655, 111.24337005615233, 111.73342895507811, 112.22348785400389, 112.71354675292967, 113.20360565185545, 113.69366455078124, 114.18372344970702, 114.6737823486328, 115.16384124755858, 115.65390014648436, 116.14395904541014, 116.63401794433592, 117.1240768432617, 117.61413574218749, 118.10419464111327, 118.59425354003905, 119.08431243896483, 119.57437133789061, 120.06443023681639, 120.55448913574217, 121.04454803466795, 121.53460693359374, 122.02466583251952, 122.5147247314453, 123.00478363037108, 123.49484252929686, 123.98490142822264, 124.47496032714842, 124.9650192260742, 125.45507812499999]}

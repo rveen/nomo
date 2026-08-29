@@ -259,6 +259,12 @@ pub enum Stmt {
     /// from the output; this node is what the reader sees, and what a
     /// diagnostic about the pack points at. See [`crate::packs`].
     Use { name: Name, span: Span },
+    /// `digits 3` — show results to three significant figures, from here down.
+    ///
+    /// Presentation, not arithmetic: it changes what is printed and nothing
+    /// about what was computed, which is why it may sit anywhere and why the
+    /// snapshot's values section ignores it.
+    Digits { figures: u32, span: Span },
     /// `fn area(d) = pi*d^2/4`
     FnDef {
         name: Name,
@@ -280,6 +286,7 @@ impl Stmt {
             | Stmt::UnitDecl { span, .. }
             | Stmt::Check { span, .. }
             | Stmt::Use { span, .. }
+            | Stmt::Digits { span, .. }
             | Stmt::FnDef { span, .. }
             | Stmt::Error { span } => *span,
         }

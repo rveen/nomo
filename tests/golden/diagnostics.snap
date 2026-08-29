@@ -31,6 +31,12 @@ unit table, and answering 1e15 F here rather than saying what went wrong is
 the worst thing this engine could do.
 PF = missing = [`missing` is not defined]
 PF = [`PF` has no value: the statement that defines it failed]
+A matrix whose rows are not the same length. One missing comma does it: the
+second row reads as a juxtaposition, so it is one element wide rather than
+two. Nothing is evaluated from a literal like this — a matrix that claimed a
+shape its data did not have crashed the engine outright, which is what the
+randomized tests found within a second of existing.
+ragged = ? = [this expression could not be parsed]
 A cycle. Neither statement can be evaluated, and neither line is itself wrong.
 [not evaluated]
 [not evaluated]
@@ -59,6 +65,8 @@ fine = good·3 = 2 m·3 = 6 m
 <p class="prose">A binding that fails takes the name over anyway. `PF` is peta-farads to the unit table, and answering 1e15 F here rather than saying what went wrong is the worst thing this engine could do.</p>
 <div class="step"><span class="name">PF</span><span class="eq">=</span>missing<span class="eq">=</span><span class="error">[`missing` is not defined]</span></div>
 <div class="step">PF<span class="eq">=</span><span class="error">[`PF` has no value: the statement that defines it failed]</span></div>
+<p class="prose">A matrix whose rows are not the same length. One missing comma does it: the second row reads as a juxtaposition, so it is one element wide rather than two. Nothing is evaluated from a literal like this — a matrix that claimed a shape its data did not have crashed the engine outright, which is what the randomized tests found within a second of existing.</p>
+<div class="step"><span class="name">ragged</span><span class="eq">=</span>?<span class="eq">=</span><span class="error">[this expression could not be parsed]</span></div>
 <p class="prose">A cycle. Neither statement can be evaluated, and neither line is itself wrong.</p>
 <div class="step error">not evaluated</div>
 <div class="step error">not evaluated</div>
@@ -77,6 +85,7 @@ badunit = error: a subexpression could not be evaluated
 dimensional = error: expected a dimensionless value, found m
 PF = error: `missing` is not defined
 ? = error: `PF` has no value: the statement that defines it failed
+ragged = error: this expression could not be parsed
 fine = 6.0 m
 
 === diagnostics ===
@@ -91,4 +100,5 @@ error[SH201] 31:15: expected a dimensionless value, found m
 warning[SH202] 36:1: `PF` is also a unit; this binding hides it for the rest of the worksheet
 error[SH201] 36:6: `missing` is not defined
 error[SH201] 37:1: `PF` has no value: the statement that defines it failed
-error[SH302] 40:1: `loop_a` and `loop_b` depend on each other, so neither can be computed
+error[SH007] 44:10: every row of a matrix must have the same number of elements
+error[SH302] 47:1: `loop_a` and `loop_b` depend on each other, so neither can be computed

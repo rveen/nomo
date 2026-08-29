@@ -36,6 +36,13 @@ dimensional = sin(2 m)
 PF = missing
 PF
 
+' A matrix whose rows are not the same length. One missing comma does it: the
+' second row reads as a juxtaposition, so it is one element wide rather than
+' two. Nothing is evaluated from a literal like this — a matrix that claimed a
+' shape its data did not have crashed the engine outright, which is what the
+' randomized tests found within a second of existing.
+ragged = [[2, -1], [-1 2]]
+
 ' A cycle. Neither statement can be evaluated, and neither line is itself wrong.
 global loop_a = loop_b + 1
 global loop_b = loop_a + 1

@@ -781,6 +781,18 @@ impl<'s> Parser<'s> {
                     span,
                     "every row of a matrix must have the same number of elements",
                 );
+                // And do not hand the rows on. Evaluation takes its shape from
+                // the first row and its contents from all of them, so a ragged
+                // literal built a matrix claiming a size its data did not have —
+                // which indexed out of bounds and took the process down. In the
+                // browser that meant the editing session, for the life of the
+                // tab.
+                //
+                // It is one missing comma away: `[[2, -1], [-1 2]]` reads the
+                // second row as a juxtaposition, so it is one element wide
+                // rather than two, and that crashed the release build. Found by
+                // `tests/robustness.rs` within a second of it existing.
+                return Expr::Error { span };
             }
             return Expr::Matrix { rows, span };
         }
@@ -1201,6 +1213,24 @@ mod tests {
             .find(|d| d.code == crate::diag::codes::UNEXPECTED_CHAR)
             .expect("expected an unexpected-character diagnostic");
         assert_eq!(d.span.text(src), "@");
+    }
+
+    #[test]
+    fn a_ragged_matrix_produces_no_matrix() {
+        // Reporting the diagnostic was not enough: the rows were handed on
+        // anyway, evaluation took the shape from the first row and the data
+        // from all of them, and indexing that crashed the process. One missing
+        // comma is all it takes.
+        let p = parse("K = [[2, -1], [-1 2]]\n");
+        assert!(p.diagnostics.iter().any(|d| d.code == codes::RAGGED_MATRIX));
+        let Some(Stmt::Assign { value, .. }) = p.ast.stmts.first() else {
+            panic!("expected an assignment, got {:?}", p.ast.stmts);
+        };
+        assert!(
+            matches!(value, Expr::Error { .. }),
+            "a ragged literal must not become a matrix, got {}",
+            sexpr(value)
+        );
     }
 
     /// `x = ((( … 1 … )))`, nested `n` deep.

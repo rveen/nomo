@@ -150,6 +150,19 @@ footer p { margin: 0; }
 
 /* ---- results ---------------------------------------------------------- */
 
+#typeset-label {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+/* A formula sits taller than a line of text, so the rows need room to breathe
+   when typesetting is on. */
+#output math { font-size: 1.05em; }
+
 #output .prose { margin: 1.1rem 0 0.4rem; color: #999; }
 #output .step {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;

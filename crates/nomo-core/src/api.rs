@@ -28,6 +28,7 @@
 use crate::ast::{Expr, Stmt};
 use crate::diag::Severity;
 use crate::doc::Sheet;
+use crate::eval::OutcomeKind;
 use crate::lex::{self, TokenKind};
 use crate::render::{html, RenderOptions};
 use crate::span::Span;
@@ -296,6 +297,142 @@ impl Utf16Offsets {
     }
 }
 
+/// A name the worksheet binds, for an editor to complete, explain and find.
+///
+/// The span is the *defining* occurrence — the `r` in `r = 5 cm` — which is what
+/// "go to definition" means and what a tooltip should point at. A name a pack
+/// brought in points at the `use` line that brought it, which is the honest
+/// answer: that is the line in this worksheet responsible for it.
+pub struct Symbol {
+    pub name: String,
+    /// `variable`, `function`, `unit`, or `pack` for one a `use` line supplied.
+    pub kind: &'static str,
+    /// What to show beside the name: its value with units, or a signature.
+    pub detail: String,
+    pub span: crate::span::Span,
+}
+
+/// Every name a worksheet binds, in the order it binds them.
+///
+/// Built from the syntax tree and the evaluated outcomes together, because
+/// neither has all of it: the tree knows where a name was written, and the
+/// outcomes know what it came to.
+pub fn symbols(sheet: &Sheet) -> Vec<Symbol> {
+    let opts = RenderOptions::default();
+    let r = crate::render::Renderer::new(&opts, sheet.units(), sheet.source());
+    let mut out = Vec::new();
+
+    for (i, (stmt, outcome)) in sheet.ast().stmts.iter().zip(sheet.outcomes()).enumerate() {
+        let kind = if sheet.is_from_pack(i) {
+            "pack"
+        } else {
+            "variable"
+        };
+        match (stmt, &outcome.kind) {
+            (
+                Stmt::Assign { name, .. } | Stmt::GlobalDef { name, .. },
+                OutcomeKind::Assign { trace, .. },
+            ) => out.push(Symbol {
+                name: name.text.clone(),
+                kind,
+                // The result as the renderer shows it, which is the unit the
+                // binding was *written* in: a completion offering `24 ksi` is
+                // useful and one offering `165474000 Pa` is arithmetic the
+                // reader did not ask for.
+                detail: match &trace.value {
+                    Ok(_) => r.result(trace),
+                    Err(_) => String::from("(not computed)"),
+                },
+                span: name.span,
+            }),
+            (Stmt::UnitDecl { name, .. }, OutcomeKind::UnitDecl { trace, .. }) => {
+                out.push(Symbol {
+                    name: name.text.clone(),
+                    kind: "unit",
+                    detail: r.symbolic(trace),
+                    span: name.span,
+                })
+            }
+            (Stmt::FnDef { name, params, .. }, _) => out.push(Symbol {
+                name: name.text.clone(),
+                kind: "function",
+                detail: format!(
+                    "fn {}({})",
+                    name.text,
+                    params
+                        .iter()
+                        .map(|p| p.text.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
+                span: name.span,
+            }),
+            _ => {}
+        }
+    }
+    out
+}
+
+/// What this build knows about, independent of any worksheet.
+///
+/// Asked for once when the editor starts rather than sent with every keystroke:
+/// the unit table alone is several hundred names, and none of it changes as a
+/// worksheet is typed. Prefixed units are left out deliberately — `k` before a
+/// symbol is a rule, and enumerating it would offer thousands of completions
+/// nobody scrolls through.
+pub fn vocabulary_json() -> String {
+    let units = crate::UnitTable::new();
+    let mut out = String::from("{\"format\":1,\"units\":[");
+    for (i, name) in units.symbols().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        out.push_str("{\"name\":");
+        push_string(&mut out, name);
+        out.push_str(",\"detail\":");
+        // The dimension, which is what tells `ksi` from `kip` at the moment of
+        // choosing between them.
+        let detail = units
+            .resolve(name)
+            .map_or_else(|_| String::new(), |u| format!("{}", u.dim));
+        push_string(&mut out, &detail);
+        out.push('}');
+    }
+    out.push_str("],\"functions\":[");
+    for (i, name) in crate::eval::BUILTINS.iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        push_string(&mut out, name);
+    }
+    out.push_str("],\"packs\":[");
+    for (i, pack) in crate::packs::PACKS.iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        out.push_str("{\"name\":");
+        push_string(&mut out, pack.name);
+        out.push_str(",\"detail\":");
+        push_string(&mut out, pack.summary);
+        out.push('}');
+    }
+    out.push_str("],\"keywords\":[");
+    for (i, word) in KEYWORDS.iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        push_string(&mut out, word);
+    }
+    out.push_str("]}");
+    out
+}
+
+/// The reserved words, which `docs/language.md` lists and the lexer enforces.
+const KEYWORDS: &[&str] = &[
+    "unit", "fn", "global", "check", "use", "digits", "axis", "if", "then", "else", "and", "or",
+    "not",
+];
+
 /// Everything the editor needs after an edit, as JSON.
 ///
 /// JSON rather than a typed binding because the module must keep importing
@@ -307,12 +444,21 @@ impl Utf16Offsets {
 /// **All offsets in the payload are UTF-16 code units**, not bytes, because the
 /// only consumer counts in UTF-16. See [`Utf16Offsets`].
 pub fn analysis_json(sheet: &Sheet) -> String {
+    analysis_json_with(sheet, &RenderOptions::default())
+}
+
+/// The same, rendered the way the caller asks.
+///
+/// The editor uses this to turn typesetting on without reopening the document:
+/// how a worksheet is drawn is a property of the view, not of the worksheet, so
+/// it belongs in the call rather than in the session.
+pub fn analysis_json_with(sheet: &Sheet, opts: &RenderOptions) -> String {
     let source = sheet.source();
     let offsets = Utf16Offsets::build(source);
     let mut out = String::from("{\"format\":1");
 
     out.push_str(",\"html\":");
-    push_string(&mut out, &html::body(sheet, &RenderOptions::default()));
+    push_string(&mut out, &html::body(sheet, opts));
 
     out.push_str(",\"tokens\":[");
     for (i, token) in classify(sheet).iter().enumerate() {
@@ -358,6 +504,25 @@ pub fn analysis_json(sheet: &Sheet) -> String {
     // the rendered HTML back. A failed check is not an error and must not be
     // counted as one — the worksheet is right and the design is not — so it
     // travels in its own field.
+    out.push_str(",\"symbols\":[");
+    for (i, symbol) in symbols(sheet).iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        out.push_str(&format!(
+            "{{\"from\":{},\"to\":{},\"kind\":\"{}\"",
+            offsets.at(symbol.span.start),
+            offsets.at(symbol.span.end),
+            symbol.kind
+        ));
+        out.push_str(",\"name\":");
+        push_string(&mut out, &symbol.name);
+        out.push_str(",\"detail\":");
+        push_string(&mut out, &symbol.detail);
+        out.push('}');
+    }
+    out.push(']');
+
     let checks = sheet.checks();
     out.push_str(&format!(
         ",\"checks\":{{\"total\":{},\"passed\":{},\"failed\":{},\"undecided\":{}}}",

@@ -71,6 +71,51 @@ check(
   "the failed check should be marked in the rendered output",
 );
 
+// The names a worksheet binds, which is what the editor completes from,
+// explains on hover and jumps to. The span is the *defining* occurrence.
+result = session.update("r = 5 cm\nfn area(d) = pi*d^2/4\nx = 2*r\n");
+const symbols = result.symbols ?? [];
+check(symbols.length === 3, `three names bound, got ${symbols.length}`);
+const r = symbols.find((s) => s.name === "r");
+check(r !== undefined && r.detail.includes("5 cm"), `r should report what it holds: ${JSON.stringify(r)}`);
+check(
+  r !== undefined && r.from === 0 && r.to === 1,
+  `r is defined at the start of the document, got ${JSON.stringify(r)}`,
+);
+const area = symbols.find((s) => s.name === "area");
+check(
+  area !== undefined && area.kind === "function" && area.detail === "fn area(d)",
+  `a function should report its signature: ${JSON.stringify(area)}`,
+);
+
+// A pack's names come with it, and point at the `use` line that brought them —
+// the line in this worksheet that is responsible for them.
+result = session.update("use steel\n");
+const packed = (result.symbols ?? []).filter((s) => s.kind === "pack");
+check(packed.length > 5, `a pack should bring its names, got ${packed.length}`);
+check(
+  packed.every((s) => s.from === 0 && s.to === 9),
+  "a pack's names should point at the `use` line",
+);
+
+// The vocabulary is asked for once and does not depend on the document.
+const vocabulary = engine.vocabulary();
+check(vocabulary.units.length > 40, `units, got ${vocabulary.units.length}`);
+check(
+  vocabulary.units.some((u) => u.name === "ksi" && u.detail.includes("kg")),
+  "a unit should carry its dimension, which is what tells `ksi` from `kip`",
+);
+check(vocabulary.functions.includes("linterp"), "the builtins should be listed");
+check(vocabulary.packs.some((p) => p.name === "steel"), "the packs should be listed");
+check(vocabulary.keywords.includes("check"), "the keywords should be listed");
+
+// Typesetting is per call rather than per session: the same document, drawn two
+// ways, without reopening it.
+const plain = session.update("y = 1/2\n");
+const typeset = session.update("y = 1/3\n", { mathml: true });
+check(!plain.html.includes("<math"), "the default should be plain");
+check(typeset.html.includes("<mfrac"), "asking for MathML should typeset the output");
+
 // Offsets are UTF-16, because the only consumer counts in UTF-16. A worksheet
 // full of `π` and `°` is the normal case for this language, not an edge one.
 result = session.update("' π°—\nr = 5 cm\n");

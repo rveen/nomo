@@ -13,6 +13,7 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 // result of its own source on the next tick.
 import { lintGutter, setDiagnostics } from "@codemirror/lint";
 
+import { assist, goToDefinition, setSymbols, setVocabulary } from "./assist.js";
 import { loadEngine } from "./engine.js";
 import { highlighting, setTokens } from "./highlight.js";
 import {
@@ -46,6 +47,7 @@ const output = document.querySelector("#output");
 const statusLine = document.querySelector("#status");
 const editorHost = document.querySelector("#editor");
 const fileName = document.querySelector("#file-name");
+const typeset = document.querySelector("#typeset");
 const buttons = {
   open: document.querySelector("#open"),
   save: document.querySelector("#save"),
@@ -118,7 +120,7 @@ function analyse() {
   const source = view.state.doc.toString();
   let result;
   try {
-    result = session.update(source);
+    result = session.update(source, { mathml: typeset.checked });
   } catch (error) {
     // The engine is gone, not merely unhappy: an errored worksheet comes back
     // as diagnostics, so anything thrown here means the instance itself failed.
@@ -128,6 +130,10 @@ function analyse() {
     return;
   }
   output.innerHTML = result.html;
+  // What the engine now knows about this worksheet's names, for completion,
+  // hover and go-to-definition. Replaced wholesale rather than merged: a name
+  // deleted from the worksheet must stop being offered.
+  setSymbols(result.symbols);
 
   view.dispatch({ effects: setTokens.of(result.tokens) });
   view.dispatch(
@@ -343,6 +349,16 @@ async function main() {
     return;
   }
 
+  // Read once: the units, functions, packs and keywords are facts about the
+  // build rather than about the document.
+  try {
+    setVocabulary(engine.vocabulary());
+  } catch (error) {
+    // Completion is a convenience; an editor that refused to start without it
+    // would be trading the whole application for part of one.
+    status(`completions unavailable: ${error.message}`, "warn");
+  }
+
   // Whatever was being edited last time, if anything.
   const draft = await loadDraft();
   const initial = draft?.text ?? STARTING_WORKSHEET;
@@ -389,6 +405,11 @@ async function main() {
             },
           },
           {
+            // The convention every editor uses for this.
+            key: "F12",
+            run: goToDefinition,
+          },
+          {
             key: "Mod-o",
             run: () => {
               void commandOpen();
@@ -399,6 +420,7 @@ async function main() {
           ...historyKeymap,
         ]),
         highlighting,
+        assist,
         EditorView.lineWrapping,
         onChange,
       ],
@@ -409,6 +431,9 @@ async function main() {
   buttons.save.addEventListener("click", () => void commandSave());
   buttons.saveAs.addEventListener("click", () => void commandSaveAs());
   buttons.new.addEventListener("click", () => void commandNew());
+  // Re-render rather than recompute: typesetting changes how the answer is
+  // drawn and not what it is.
+  typeset.addEventListener("change", analyse);
 
   if (!canWriteFiles) {
     // Say what the button does rather than offering a Save that silently

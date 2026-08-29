@@ -394,12 +394,29 @@ passes. The check therefore asks the page where the numerator *ended up* —
 above the denominator, and taller than a letter — and was confirmed to fail
 against output rendered without the flag.
 
-### 19. The editor
+### 19. The editor — **done, less the multi-document part**
 
-Unit- and function-aware completion that shows the dimension, hover giving a
-name's value and dimension, go-to-definition, and more than one open document.
-The boundary already supports multiple sessions — nothing in the module is
-global — so the missing part is interface, not engine.
+Completion, hover and go-to-definition, all from a symbol table the engine now
+reports after every edit: each name a worksheet binds, what it came to, and
+*where it was written*. No parsing in the front end — a second answer to "what
+does this worksheet mean" is exactly what design note §10 records CalcpadCE
+paying for.
+
+Two details worth keeping. A completion shows a **unit's dimension**, because
+`ksi` and `kip` are one letter apart and mean different things, and the moment
+of choosing is the moment that matters. And a name a *pack* supplied points at
+the `use` line that brought it — the line in this worksheet responsible for it —
+rather than into a file the reader cannot see.
+
+The Typeset toggle landed here too: step 18 put MathML behind a CLI flag, and
+this is where a reader meets it. It is a per-call option rather than a session
+setting, because how a worksheet is drawn is a property of the view — the same
+document is typeset in one pane and plain in a printout.
+
+**Multiple open documents was not built.** It is pure interface work — tabs, a
+draft and a file handle per document, and a decision about what "unsaved" means
+across several — with no engine question in it, which makes it a step of its own
+rather than a corner of this one.
 
 ## Phase 7 — the importer, continuing its own ranking
 

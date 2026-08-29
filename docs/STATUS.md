@@ -29,6 +29,7 @@ function of `x`, in that order.
 | — Releasing | **written, unrun** | A tag builds a binary per architecture with no cross-compilation, each published only after passing the golden suite on the machine that built it; the wasm module goes out with its hash after agreeing with native byte for byte; the editor and gallery deploy to Pages. The shell was tested against stand-in artifacts; the runners have never run it |
 | — The gallery, and migration shown | **done** | `build-gallery.sh` renders every example into a browsable set of self-contained pages, and `docs/smath.md` finally *shows* an import: an SMath worksheet written here — ours to publish, unlike the corpora — beside what Nomo makes of it and what it computes. That fixture is also the only importer test that runs without the corpora |
 | — How-to worksheets | **six of six** | `bolt`, `shaft`, `column`, `bearing`, `spring`, `vessel` — a bolted joint, a shaft in combined bending and torsion, a column across the buckling transition, bearing life, a compression spring against six constraints, and a pressure vessel worked thin-wall and thick-wall side by side. The first worksheets written *for* the language rather than to exercise it; their acceptance is an engineer agreeing with the method rather than a green gate. Each says what it leaves out |
+| — The editor assists | **done** | Completion offering a name with what it holds and a unit with its dimension, hover saying what a name is, F12 to its definition, and a Typeset toggle that puts §18's MathML where a reader actually looks. All from the engine's own symbol table — no second parser in the front end. **Multiple open documents is the one piece not built**; the boundary already supports it and the reason is below |
 | — Typeset output | **first phase done** | `nomo html --mathml` renders the symbolic and substituted columns as MathML: division becomes a fraction, a power a superscript, `sqrt` a radical, and a bracket the fraction bar makes unnecessary is dropped. Off by default. `check-mathml.mjs` asks Chrome where the numerator ended up, because a browser without MathML draws it *beside* the denominator rather than failing |
 | — Complex vectors | **done** | A vector literal with a complex element is a complex vector: elementwise arithmetic, `sum`, `abs`/`arg`/`Re`/`Im`/`conj`, indexing. Everything else refuses by name — the alternative was an aggregate seeing an empty collection and answering, which is how `sort` gave back `[]`. A complex *matrix* is still not built. Nine exhaustive matches, exactly as §8.40 predicted for a second value tower |
 | — Eigenvalues | **done** | `eigenvalues(m)` and `eigenvectors(m)` for a symmetric matrix, by cyclic Jacobi at a fixed twelve sweeps. Exactly symmetric or refused, with the remedy named — a nearly-symmetric matrix is the heuristic zero-test §8.40 refuses. `examples/shaft.nomo` now computes its principal stresses and checks them against the Tresca stress it already had, which is an independent check of the solver inside a real calculation |
@@ -98,7 +99,7 @@ cargo run --release -p nomo-cli -- bench               # timings; a report, exit
 ./scripts/compare-arch.sh                               # x86-64 vs aarch64 (needs qemu-user)
 ./scripts/build-gallery.sh                              # the worked examples as a
                                                         # browsable set of pages
-./scripts/build-web.sh                                  # front end; also runs the eight
+./scripts/build-web.sh                                  # front end; also runs the nine
                                                         # browser checks, including
                                                         # check-figures.mjs,
                                                         # check-plots.mjs and
@@ -541,6 +542,15 @@ it fail, which was checked.
   media and asks the page what is visible. Header, footer and editor must be
   gone; the worksheet must remain, must not clip and must wrap. Both checks were
   confirmed to fail when the thing they check is broken.
+- `check-assist.mjs` — types into the editor and reads what appears: the
+  completion list and what it says beside each name, the hover tooltip, where
+  F12 leaves the cursor, and whether the Typeset toggle produces a fraction
+  whose numerator sits above its denominator. It drives everything through the
+  DOM rather than through CodeMirror's own API, because the editor does not
+  publish its view object and a test hook in the application to let a check
+  reach it would be a worse trade than measuring what the page shows. F12 is
+  dispatched as a page event: a browser keeps that key for its own developer
+  tools, and what is under test is the editor's binding.
 - `check-mathml.mjs` — renders a worksheet with `--mathml`, then asks the page
   where the numerator of a fraction ended up. It is the one check that could not
   be replaced by an assertion on the markup: a browser that does not implement
@@ -1476,7 +1486,7 @@ document that a missing secret explained it was wrong.
   no-host-math guard.
 - **`wasm`** — the module builds for `wasm32-unknown-unknown` and agrees with
   native byte for byte.
-- **`browser`** — all eight Chrome checks, on CI's own Chrome rather than this
+- **`browser`** — all nine Chrome checks, on CI's own Chrome rather than this
   machine's.
 - **`corpus`** — the two `check-corpus.sh` baselines and the coverage report,
   added in `cde475f` once the worksheets were in the repository. It asserts the
@@ -1826,7 +1836,11 @@ None of these are bugs; they are scope, recorded so they are not rediscovered.
   the span that was asked for and the vertical one is fitted to the data.
 - **The editor holds one worksheet at a time.** Multiple open documents would
   mean multiple sessions, which the boundary already supports — nothing in the
-  module is global — but there is no interface for it.
+  module is global — but there is no interface for it. It is the one part of
+  step 19 that was not built, and deliberately: it is a piece of interface work
+  — tabs, a draft per document, a file handle per document, and what "unsaved"
+  means across several — with no engine question in it at all, which makes it a
+  step of its own rather than a corner of this one.
 - **`Save` in Firefox and Safari is a download.** Those browsers have no File
   System Access API, so there is nothing to write back to. The button says
   Download there rather than pretending otherwise.

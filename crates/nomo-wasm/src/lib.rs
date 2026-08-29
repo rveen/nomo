@@ -111,6 +111,18 @@ pub extern "C" fn nomo_snapshot_format() -> u32 {
     nomo_core::golden::FORMAT
 }
 
+/// Everything this build knows about independent of any worksheet: unit names
+/// with their dimensions, function names, pack names, keywords.
+///
+/// Asked for once at startup rather than sent with every keystroke. The unit
+/// table alone is several hundred names and none of it changes as a worksheet
+/// is typed, so putting it in the per-edit payload would be several hundred
+/// names of waste per character.
+#[no_mangle]
+pub extern "C" fn nomo_vocabulary() -> *mut u8 {
+    into_buffer(nomo_core::api::vocabulary_json())
+}
+
 // ---- the editing session -------------------------------------------------
 //
 // `nomo_snapshot` above is stateless, which is right for rendering a file. An
@@ -153,6 +165,28 @@ pub unsafe extern "C" fn nomo_document_update(
     ptr: *const u8,
     len: usize,
 ) -> *mut u8 {
+    nomo_document_update_as(handle, ptr, len, 0)
+}
+
+/// The same, rendered as the caller asks: `mathml` non-zero typesets the
+/// mathematics.
+///
+/// A second entry point rather than a setting on the session, because how a
+/// worksheet is *drawn* is a property of the view and not of the document — the
+/// same worksheet is typeset in one pane and plain in a printout, and a session
+/// that remembered a rendering choice would have to be reopened to change it.
+///
+/// # Safety
+///
+/// `handle` must be a session from [`nomo_document_new`] that has not been
+/// freed, and the pointer must address `len` readable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn nomo_document_update_as(
+    handle: *mut nomo_core::Sheet,
+    ptr: *const u8,
+    len: usize,
+    mathml: u32,
+) -> *mut u8 {
     if handle.is_null() {
         return std::ptr::null_mut();
     }
@@ -161,8 +195,12 @@ pub unsafe extern "C" fn nomo_document_update(
     };
     let sheet = &mut *handle;
     let recalculation = sheet.update(source);
+    let opts = nomo_core::RenderOptions {
+        mathml: mathml != 0,
+        ..Default::default()
+    };
     into_buffer(with_recalculation(
-        nomo_core::api::analysis_json(sheet),
+        nomo_core::api::analysis_json_with(sheet, &opts),
         &recalculation,
     ))
 }

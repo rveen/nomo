@@ -186,6 +186,41 @@ async function start(binary, profile) {
       return call("Input.insertText", { text });
     },
 
+    /**
+     * Press a named key, as a user would.
+     *
+     * `Input.insertText` cannot do this: a shortcut is not text, and the editor
+     * only sees it as a key event. Down and up both, because a handler that
+     * listens for one and not the other is a real mistake and this should catch
+     * it rather than paper over it.
+     */
+    async key(name, { ctrl = false, code, keyCode } = {}) {
+      for (const type of ["keyDown", "keyUp"]) {
+        await call("Input.dispatchKeyEvent", {
+          type,
+          key: name,
+          code: code ?? name,
+          // 2 is Control in the DevTools protocol's modifier bitmask.
+          modifiers: ctrl ? 2 : 0,
+          windowsVirtualKeyCode: keyCode,
+          nativeVirtualKeyCode: keyCode,
+        });
+      }
+    },
+
+    /** Click at a point in the page, as a user would. */
+    async click(x, y) {
+      for (const type of ["mousePressed", "mouseReleased"]) {
+        await call("Input.dispatchMouseEvent", {
+          type,
+          x,
+          y,
+          button: "left",
+          clickCount: 1,
+        });
+      }
+    },
+
     /** Evaluate an expression in the page and return its value. */
     async evaluate(expression) {
       const result = await call("Runtime.evaluate", {

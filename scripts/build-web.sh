@@ -47,4 +47,5 @@ node scripts/check-recovery.mjs
 node scripts/check-figures.mjs
 node scripts/check-plots.mjs
 node scripts/check-mathml.mjs
+node scripts/check-assist.mjs
 node scripts/check-offline.mjs

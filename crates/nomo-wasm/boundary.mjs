@@ -26,8 +26,10 @@ export function bind(exports) {
     nomo_free,
     nomo_snapshot,
     nomo_snapshot_format,
+    nomo_vocabulary,
     nomo_document_new,
     nomo_document_update,
+    nomo_document_update_as,
     nomo_document_free,
     nomo_for_saving,
   } = exports;
@@ -72,6 +74,18 @@ export function bind(exports) {
     format: () => nomo_snapshot_format(),
 
     /**
+     * What the engine knows about independent of any worksheet: units with
+     * their dimensions, functions, packs, keywords.
+     *
+     * Read once. It is what an editor completes from, and none of it changes as
+     * a document is typed — so putting it in the per-edit payload would be
+     * several hundred names of waste per keystroke.
+     */
+    vocabulary() {
+      return JSON.parse(read(nomo_vocabulary()));
+    },
+
+    /**
      * The text to write to disk: the worksheet with a version pragma.
      *
      * Asked of the engine rather than composed here, because the version number
@@ -104,11 +118,17 @@ export function bind(exports) {
 
       let open = true;
       return {
-        /** Apply an edit and return the analysis. */
-        update(text) {
+        /**
+         * Apply an edit and return the analysis.
+         *
+         * `mathml` typesets the rendered output. It is per call rather than per
+         * session because how a worksheet is drawn is a property of the view:
+         * the same document is typeset in one pane and plain in a printout.
+         */
+        update(text, { mathml = false } = {}) {
           if (!open) throw new Error("this session is closed");
           const json = withText(text, (s) =>
-            read(nomo_document_update(handle, s.ptr, s.len)),
+            read(nomo_document_update_as(handle, s.ptr, s.len, mathml ? 1 : 0)),
           );
           return JSON.parse(json);
         },

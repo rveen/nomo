@@ -75,16 +75,24 @@ const SABOTAGE = `
     built += 1;
     if (built > 1) return real;
     const exports = { ...real.exports };
-    const update = exports.nomo_document_update;
+    // Both entry points, because the editor picks one and this check must not
+    // quietly stop failing when it picks the other. It did exactly that when
+    // the typeset-aware update arrived: the patched function was no longer
+    // called, the simulated trap never fired, and the check timed out — which
+    // is the right failure, and the reason to patch both now.
     let calls = 0;
-    exports.nomo_document_update = (...args) => {
-      calls += 1;
-      if (calls === 2) {
-        window.__nomoFailed = true;
-        throw new WebAssembly.RuntimeError("simulated trap");
-      }
-      return update(...args);
-    };
+    for (const name of ["nomo_document_update", "nomo_document_update_as"]) {
+      const real = exports[name];
+      if (!real) continue;
+      exports[name] = (...args) => {
+        calls += 1;
+        if (calls === 2) {
+          window.__nomoFailed = true;
+          throw new WebAssembly.RuntimeError("simulated trap");
+        }
+        return real(...args);
+      };
+    }
     return Object.create(RealInstance.prototype, { exports: { value: exports } });
   };
 })();

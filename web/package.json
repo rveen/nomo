@@ -15,5 +15,8 @@
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.39.1",
     "esbuild": "^0.28.2"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.20.3"
   }
 }

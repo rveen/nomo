@@ -264,13 +264,19 @@ rather than in pascals. It only half worked: a *compound* target like `mm^2` or
 fixed. Fixing it nearly shipped a much worse bug — see the commit — and the
 guard against it is a test.
 
-### 12. The gallery, and the migration story shown rather than described
+### 12. The gallery, and the migration story shown rather than described — **done**
 
-`nomo html` already produces a self-contained page per worksheet; those become a
-gallery. And `docs/smath.md` explains the import but never *shows* one: an SMath
-worksheet beside the `.nomo` it becomes, with every marker explained, is the
-artifact that persuades an SMath user to try it — and someone trying it is how
-the current-era worksheets §11 question 8 still needs actually arrive.
+Both done, and the second had a constraint that shaped it: the corpora are other
+people's documents, so a before-and-after cannot show one. The worksheet in
+`docs/smath.md` is therefore an SMath 1.x file **written here** — our numbers,
+our prose, ours to publish — carrying one of each thing that matters: prose, a
+global `≡`, positional definitions with units, two stored answers, and one
+construct that is out of scope so a refusal is shown too.
+
+It turned out to be worth more than the document it was written for.
+`check-corpus.sh` skips what it cannot find, so on any machine without the
+corpora — every CI runner, so far — the importer had **no test at all**. That
+fixture is now four, and they run anywhere.
 
 ## Phase 4 — ship it
 

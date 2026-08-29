@@ -117,6 +117,111 @@ in three worksheets while every count and every value stayed identical.
 
 ---
 
+## A worked example, both sides
+
+Everything above describes the crossing. This shows it, on a worksheet small
+enough to read whole.
+
+`crates/nomo-smath/tests/fixtures/pipe.sm` is an SMath 1.x worksheet written for
+this document — our numbers and our prose, because the corpora are other
+people's documents and are not ours to reproduce. It sizes a pipe run for a
+target velocity, and it carries one of each thing that matters: prose, a global
+`≡`, positional `:` definitions with units, a computed value, two stored answers
+and one construct that is out of scope.
+
+### What SMath stores
+
+A definition is a postfix operand stream, and a unit is an operand carrying
+`style="unit"`, attached by multiplication. This is `d : 100 mm`:
+
+```xml
+<region left="18" top="140" width="320" height="24" color="#000000" fontSize="10">
+    <math>
+      <input>
+        <e type="operand">d</e>
+        <e type="operand">100</e>
+        <e type="operand" style="unit">mm</e>
+        <e type="operator" args="2">*</e>
+        <e type="operator" args="2">:</e>
+      </input>
+    </math>
+  </region>
+```
+
+A display carries the answer SMath computed beside the expression, which is what
+makes an imported worksheet checkable rather than merely readable. This is `v =`
+with the value it showed:
+
+```xml
+<region left="18" top="340" width="320" height="24" color="#000000" fontSize="10">
+    <math>
+      <input>
+        <e type="operand">v</e>
+      </input>
+      <result action="numeric">
+        <e type="operand">1.90986</e>
+        <e type="operand" style="unit">m</e>
+        <e type="operand" style="unit">s</e>
+        <e type="operator" args="2">/</e>
+        <e type="operator" args="2">*</e>
+      </result>
+    </math>
+  </region>
+```
+
+### What Nomo makes of it
+
+```nomo
+' A pipe run, sized for a target velocity. Written in SMath and imported by Nomo.
+global g = 9.81*(m/s^2)
+' The pipe, and the flow it has to carry.
+d = 100 mm
+Q = 15*(L/s)
+A = π*d^2/4
+v = Q/A
+' The velocity that produces, against a 2.5 m/s limit for a pumped water main.
+v
+A
+' A construct Nomo does not translate, so that a refusal can be seen too.
+' [import] unsupported: the definition of `expr`: the function `Maxima`
+```
+
+### What it computes
+
+```
+A pipe run, sized for a target velocity. Written in SMath and imported by Nomo.
+g = 9.81·(m/s²)
+The pipe, and the flow it has to carry.
+d = 100 mm
+Q = 15·(L/s)
+A = π·d²/4 = π·(100 mm)²/4 = 0.00785398 m²
+v = Q/A = 0.015 m³·s⁻¹/(0.00785398 m²) = 1.90986 m·s⁻¹
+The velocity that produces, against a 2.5 m/s limit for a pumped water main.
+v = 1.90986 m·s⁻¹
+A = 0.00785398 m²
+A construct Nomo does not translate, so that a refusal can be seen too.
+[import] unsupported: the definition of `expr`: the function `Maxima`
+```
+
+Four things to notice, and each is a decision the rest of this document
+explains:
+
+- **The prose came across.** A worksheet is a document, and text regions are not
+  packaging around the mathematics.
+- **`≡` became `global`.** It is a position-independent definition in SMath and
+  it stays one here, which is why `g` may be read above the line that binds it.
+- **The units are units.** `100 mm` is a length, not the number 100 with a label,
+  and everything downstream is dimensioned because of it.
+- **The Maxima call is a marker, not a gap.** It sits where the construct stood,
+  it says what it was, and it counts in the coverage report. Nothing was dropped
+  quietly.
+
+And the two answers SMath stored — 1.90986 m/s and 7853.98 mm² — are recomputed
+from the definitions and compared: `smath-import --check` on this file reports
+2 of 2 agreeing. `crates/nomo-smath/tests/fixture.rs` is that same check as a
+test, and it is the only importer test that runs on a machine without the
+corpora.
+
 ## What comes across
 
 ### The file itself

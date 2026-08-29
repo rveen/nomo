@@ -33,6 +33,9 @@ if [ ! -d web/node_modules ]; then
 fi
 (cd web && node build.mjs)
 
+echo "==> worked examples"
+./scripts/build-gallery.sh
+
 echo "==> editing sessions"
 node scripts/check-session.mjs
 

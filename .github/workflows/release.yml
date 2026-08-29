@@ -5,8 +5,10 @@ name: Release
 on:
   push:
     tags: ["v*"]
-  # So the page can be republished without cutting a release — the editor and
-  # the worked examples are worth being able to fix on their own.
+    # The site tracks the default branch; the release tracks tags. See the
+    # `pages` job for why those cannot be the same trigger.
+    branches: [main]
+  # So the page can be republished on demand as well.
   workflow_dispatch:
 
 permissions:
@@ -30,6 +32,7 @@ jobs:
   # the way to show that is to build on each machine and let the golden suite
   # prove they agree.
   binaries:
+    if: github.ref_type == 'tag'
     strategy:
       fail-fast: false
       matrix:
@@ -76,6 +79,7 @@ jobs:
   # determinism claim is checkable by whoever downloads it rather than only by
   # whoever built it.
   wasm:
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -107,7 +111,15 @@ jobs:
           path: dist/
 
   # The editor and the worked examples, as a static site.
+  #
+  # **On a branch, never on a tag.** The `github-pages` environment allows
+  # deployments from branches only, so a tag build fails this job in one second
+  # with no step run at all — which is exactly what the first tag did. Deploying
+  # from `main` is also the better arrangement on its own terms: the site should
+  # track what is on the default branch, and fixing a typo on a page should not
+  # require cutting a release.
   pages:
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

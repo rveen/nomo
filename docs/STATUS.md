@@ -188,12 +188,18 @@ rather than a third-party action: it is on every runner and it is GitHub's own,
 so publishing costs this repository no dependency the engine would not be
 allowed.
 
-**Two things need doing once, by hand, and cannot be done from here.** The
-repository's Pages source must be set to "GitHub Actions" in its settings, or
-the `pages` job fails at deployment. And the first tag is the first time macOS
-runs anything in this project at all: the release's golden suite on
-`macos-aarch64` is a third platform's word on the central claim, and if it
-disagrees the release fails loudly, which is what it is there for.
+**What the first tag settled.** `v0.1.0` published all five artifacts and
+**macOS agreed** — its golden suite passed, which is a third platform's word on
+the central claim, after x86-64 and aarch64. The Pages source had to be set to
+"GitHub Actions" by hand first; that is done.
+
+**And what it caught.** The `pages` job failed in one second with no step run,
+because the `github-pages` environment allows deployments from **branches only**
+and a tag is not one. The site is therefore deployed from `main` and the release
+artifacts from a tag — which is the better arrangement anyway: the page should
+track the default branch, and fixing a typo on it should not require cutting a
+release. `binaries` and `wasm` stay tag-only, or every push would build three
+binaries for nothing.
 
 **What has been checked here, and what has not.** The workflow's shell — the
 packaging, the checksums, the collection of artifacts into one `SHA256SUMS.txt`,

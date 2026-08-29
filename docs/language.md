@@ -417,13 +417,13 @@ that a worksheet gives the same last bits on every machine.
 
 | Group | Functions |
 |---|---|
-| Trigonometric | `sin` `cos` `tan` `asin` `acos` `atan` `atan2` |
-| Hyperbolic | `sinh` `cosh` `tanh` |
-| Exponential | `exp` `ln` `log10` `log2` |
-| Numeric | `sqrt` `abs` `sign` `round` `floor` `ceil` |
-| Aggregate | `sum` `min` `max` `length` |
-| Linear algebra | `transpose` `det` `inv` `identity` `diag` `dot` `cross` `norm` |
-| Shape | `rows` `cols` `row` `col` `augment` `stack` |
+| Trigonometric | `sin` `cos` `tan` `cot` `sec` `csc` `asin` `acos` `atan` `atan2` |
+| Hyperbolic | `sinh` `cosh` `tanh` `asinh` `acosh` `atanh` |
+| Exponential | `exp` `ln` `log` `log10` `log2` |
+| Numeric | `sqrt` `nthroot` `abs` `sign` `round` `floor` `ceil` `mod` `hypot` |
+| Aggregate | `sum` `product` `min` `max` `mean` `median` `length` |
+| Linear algebra | `transpose` `det` `inv` `identity` `diag` `dot` `cross` `norm` `trace` |
+| Shape | `rows` `cols` `row` `col` `augment` `stack` `submatrix` `sort` `reverse` |
 | Repetition | `range` `map` `iterate` |
 | Numerical | `root` `roots` `derivative` `integral` `solve_linear` |
 | Tables | `linterp` |
@@ -431,7 +431,33 @@ that a worksheet gives the same last bits on every machine.
 Trigonometric and exponential functions require a dimensionless argument. Since
 `rad`, `°` and `%` are dimensionless, `sin(30 °)` works and gives `0.5`.
 
-`sqrt` halves the dimension, so `sqrt(16 m^2)` is `4 m`.
+`sqrt` halves the dimension, so `sqrt(16 m^2)` is `4 m`, and `nthroot(x, n)`
+divides it by `n` — which is what rational dimension exponents are for. A
+negative value has a real root only for an odd whole index, so `nthroot(-8, 3)`
+is `-2` and `nthroot(-8, 2)` is an error rather than a complex number.
+
+`log` always states its base: `log(x, b)`. `log10`, `log2` and `ln` are the
+shorthands. A one-argument `log` means base 10 in some worksheets and base e in
+others, and every `log` call in the surveyed corpora states its base, so
+requiring it costs nothing real.
+
+`mod(a, b)` takes the sign of `a`, as SMath's does, and refuses a zero divisor.
+Both operands share a dimension and so does the answer.
+
+`sum`, `mean`, `median`, `sort`, `min` and `max` need **one dimension across the
+collection**, because each is a weighted sum or an ordering of it — comparing
+`5 m` against `3 s` would mean comparing magnitudes in base units, which means
+nothing. `product` is the exception: dimensions multiply, so
+`product([2 m, 3 m])` is `6 m²`.
+
+**`stdev` is deliberately absent.** Dividing by *n* and dividing by *n−1* are
+both called the standard deviation, the difference does not show in the answer,
+and nothing here can settle which a worksheet meant. Rather than pick one
+silently, the language does not offer the name.
+
+`submatrix(m, r1, r2, c1, c2)` takes the block from row `r1` to `r2` and column
+`c1` to `c2`, inclusive, counting from one. A single column comes back as a
+vector.
 
 ### Reading a table
 

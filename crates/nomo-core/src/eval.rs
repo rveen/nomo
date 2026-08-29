@@ -98,10 +98,13 @@ pub const BUILTINS: &[&str] = &[
     "Re",
     "abs",
     "acos",
+    "acosh",
     "arg",
     "asin",
+    "asinh",
     "atan",
     "atan2",
+    "atanh",
     "augment",
     "ceil",
     "col",
@@ -109,13 +112,16 @@ pub const BUILTINS: &[&str] = &[
     "conj",
     "cos",
     "cosh",
+    "cot",
     "cross",
+    "csc",
     "derivative",
     "det",
     "diag",
     "dot",
     "exp",
     "floor",
+    "hypot",
     "identity",
     "integral",
     "inv",
@@ -123,28 +129,39 @@ pub const BUILTINS: &[&str] = &[
     "length",
     "linterp",
     "ln",
+    "log",
     "log10",
     "log2",
     "map",
     "max",
+    "mean",
+    "median",
     "min",
+    "mod",
     "norm",
+    "nthroot",
     "plot",
+    "product",
     "range",
+    "reverse",
     "root",
     "roots",
     "round",
     "row",
     "rows",
+    "sec",
     "sign",
     "sin",
     "sinh",
     "solve_linear",
+    "sort",
     "sqrt",
     "stack",
+    "submatrix",
     "sum",
     "tan",
     "tanh",
+    "trace",
     "transpose",
 ];
 
@@ -1600,6 +1617,16 @@ impl Env {
             "acos" => unary_dimensionless(math::acos),
             "atan" => unary_dimensionless(math::atan),
             "sinh" => unary_dimensionless(math::sinh),
+            // SMath spells these `ctg`, `sec` and `cosec`; the importer maps
+            // them. Written as reciprocals of the three that exist rather than
+            // as their own series, so `cot(x)` and `1/tan(x)` cannot drift
+            // apart in the last bits.
+            "cot" => unary_dimensionless(|x| 1.0 / math::tan(x)),
+            "sec" => unary_dimensionless(|x| 1.0 / math::cos(x)),
+            "csc" => unary_dimensionless(|x| 1.0 / math::sin(x)),
+            "asinh" => unary_dimensionless(math::asinh),
+            "acosh" => unary_dimensionless(math::acosh),
+            "atanh" => unary_dimensionless(math::atanh),
             "cosh" => unary_dimensionless(math::cosh),
             "tanh" => unary_dimensionless(math::tanh),
             "exp" => unary_dimensionless(math::exp),
@@ -1673,6 +1700,108 @@ impl Env {
                     })
                 })
             }
+            // The remainder, with the sign of the dividend — which is what
+            // SMath's `Mod` does (`rem` on two doubles) and what it refuses on
+            // (a zero divisor). Both operands share a dimension and so does the
+            // answer: 7 m mod 2 m is 1 m.
+            "mod" => {
+                arity(2)?;
+                let (a, b) = (scalar_arg(&args[0])?, scalar_arg(&args[1])?);
+                if a.dim != b.dim {
+                    return Err(EvalError::Unit(UnitError::DimensionMismatch {
+                        lhs: a.dim,
+                        rhs: b.dim,
+                    }));
+                }
+                if b.value == 0.0 {
+                    return Err(EvalError::Singular("`mod` by zero"));
+                }
+                Ok(Value::Scalar(Quantity::new(
+                    math::fmod(a.value, b.value),
+                    a.dim,
+                )))
+            }
+
+            // √(a² + b²) without the overflow of squaring first. Both operands
+            // share a dimension, and it is the answer's.
+            "hypot" => {
+                arity(2)?;
+                let (a, b) = (scalar_arg(&args[0])?, scalar_arg(&args[1])?);
+                if a.dim != b.dim {
+                    return Err(EvalError::Unit(UnitError::DimensionMismatch {
+                        lhs: a.dim,
+                        rhs: b.dim,
+                    }));
+                }
+                Ok(Value::Scalar(Quantity::new(
+                    math::hypot(a.value, b.value),
+                    a.dim,
+                )))
+            }
+
+            // The nth root, which divides the dimension by n — the reason
+            // dimension exponents are rational in the first place.
+            //
+            // A negative radicand is allowed only for an odd whole n, where the
+            // real root exists: `nthroot(-8, 3)` is -2. Everything else about a
+            // negative base is a complex answer with a branch cut nobody can
+            // state for the worksheet, which the language refuses elsewhere for
+            // the same reason.
+            "nthroot" => {
+                arity(2)?;
+                let (x, n) = (scalar_arg(&args[0])?, scalar_arg(&args[1])?);
+                if !n.is_dimensionless() {
+                    return Err(EvalError::Unit(UnitError::ExpectedDimensionless {
+                        found: n.dim,
+                    }));
+                }
+                if n.value == 0.0 {
+                    return Err(EvalError::Singular("`nthroot` needs a nonzero index"));
+                }
+                let root = Quantity::scalar(1.0).div(&n)?;
+                if x.value < 0.0 {
+                    // Exact, for the same reason `complex.rs` is exact when it
+                    // asks whether an exponent is a whole number: that is a
+                    // question about the bits, and 3.0000000000000004 is not an
+                    // odd whole number however close it looks.
+                    #[allow(clippy::float_cmp)]
+                    let whole_odd = n.value == math::round(n.value)
+                        && math::fmod(math::abs(n.value), 2.0) == 1.0;
+                    if !whole_odd {
+                        return Err(EvalError::Singular(
+                            "a negative value has a real root only for an odd whole index",
+                        ));
+                    }
+                    let magnitude = Quantity::new(-x.value, x.dim).pow(&root)?;
+                    return Ok(Value::Scalar(Quantity::new(
+                        -magnitude.value,
+                        magnitude.dim,
+                    )));
+                }
+                Ok(Value::Scalar(x.pow(&root)?))
+            }
+
+            // `log(x, base)`, always with the base stated. SMath's one-argument
+            // `log` means base 10 to some worksheets and base e to others
+            // depending on where they came from, and every one of the six calls
+            // in either corpus states its base — so requiring it costs nothing
+            // real and removes the one way this can be silently wrong. `log10`,
+            // `log2` and `ln` are the shorthands.
+            "log" => {
+                arity(2)?;
+                let (x, base) = (scalar_arg(&args[0])?, scalar_arg(&args[1])?);
+                for q in [&x, &base] {
+                    if !q.is_dimensionless() {
+                        return Err(EvalError::Unit(UnitError::ExpectedDimensionless {
+                            found: q.dim,
+                        }));
+                    }
+                }
+                Ok(Value::Scalar(Quantity::scalar(
+                    math::ln(x.value) / math::ln(base.value),
+                )))
+            }
+
             "atan2" => {
                 arity(2)?;
                 let (a, b) = (scalar_arg(&args[0])?, scalar_arg(&args[1])?);
@@ -2090,6 +2219,149 @@ impl Env {
                 let span = y1.sub(&y0)?;
                 let value = y0.add(&Quantity::new(t * span.value, span.dim))?;
                 Ok(Value::Scalar(value))
+            }
+
+            // The product of a collection, which is `sum`'s twin: dimensions
+            // multiply rather than having to agree, so `product([2 m, 3 m])` is
+            // 6 m². Strictly left to right, like every other reduction here.
+            "product" => {
+                arity(1)?;
+                fold("product", &args[0], |a, b| a.mul(b))
+            }
+
+            // Statistics on a column of readings. Both need one dimension
+            // across the collection, because both are weighted sums of it.
+            //
+            // `stdev` is deliberately absent, and its absence is the point:
+            // dividing by n and dividing by n-1 are both called the standard
+            // deviation, the difference is invisible in the answer, and this
+            // installation of SMath has neither to read. Naming one `stdev`
+            // would pick a convention silently, which is the failure this
+            // project spends most of its effort avoiding.
+            "mean" | "median" => {
+                arity(1)?;
+                let mut xs = args[0].elements();
+                if xs.is_empty() {
+                    return Err(EvalError::Singular("an empty collection has no average"));
+                }
+                let dim = xs[0].dim;
+                if xs.iter().any(|q| q.dim != dim) {
+                    return Err(EvalError::Singular(
+                        "every value must share one dimension to be averaged",
+                    ));
+                }
+                if xs.iter().any(Quantity::is_point) {
+                    return Err(EvalError::Singular(
+                        "an offset temperature scale cannot be averaged; use an absolute scale such as K",
+                    ));
+                }
+                if name == "mean" {
+                    let mut total = Quantity::new(0.0, dim);
+                    for x in &xs {
+                        total = total.add(x)?;
+                    }
+                    return Ok(Value::Scalar(Quantity::new(
+                        total.value / xs.len() as f64,
+                        dim,
+                    )));
+                }
+                sort_quantities(&mut xs);
+                let n = xs.len();
+                let middle = if n % 2 == 1 {
+                    xs[n / 2]
+                    // The mean of the two middle readings, computed as
+                    // `a + (b - a)/2` rather than `(a + b)/2`: the same answer
+                    // without the overflow, and it is what the addition rules
+                    // already allow.
+                } else {
+                    let (a, b) = (xs[n / 2 - 1], xs[n / 2]);
+                    let half = b.sub(&a)?;
+                    a.add(&Quantity::new(half.value / 2.0, half.dim))?
+                };
+                Ok(Value::Scalar(middle))
+            }
+
+            // Ascending, and refusing a collection whose values do not share a
+            // dimension: ordering 5 m against 3 s would mean comparing their
+            // magnitudes in base units, which is an answer with no meaning.
+            "sort" | "reverse" => {
+                arity(1)?;
+                let mut xs = args[0].elements();
+                if name == "sort" {
+                    let dim = xs.first().map(|q| q.dim);
+                    if xs.iter().any(|q| Some(q.dim) != dim) {
+                        return Err(EvalError::Singular(
+                            "every value must share one dimension to be sorted",
+                        ));
+                    }
+                    sort_quantities(&mut xs);
+                } else {
+                    xs.reverse();
+                }
+                Ok(Value::Vector(VectorValue { elements: xs }))
+            }
+
+            // The sum of a square matrix's diagonal.
+            "trace" => {
+                arity(1)?;
+                let (rows, cols) = shape_of(&args[0]);
+                if rows != cols || rows == 0 {
+                    return Err(EvalError::Singular("`trace` needs a square matrix"));
+                }
+                let cells = args[0].elements();
+                let mut total = cells[0];
+                for i in 1..rows {
+                    total = total.add(&cells[i * cols + i])?;
+                }
+                Ok(Value::Scalar(total))
+            }
+
+            // `submatrix(m, r1, r2, c1, c2)` — the block from row r1 to r2 and
+            // column c1 to c2, inclusive and counting from one. Argument order,
+            // inclusivity and bounds checking are SMath's, read from
+            // `TMatrix::Submatrix(startRow, endRow, startCol, endCol)`, so an
+            // imported worksheet means what it meant.
+            "submatrix" => {
+                arity(5)?;
+                let (rows, cols) = shape_of(&args[0]);
+                let bounds = [
+                    (as_index(&args[1])?, rows),
+                    (as_index(&args[2])?, rows),
+                    (as_index(&args[3])?, cols),
+                    (as_index(&args[4])?, cols),
+                ];
+                for (i, limit) in bounds {
+                    if i < 1 || i as usize > limit {
+                        return Err(EvalError::IndexOutOfBounds {
+                            index: i,
+                            len: limit,
+                        });
+                    }
+                }
+                let (r1, r2, c1, c2) = (
+                    bounds[0].0 as usize,
+                    bounds[1].0 as usize,
+                    bounds[2].0 as usize,
+                    bounds[3].0 as usize,
+                );
+                if r2 < r1 || c2 < c1 {
+                    return Err(EvalError::Singular(
+                        "`submatrix` needs its last row and column at or after its first",
+                    ));
+                }
+                let cells = args[0].elements();
+                let mut data = Vec::with_capacity((r2 - r1 + 1) * (c2 - c1 + 1));
+                for r in r1..=r2 {
+                    for c in c1..=c2 {
+                        data.push(cells[(r - 1) * cols + (c - 1)]);
+                    }
+                }
+                let (h, w) = (r2 - r1 + 1, c2 - c1 + 1);
+                Ok(if w == 1 {
+                    Value::Vector(VectorValue { elements: data })
+                } else {
+                    Value::Matrix(MatrixValue::new(h, w, data))
+                })
             }
 
             "norm" => {
@@ -2853,6 +3125,17 @@ fn shadowing_is_worth_reporting(name: &str) -> bool {
 
 fn clone_or_poison(t: &Trace) -> Result<Value, EvalError> {
     t.value.clone().map_err(|_| EvalError::Poisoned)
+}
+
+/// Order quantities by magnitude, ascending.
+///
+/// `total_cmp` rather than `partial_cmp`: it is a total order over every f64
+/// including NaN, so sorting cannot depend on comparison order and a table with
+/// a NaN in it sorts deterministically rather than arbitrarily. The caller has
+/// already established that they share a dimension, so magnitudes are
+/// comparable.
+fn sort_quantities(xs: &mut [Quantity]) {
+    xs.sort_by(|a, b| a.value.total_cmp(&b.value));
 }
 
 fn scalar_arg(v: &Value) -> Result<Quantity, EvalError> {

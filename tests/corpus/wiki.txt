@@ -8,8 +8,8 @@ CEE2500Test02Problem[4].sm	answers=12 agreed=11 disagreed=0 unevaluated=1 unsupp
 CEE3030Fall2009SolutionTest2.sm	answers=6 agreed=6 disagreed=0 unevaluated=0 unsupported=25 values=c624836a2bfa90ea source=42a7096eaac13701
 CEE3500Fall2009Test03Problem[1].sm	answers=6 agreed=6 disagreed=0 unevaluated=0 unsupported=4 values=2502a7cbae120c53 source=a0090e2b36a30448
 CEE3500Fall2009Test03Problem[2].sm	answers=2 agreed=1 disagreed=0 unevaluated=1 unsupported=11 values=104289da1df8686f source=dc6e629b32082cfa
-CEE3500Fall2009Test03Problem[3].sm	answers=9 agreed=6 disagreed=0 unevaluated=3 unsupported=12 values=8fb5a5a5d105bb4f source=f6021954cf2115f8
-CEE3500Fall2009Test03Problem[4].sm	answers=5 agreed=4 disagreed=0 unevaluated=1 unsupported=19 values=77d68b7e9dd33e1a source=6095657377191fdb
+CEE3500Fall2009Test03Problem[3].sm	answers=9 agreed=9 disagreed=0 unevaluated=0 unsupported=11 values=68711de6eb1681ae source=f733d1b22d87aa7f
+CEE3500Fall2009Test03Problem[4].sm	answers=5 agreed=4 disagreed=0 unevaluated=1 unsupported=18 values=77d68b7e9dd33e1a source=066715fbfb7ea9ce
 CEE3500Test01Problem01.sm	answers=10 agreed=10 disagreed=0 unevaluated=0 unsupported=9 values=27fb89758ee115fd source=87e22c6d9753dac4
 CEE3500Test01Problem02.sm	answers=9 agreed=9 disagreed=0 unevaluated=0 unsupported=10 values=8954c838bcd00dc4 source=cd9fa1a3102199c0
 CEE3500Test01Problem03.sm	answers=18 agreed=18 disagreed=0 unevaluated=0 unsupported=21 values=851ac706aa09fce2 source=e9a206733a98ba4b
@@ -23,24 +23,24 @@ Engineering Calculations - Ramp Design.sm	answers=24 agreed=21 disagreed=0 uneva
 Finite differences.sm	answers=2 agreed=0 disagreed=0 unevaluated=2 unsupported=20 values=6846f9acfa6aef2f source=9113daa0d20e331d
 HL-93.sm	answers=2 agreed=0 disagreed=0 unevaluated=2 unsupported=6 values=82d98c262303b1dc source=7c47915002ebf171
 Hydraulic Geometry of Rivers 120704.sm	answers=3 agreed=0 disagreed=1 unevaluated=2 unsupported=2 values=404e40525d9d8d47 source=885ddc8b27a333ca
-ImplicitFunctionGrapher.sm	answers=4 agreed=3 disagreed=1 unevaluated=0 unsupported=3 values=1df7d6f85781549b source=621695a0fe987673
+ImplicitFunctionGrapher.sm	answers=4 agreed=3 disagreed=0 unevaluated=1 unsupported=1 values=38939031a6ea9022 source=2364a6150e22e50e
 NASA_atmosphere.sm	answers=0 agreed=0 disagreed=0 unevaluated=0 unsupported=0 values=cbf29ce484222325 source=522d87591179aefb
 NewtonRaphsonApplications.sm	answers=10 agreed=0 disagreed=9 unevaluated=1 unsupported=21 values=db373bdad8919682 source=2600f9ed20009d61
 Newtoninterp.sm	answers=2 agreed=0 disagreed=0 unevaluated=2 unsupported=7 values=e030db41549c859a source=19b48c2e37d67724
 Newtoninterpb.sm	answers=2 agreed=0 disagreed=0 unevaluated=2 unsupported=7 values=1cab3ee3c001262d source=ee686260605ed383
-PolyProperties_2013.02.01.sm	answers=18 agreed=0 disagreed=0 unevaluated=18 unsupported=85 values=d0ee60d86bf5040a source=6ef33b37f04f19c0
+PolyProperties_2013.02.01.sm	answers=18 agreed=0 disagreed=0 unevaluated=18 unsupported=84 values=d0ee60d86bf5040a source=bad3aec1ee43f0b7
 RCBeamDesignNZS3101.sm	answers=36 agreed=35 disagreed=0 unevaluated=1 unsupported=0 values=abc80ff30f4889ba source=e36a48d7157d3e41
 RK4-2ndOrderODE.sm	answers=4 agreed=2 disagreed=0 unevaluated=2 unsupported=22 values=a4e194b7fe74b0fb source=50c186769c204d98
 RK4SingleEquation.sm	answers=2 agreed=0 disagreed=0 unevaluated=2 unsupported=20 values=2e5d9baea371dcbf source=404875a51ee186f3
 RK4SystemEquations.sm	answers=4 agreed=2 disagreed=0 unevaluated=2 unsupported=18 values=a0ef5edf82f8751b source=c35ce6e1f3890212
-SimplySupportedTimberBeam_Eurocode5_v1.0.sm	answers=55 agreed=15 disagreed=0 unevaluated=40 unsupported=43 values=5495a27ca245f3b6 source=f8fa0de1492997e6
+SimplySupportedTimberBeam_Eurocode5_v1.0.sm	answers=56 agreed=15 disagreed=0 unevaluated=41 unsupported=42 values=f9351d72abddd7c5 source=088c10b4e9f78391
 Swamee-Jain friction factor for pipe flow 121231.sm	answers=1 agreed=1 disagreed=0 unevaluated=0 unsupported=0 values=f3f12e03ca1b322b source=b256c14daf85eb96
 Vertical Velocity Distribution in a Hydraulically Smooth OCF 120704.sm	answers=11 agreed=11 disagreed=0 unevaluated=0 unsupported=6 values=ef092f3eabef1a68 source=6d29a4be34969bfc
 Weir Flow using the Rehbock Equation 120704.sm	answers=2 agreed=2 disagreed=0 unevaluated=0 unsupported=0 values=d562913f52ef9113 source=db5064b810495016
-aircraft_performance.sm	answers=14 agreed=10 disagreed=0 unevaluated=4 unsupported=8 values=787372b960ba9748 source=da376e9a57f9b6e0
+aircraft_performance.sm	answers=14 agreed=11 disagreed=0 unevaluated=3 unsupported=7 values=3adb574290ec3504 source=57e01031627f3554
 chisquareddist.sm	answers=6 agreed=0 disagreed=4 unevaluated=2 unsupported=5 values=cfc9975f194fbb27 source=14d8b27f42f32407
 fdist.sm	answers=6 agreed=0 disagreed=4 unevaluated=2 unsupported=5 values=cec40c7e4490fd14 source=e2ada8d181e993b5
-financial.sm	answers=24 agreed=12 disagreed=0 unevaluated=12 unsupported=4 values=f2cc2f7a0e9b0aea source=0ce10f7cced5d0d0
+financial.sm	answers=24 agreed=16 disagreed=0 unevaluated=8 unsupported=1 values=07ab6bec3c517900 source=1a7bf6d9152e8d54
 finger4.sm	answers=4 agreed=1 disagreed=0 unevaluated=3 unsupported=6 values=20724371c13483d4 source=e51759ed3267f9c5
 gauss-legendre.sm	answers=10 agreed=7 disagreed=0 unevaluated=3 unsupported=5 values=e9e14a252646d743 source=2e91fc35f07ecfd8
 importDataCSV.sm	answers=3 agreed=0 disagreed=0 unevaluated=3 unsupported=3 values=39ae8f9bf88f62d9 source=8ae71d95c0575549

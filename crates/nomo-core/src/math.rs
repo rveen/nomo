@@ -106,6 +106,33 @@ pub fn tanh(x: f64) -> f64 {
     libm::tanh(x)
 }
 
+/// The remainder of `x/y`, with the sign of `x`.
+///
+/// Here rather than as `x % y` for two reasons. It is the same reason the rest
+/// of this module exists — `%` on `f64` lowers to a call to whatever `fmod` the
+/// target provides — and on `wasm32-unknown-unknown` there is no such call to
+/// make, so the artifact would either grow an import or depend on a compiler
+/// builtin. `libm::fmod` is compiled in like everything else here.
+///
+/// Unlike the transcendentals around it, this one is *exactly* specified: the
+/// result is representable and no rounding happens. It is wrapped for the
+/// linkage, not for the arithmetic.
+pub fn fmod(x: f64, y: f64) -> f64 {
+    libm::fmod(x, y)
+}
+
+pub fn asinh(x: f64) -> f64 {
+    libm::asinh(x)
+}
+
+pub fn acosh(x: f64) -> f64 {
+    libm::acosh(x)
+}
+
+pub fn atanh(x: f64) -> f64 {
+    libm::atanh(x)
+}
+
 pub fn cbrt(x: f64) -> f64 {
     libm::cbrt(x)
 }

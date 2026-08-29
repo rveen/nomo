@@ -42,5 +42,40 @@ r = round(n)
 f = floor(n)
 ce = ceil(n)
 
+' The reciprocal three, written as reciprocals so they cannot drift from the
+' three they come from.
+cotangent = cot(x)
+secant = sec(x)
+cosecant = csc(x)
+
+' The inverse hyperbolics.
+ash = asinh(x)
+ach = acosh(1 + n)
+ath = atanh(0.5)
+
+' A logarithm always states its base; log10, log2 and ln are the shorthands.
+base7 = log(n, 7)
+
+' Numeric, on quantities. `mod` keeps the sign of its dividend and `nthroot`
+' divides the dimension, which is what rational dimension exponents are for.
+remainder = mod(7 m, 2 m)
+diagonal = hypot(3 m, 4 m)
+cube_side = nthroot(8 m^3, 3)
+odd_root = nthroot(-32, 5)
+
+' Collections. `product` multiplies dimensions where `sum` requires them to
+' agree; the rest need one dimension across the collection.
+sizes = [5, 1, 9, 3] mm
+volume = product([2 m, 3 m, 4 m])
+average = mean(sizes)
+middle = median(sizes)
+ordered = sort(sizes)
+backwards = reverse(sizes)
+
+' Matrices.
+K = [[2, -1, 0], [-1, 2, -1], [0, -1, 2]]
+tr = trace(K)
+corner = submatrix(K, 2, 3, 1, 2)
+
 ' The identity that would catch a mismatched pair.
 pythagoras = sin(x)^2 + cos(x)^2

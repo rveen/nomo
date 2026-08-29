@@ -1047,6 +1047,106 @@ f(2)
     );
 }
 
+// ---- the second batch of builtins ---------------------------------------
+
+#[test]
+fn remainder_hypotenuse_and_roots_carry_dimensions() {
+    // `mod` keeps the sign of the dividend, which is what SMath's does — its
+    // `Mod` is `rem` on two doubles — and refuses a zero divisor as it does.
+    assert_close(last_in("mod(7 m, 2 m)", "m"), 1.0, "7 mod 2");
+    assert_close(
+        last_raw("mod(-7, 2)"),
+        -1.0,
+        "the sign follows the dividend",
+    );
+    assert!(errors("mod(7, 0)")[0].contains("by zero"));
+    assert!(errors("mod(7 m, 2 s)")[0].contains("cannot combine"));
+
+    assert_close(last_in("hypot(3 m, 4 m)", "m"), 5.0, "3-4-5");
+
+    // The nth root divides the dimension, which is the reason the exponents are
+    // rational rather than integer.
+    assert_close(last_in("nthroot(8 m^3, 3)", "m"), 2.0, "the side of a cube");
+    assert_close(
+        last_raw("nthroot(-32, 5)"),
+        -2.0,
+        "an odd root of a negative",
+    );
+    assert!(errors("nthroot(-8, 2)")[0].contains("odd whole index"));
+    assert!(errors("nthroot(8, 0)")[0].contains("nonzero index"));
+
+    // A logarithm always states its base. Every `log` call in either corpus
+    // does, so requiring it costs nothing real.
+    assert_close(last_raw("log(8, 2)"), 3.0, "log base 2 of 8");
+    assert!(errors("log(8)")[0].contains("argument"));
+}
+
+#[test]
+fn collections_fold_and_order() {
+    // `product` multiplies dimensions where `sum` requires them to agree.
+    assert_close(last_in("product([2 m, 3 m, 4 m])", "m^3"), 24.0, "a volume");
+
+    assert_close(last_in("mean([10, 20, 60] kN)", "kN"), 30.0, "the mean");
+    // An even count averages the two middle readings; an odd one takes the
+    // middle. Both need the collection sorted first, and neither disturbs it.
+    assert_close(last_in("median([5, 1, 9, 3] mm)", "mm"), 4.0, "even median");
+    assert_close(last_in("median([5, 1, 9] mm)", "mm"), 5.0, "odd median");
+
+    // In millimetres, because 9 mm is 0.009000000000000001 m and comparing the
+    // stored magnitudes exactly would be testing binary64 rather than `sort`.
+    let sorted = magnitudes(&last_query("sort([5, 1, 9, 3] mm)"));
+    for (got, want) in sorted.iter().zip([1.0, 3.0, 5.0, 9.0]) {
+        assert_close(got * 1000.0, want, "sorted");
+    }
+    assert_eq!(
+        magnitudes(&last_query("reverse([1, 2, 3])")),
+        vec![3.0, 2.0, 1.0]
+    );
+
+    // Ordering across dimensions would mean comparing magnitudes in base units,
+    // which is an answer with no meaning.
+    assert!(errors("sort([1 m, 1 s])")[0].contains("one dimension"));
+    assert!(errors("mean([1 m, 1 s])")[0].contains("one dimension"));
+    assert!(errors("mean([20 °C, 30 °C])")[0].contains("offset"));
+}
+
+#[test]
+fn a_matrix_can_be_traced_and_cut() {
+    assert_close(last_raw("trace([[1, 2], [3, 4]])"), 5.0, "the diagonal");
+    assert!(errors("trace([[1, 2, 3], [4, 5, 6]])")[0].contains("square"));
+
+    // `submatrix(m, r1, r2, c1, c2)`, inclusive and counting from one — the
+    // argument order and the inclusivity are SMath's, read from
+    // `TMatrix::Submatrix(startRow, endRow, startCol, endCol)`.
+    let m = "K = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]\n";
+    assert_eq!(
+        magnitudes(&last_query(&format!("{m}submatrix(K, 2, 3, 1, 2)"))),
+        vec![4.0, 5.0, 7.0, 8.0]
+    );
+    // A single column comes back as a vector, which is what a column is here.
+    assert_eq!(
+        magnitudes(&last_query(&format!("{m}submatrix(K, 1, 3, 2, 2)"))),
+        vec![2.0, 5.0, 8.0]
+    );
+    assert!(errors(&format!("{m}submatrix(K, 0, 2, 1, 2)"))[0].contains("outside"));
+    assert!(errors(&format!("{m}submatrix(K, 1, 9, 1, 2)"))[0].contains("outside"));
+    assert!(errors(&format!("{m}submatrix(K, 3, 1, 1, 2)"))[0].contains("at or after"));
+}
+
+#[test]
+fn the_reciprocal_and_inverse_hyperbolic_functions() {
+    // Reciprocals of the three that exist, so they cannot drift in the last
+    // bits from `1/tan(x)` written out.
+    assert_close(last_raw("cot(0.5)"), 1.0 / (0.5_f64).tan(), "cot");
+    assert_close(last_raw("sec(0.5)"), 1.0 / (0.5_f64).cos(), "sec");
+    assert_close(last_raw("csc(0.5)"), 1.0 / (0.5_f64).sin(), "csc");
+    assert_close(last_raw("asinh(1)"), (1.0_f64).asinh(), "asinh");
+    assert_close(last_raw("acosh(2)"), (2.0_f64).acosh(), "acosh");
+    assert_close(last_raw("atanh(0.5)"), (0.5_f64).atanh(), "atanh");
+    // Dimensionless in, as the rest of the trigonometry is.
+    assert!(errors("cot(1 m)")[0].contains("dimensionless"));
+}
+
 // ---- interpolation ------------------------------------------------------
 
 #[test]

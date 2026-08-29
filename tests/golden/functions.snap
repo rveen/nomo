@@ -39,6 +39,35 @@ a = abs(-n) = abs(-3.25) = 3.25
 r = round(n) = round(3.25) = 3
 f = floor(n) = floor(3.25) = 3
 ce = ceil(n) = ceil(3.25) = 4
+The reciprocal three, written as reciprocals so they cannot drift from the
+three they come from.
+cotangent = cot(x) = cot(0.7) = 1.18724
+secant = sec(x) = sec(0.7) = 1.30746
+cosecant = csc(x) = csc(0.7) = 1.55227
+The inverse hyperbolics.
+ash = asinh(x) = asinh(0.7) = 0.652667
+ach = acosh(1 + n) = acosh(1 + 3.25) = 2.12593
+ath = atanh(0.5) = 0.549306
+A logarithm always states its base; log10, log2 and ln are the shorthands.
+base7 = log(n, 7) = log(3.25, 7) = 0.605709
+Numeric, on quantities. `mod` keeps the sign of its dividend and `nthroot`
+divides the dimension, which is what rational dimension exponents are for.
+remainder = mod(7 m, 2 m) = 1 m
+diagonal = hypot(3 m, 4 m) = 5 m
+cube_side = nthroot(8 m³, 3) = 2 m
+odd_root = nthroot(-32, 5) = -2
+Collections. `product` multiplies dimensions where `sum` requires them to
+agree; the rest need one dimension across the collection.
+sizes = [5, 1, 9, 3] mm
+volume = product([2 m, 3 m, 4 m]) = 24 m³
+average = mean(sizes) = mean([0.005 m, 0.001 m, 0.009 m, 0.003 m]) = 0.0045 m
+middle = median(sizes) = median([0.005 m, 0.001 m, 0.009 m, 0.003 m]) = 0.004 m
+ordered = sort(sizes) = sort([0.005 m, 0.001 m, 0.009 m, 0.003 m]) = [0.001 m, 0.003 m, 0.005 m, 0.009 m]
+backwards = reverse(sizes) = reverse([0.005 m, 0.001 m, 0.009 m, 0.003 m]) = [0.003 m, 0.009 m, 0.001 m, 0.005 m]
+Matrices.
+K = [[2, -1, 0], [-1, 2, -1], [0, -1, 2]]
+tr = trace(K) = trace([[2, -1, 0], [-1, 2, -1], [0, -1, 2]]) = 6
+corner = submatrix(K, 2, 3, 1, 2) = submatrix([[2, -1, 0], [-1, 2, -1], [0, -1, 2]], 2, 3, 1, 2) = [[-1, 2], [0, -1]]
 The identity that would catch a mismatched pair.
 pythagoras = sin(x)² + cos(x)² = sin(0.7)² + cos(0.7)² = 1
 
@@ -74,6 +103,32 @@ pythagoras = sin(x)² + cos(x)² = sin(0.7)² + cos(0.7)² = 1
 <div class="step"><span class="name">r</span><span class="eq">=</span>round(n)<span class="eq">=</span><span class="subst">round(3.25)</span><span class="eq">=</span><span class="result">3</span></div>
 <div class="step"><span class="name">f</span><span class="eq">=</span>floor(n)<span class="eq">=</span><span class="subst">floor(3.25)</span><span class="eq">=</span><span class="result">3</span></div>
 <div class="step"><span class="name">ce</span><span class="eq">=</span>ceil(n)<span class="eq">=</span><span class="subst">ceil(3.25)</span><span class="eq">=</span><span class="result">4</span></div>
+<p class="prose">The reciprocal three, written as reciprocals so they cannot drift from the three they come from.</p>
+<div class="step"><span class="name">cotangent</span><span class="eq">=</span>cot(x)<span class="eq">=</span><span class="subst">cot(0.7)</span><span class="eq">=</span><span class="result">1.18724</span></div>
+<div class="step"><span class="name">secant</span><span class="eq">=</span>sec(x)<span class="eq">=</span><span class="subst">sec(0.7)</span><span class="eq">=</span><span class="result">1.30746</span></div>
+<div class="step"><span class="name">cosecant</span><span class="eq">=</span>csc(x)<span class="eq">=</span><span class="subst">csc(0.7)</span><span class="eq">=</span><span class="result">1.55227</span></div>
+<p class="prose">The inverse hyperbolics.</p>
+<div class="step"><span class="name">ash</span><span class="eq">=</span>asinh(x)<span class="eq">=</span><span class="subst">asinh(0.7)</span><span class="eq">=</span><span class="result">0.652667</span></div>
+<div class="step"><span class="name">ach</span><span class="eq">=</span>acosh(1 + n)<span class="eq">=</span><span class="subst">acosh(1 + 3.25)</span><span class="eq">=</span><span class="result">2.12593</span></div>
+<div class="step"><span class="name">ath</span><span class="eq">=</span>atanh(0.5)<span class="eq">=</span><span class="result">0.549306</span></div>
+<p class="prose">A logarithm always states its base; log10, log2 and ln are the shorthands.</p>
+<div class="step"><span class="name">base7</span><span class="eq">=</span>log(n, 7)<span class="eq">=</span><span class="subst">log(3.25, 7)</span><span class="eq">=</span><span class="result">0.605709</span></div>
+<p class="prose">Numeric, on quantities. `mod` keeps the sign of its dividend and `nthroot` divides the dimension, which is what rational dimension exponents are for.</p>
+<div class="step"><span class="name">remainder</span><span class="eq">=</span>mod(7 m, 2 m)<span class="eq">=</span><span class="result">1 m</span></div>
+<div class="step"><span class="name">diagonal</span><span class="eq">=</span>hypot(3 m, 4 m)<span class="eq">=</span><span class="result">5 m</span></div>
+<div class="step"><span class="name">cube_side</span><span class="eq">=</span>nthroot(8 m³, 3)<span class="eq">=</span><span class="result">2 m</span></div>
+<div class="step"><span class="name">odd_root</span><span class="eq">=</span>nthroot(-32, 5)<span class="eq">=</span><span class="result">-2</span></div>
+<p class="prose">Collections. `product` multiplies dimensions where `sum` requires them to agree; the rest need one dimension across the collection.</p>
+<div class="step"><span class="name">sizes</span><span class="eq">=</span>[5, 1, 9, 3] mm</div>
+<div class="step"><span class="name">volume</span><span class="eq">=</span>product([2 m, 3 m, 4 m])<span class="eq">=</span><span class="result">24 m³</span></div>
+<div class="step"><span class="name">average</span><span class="eq">=</span>mean(sizes)<span class="eq">=</span><span class="subst">mean([0.005 m, 0.001 m, 0.009 m, 0.003 m])</span><span class="eq">=</span><span class="result">0.0045 m</span></div>
+<div class="step"><span class="name">middle</span><span class="eq">=</span>median(sizes)<span class="eq">=</span><span class="subst">median([0.005 m, 0.001 m, 0.009 m, 0.003 m])</span><span class="eq">=</span><span class="result">0.004 m</span></div>
+<div class="step"><span class="name">ordered</span><span class="eq">=</span>sort(sizes)<span class="eq">=</span><span class="subst">sort([0.005 m, 0.001 m, 0.009 m, 0.003 m])</span><span class="eq">=</span><span class="result">[0.001 m, 0.003 m, 0.005 m, 0.009 m]</span></div>
+<div class="step"><span class="name">backwards</span><span class="eq">=</span>reverse(sizes)<span class="eq">=</span><span class="subst">reverse([0.005 m, 0.001 m, 0.009 m, 0.003 m])</span><span class="eq">=</span><span class="result">[0.003 m, 0.009 m, 0.001 m, 0.005 m]</span></div>
+<p class="prose">Matrices.</p>
+<div class="step"><span class="name">K</span><span class="eq">=</span>[[2, -1, 0], [-1, 2, -1], [0, -1, 2]]</div>
+<div class="step"><span class="name">tr</span><span class="eq">=</span>trace(K)<span class="eq">=</span><span class="subst">trace([[2, -1, 0], [-1, 2, -1], [0, -1, 2]])</span><span class="eq">=</span><span class="result">6</span></div>
+<div class="step"><span class="name">corner</span><span class="eq">=</span>submatrix(K, 2, 3, 1, 2)<span class="eq">=</span><span class="subst">submatrix([[2, -1, 0], [-1, 2, -1], [0, -1, 2]], 2, 3, 1, 2)</span><span class="eq">=</span><span class="result">[[-1, 2], [0, -1]]</span></div>
 <p class="prose">The identity that would catch a mismatched pair.</p>
 <div class="step"><span class="name">pythagoras</span><span class="eq">=</span>sin(x)² + cos(x)²<span class="eq">=</span><span class="subst">sin(0.7)² + cos(0.7)²</span><span class="eq">=</span><span class="result">1</span></div>
 
@@ -101,6 +156,26 @@ a = 3.25 dimensionless
 r = 3.0 dimensionless
 f = 3.0 dimensionless
 ce = 4.0 dimensionless
+cotangent = 1.1872418321266793 dimensionless
+secant = 1.3074592597335937 dimensionless
+cosecant = 1.552270326957104 dimensionless
+ash = 0.6526665660823557 dimensionless
+ach = 2.1259288074588905 dimensionless
+ath = 0.5493061443340548 dimensionless
+base7 = 0.6057088488457966 dimensionless
+remainder = 1.0 m
+diagonal = 5.0 m
+cube_side = 2.0 m
+odd_root = -2.0 dimensionless
+sizes = [0.005 m, 0.001 m, 0.009000000000000001 m, 0.003 m]
+volume = 24.0 m^3
+average = 0.0045000000000000005 m
+middle = 0.004 m
+ordered = [0.001 m, 0.003 m, 0.005 m, 0.009000000000000001 m]
+backwards = [0.003 m, 0.009000000000000001 m, 0.001 m, 0.005 m]
+K = [[2.0 dimensionless, -1.0 dimensionless, 0.0 dimensionless], [-1.0 dimensionless, 2.0 dimensionless, -1.0 dimensionless], [0.0 dimensionless, -1.0 dimensionless, 2.0 dimensionless]]
+tr = 6.0 dimensionless
+corner = [[-1.0 dimensionless, 2.0 dimensionless], [0.0 dimensionless, -1.0 dimensionless]]
 pythagoras = 1.0 dimensionless
 
 === diagnostics ===

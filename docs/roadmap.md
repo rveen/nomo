@@ -164,7 +164,7 @@ functions at all** — `SMath.Manager`'s name table has no lookup of any kind �
 they are unimplementable from here on principle rather than on priority, and the
 importer's registry no longer claims them.
 
-### 8. The cheap missing builtins, in one batch
+### 8. The cheap missing builtins, in one batch — **done**
 
 `mod`, `product`, `sort`, `reverse`, `submatrix`, `trace`, `rank`, `nthroot`,
 `hypot`, `log(x, base)`, `cot`/`sec`/`csc`, the inverse hyperbolics, and
@@ -175,8 +175,19 @@ mixed-dimension vector rather than comparing it in base units.
 `examples/functions.nomo` grows to cover them, because that file exists to put
 every function through the native-versus-WebAssembly comparison.
 
-*Gate:* `cargo test`, golden, `scripts/compare-targets.sh`,
-`scripts/check-no-host-math.sh`.
+Done, with two of the batch deliberately dropped and one convention question
+answered by measurement rather than by taste. `rank` is out because a matrix
+rank needs a pivot zero-test, which over `f64` is a heuristic — the same ground
+§8.40 refused symbolic linear algebra on. `stdev` is out because dividing by *n*
+and by *n−1* are both called the standard deviation and nothing here settles
+which a worksheet meant. `log` requires its base, which cost nothing: all six
+`log` calls in either corpus state one.
+
+The names were checked against the corpus rather than assumed — every one is
+spelled the way real worksheets spell it, so the importer needed no renames —
+and against SMath's own implementation where a convention was at stake: `mod`
+takes the sign of its dividend (`rem` on two doubles) and `submatrix` is
+inclusive and one-based. Wiki agreement went from 304/337 to 312/344.
 
 ### 9. Packs — shared units and constants, without I/O
 

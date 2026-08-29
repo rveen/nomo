@@ -464,12 +464,27 @@ language step, and it should not be smuggled in under an importer heading.
 convention is unverified — a piecewise function whose boundaries might be the
 wrong way round is exactly what this project refuses to guess.
 
-### 22. `ltle`, `ltlt`, `lele` — 29 uses, settled by disassembly
+### 22. `ltle`, `ltlt`, `lele` — **closed by exhaustion, still refused**
 
-Refused today because the boundary convention is unknown, and refusing was
-right. `/opt/smath` can say what it is, exactly as `PlotRegion.dll` settled the
-plot span. If the disassembly is ambiguous they stay refused, and the marker
-says why.
+The disassembly could not say, because the assembly is not there:
+CustomFunctions is not among the ten plugins the AppImage carries, and the names
+appear in no assembly, example or snippet in the whole installation. That is now
+a rule rather than an accident — `/opt/smath` settles core behaviour and nothing
+a plugin provides, which is where the lookup family and `rkfixed` also ended.
+
+The corpus cannot settle it either, and design note §8.45 shows why: the family
+is always the condition of a `cases` over adjacent intervals sharing an
+endpoint, so only an answer evaluated *exactly on a boundary* discriminates —
+and the only two consumers are a `FindRoot` and an `int`, both insensitive to
+the value at a single point.
+
+The best part of the finding is that the name and the usage disagree. `ltle`
+reads as `lo < x ≤ hi`; under that reading the beam worksheet leaves `P(0)`
+undefined at its left support, and under the other reading it leaves `P(2a)`
+undefined at its right. Either is plausible. That is the clearest demonstration
+this project has of why a name is not evidence.
+
+Still refused, with the marker saying so, and `cases` waits with it.
 
 ## What this list does not contain
 

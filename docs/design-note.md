@@ -2980,6 +2980,56 @@ attempted under the heading of an import.
 round is precisely the construct this project refuses to guess at, so `cases`
 waits on that question rather than being answered ahead of it.
 
+### 8.45 `ltle`, `ltlt`, `lele`: both routes exhausted (2026-08-29)
+
+§8.7 item 24 left this family open with "confirm against SMath before
+implementing". This is that attempt, and it closes the question in the only way
+that was available: by showing that neither source of evidence on this machine
+can answer it.
+
+**The plugin route is closed.** These are CustomFunctions names, and the
+AppImage carries ten plugins — MathRegion, PictureRegion, SpecialFunctions,
+TextRegion, AreaRegion, ImageFileType, SMathFileType, HTMLFileType, PlotRegion
+and StandardToolboxButtons. CustomFunctions is not among them. A whole-word
+search across every assembly in the installation finds the names in none of
+them; across the bundled examples, snippets and entries, in none of those
+either. The single hit anywhere is inside a Spanish translation credit, where
+"lele" is part of a contributor's name.
+
+That is the same wall the lookup family hit (§8.42) and `rkfixed` after it: what
+this installation cannot show is precisely the plugin functions, and three
+separate questions have now ended there. It is worth stating as a rule rather
+than rediscovering a fourth time — **`/opt/smath` settles core behaviour and
+nothing a plugin provides.**
+
+**The corpus route is closed too, and this is the part worth reading.** Six
+worksheets use the family, always as the condition of a `cases`. The usage is
+adjacent intervals sharing an endpoint — `8.2.sm` writes
+`cases(M₁/x, ltle(x, 0, a), M₂/x, ltle(x, a, 2a))` — so *only an answer
+evaluated exactly on a boundary can discriminate*, and there is none. The two
+constructs that consume a piecewise function in these worksheets are a
+`FindRoot` and an `int`, and both are insensitive to the value at a single
+point: an integral does not notice a boundary at all.
+
+**What the names suggest, and why that is not enough.** `ltle` reads as
+"less-than, less-equal", i.e. `lo < x ≤ hi`, and a reasonable person would
+implement it on that basis. But run that reading against the worksheet above:
+at `x = 0` the first case is `0 < 0`, which fails, and the second is `0 > a`,
+which fails too — so `P(0)` is undefined at the left support of a beam. Read it
+the other way, `lo ≤ x < hi`, and it is `P(2a)` at the right end that is
+undefined instead. Each reading leaves exactly one end of the beam without a
+value, and both are plausible things for the worksheet's author to have
+intended. The name and the usage point in different directions, which is the
+clearest possible demonstration of why this family is not implemented on a
+guess.
+
+**What would settle it**: the CustomFunctions assembly, from an installation
+that has it; or the plugin's source; or its author. Any of those is outside this
+repository, and the marker stays until one of them arrives. `cases` waits with
+it — nine calls whose conditions are this family, and a piecewise function whose
+boundaries might be the wrong way round is the quietly-wrong answer this project
+exists to avoid.
+
 ### 8.8 Strategy: corpus-driven
 
 Build the importer as a separate crate emitting the Nomo document format, then run it across every
@@ -3042,6 +3092,12 @@ Importer-specific, ranked by risk:
    — new root element, XML namespace, new payload and result kinds. Measured against a second,
    1.3–1.5 corpus in §8.10. What replaces it: **how much else changed after 1.5**, and the answer to
    that is the same as before — get the worksheets the users being migrated actually hold.
+9. ~~**What do `ltle`, `ltlt` and `lele` mean?**~~ **Closed by exhaustion (§8.45).** Not
+   answerable here: CustomFunctions is not among the ten plugins the AppImage carries, the
+   names appear in no assembly or bundled file, and no stored answer in the corpus is
+   evaluated on a boundary — the only place the convention shows. The name suggests
+   `lo < x ≤ hi`; the usage suggests the opposite; that disagreement is the argument for the
+   refusal. Needs the plugin, its source, or its author.
 9. **What is the `—` operator?** 6 uses in the wiki corpus. Re-measurement narrows it: every use has
    a function call on its left and that function's expanded form on its right, which reads as a
    **symbolic-evaluation display** rather than a binding — if so, those six right-hand sides are

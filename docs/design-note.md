@@ -2871,6 +2871,64 @@ kind of question this project refuses to guess at. `cinterp` (8 calls) and
 material table overshoots between rows, and whether a worksheet wants that is a
 design question with its own evidence to gather.
 
+### 8.43 The loops that are left are programs, not folds (2026-08-29)
+
+§8.38 and the roadmap both expected the remaining `for` loops to be
+**recurrences and accumulators, which are folds** — expressible as `iterate` over
+a pair once the language could carry one. Reading all eleven of them says
+otherwise, and the expectation is withdrawn.
+
+What is actually left, by the emitter's own classification:
+
+| Refusal | Count | What the loops are |
+|---|---|---|
+| binds a whole name rather than an element | 9 | multi-statement bodies |
+| body does more than assign | 6 | the same, seen from the other side |
+| reads a name it is filling | 2 | a two-dimensional recurrence |
+| reads names with no value here | 7 | upstream failures, not loop shapes |
+| counter does not step by one | 1 | `range` with a step, still unverified (§8.7) |
+
+And what those bodies hold, read one by one:
+
+- **Hand-written Runge–Kutta**, in `RK4SingleEquation.sm`,
+  `RK4SystemEquations.sm` and `RK4-2ndOrderODE.sm`. Each loop is a `line(…)` of
+  a dozen statements computing K₁ to K₄ into local names and then advancing
+  `ysol[k+1]`. That is a program with local temporaries and a recurrence in it,
+  not a fold.
+- **A tyre model** (`pacejka.sm`), two nested loops with eleven-statement
+  bodies.
+- **Divided differences** (`Newtoninterp.sm`, `Newtoninterpb.sm`): a nested loop
+  filling `A[i, j+1] ← A[i, j] − A[i−1, j]`, which is a two-dimensional
+  recurrence over a matrix being written in place.
+- **One paired accumulator** (`Newtoninterpb.sm`):
+  `line(z ← z·(α + j − 1)/j, yn ← yn + c[j+2]·z)`. This one *is* a fold — over a
+  triple, because the body reads the loop counter as well as both accumulators.
+
+Translating any of them needs one of three things this project has refused:
+**local bindings inside an expression**, **indexed assignment into a matrix**, or
+`iterate` over a **heterogeneous tuple** whose elements carry different
+dimensions. The first two are mutation by another name (§ "A worksheet is a set
+of definitions"), and the third is the vector-of-mixed-dimensions limitation
+already recorded.
+
+Even the one true fold is not worth the machinery. Emitting it means
+synthesising `fn step(s) = [s[1] + 1, s[2]·(α + s[1] − 1)/s[1], s[3] + c[s[1]+2]·s[2]]`
+and an `iterate` over it — correct, and unreadable, for one loop in one
+worksheet. An import that produces something no engineer would keep has not
+translated the worksheet; it has obfuscated it.
+
+**The most useful observation is about the largest group.** Three of these
+worksheets hand-write a fixed-step Runge–Kutta integration because SMath has no
+such thing in its core. Nomo has `rk4` now (roadmap step 15). So their *intent*
+is expressible here in one line — the importer simply cannot get there from
+their *code*, because recognising a hand-rolled RK4 in a twelve-statement loop
+body and rewriting it as a call is pattern-matching on a program, which is a
+different and much less trustworthy kind of translation than anything else this
+importer does.
+
+The marker stays what it is: it names the construct, counts it, and leaves the
+reader to write the two lines that replace it.
+
 ### 8.8 Strategy: corpus-driven
 
 Build the importer as a separate crate emitting the Nomo document format, then run it across every

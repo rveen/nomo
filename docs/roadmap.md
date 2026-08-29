@@ -420,11 +420,27 @@ rather than a corner of this one.
 
 ## Phase 7 — the importer, continuing its own ranking
 
-### 20. The folds
+### 20. The folds — **measured, and not built**
 
-What is left of the loops once `for` becomes `map`: a recurrence
-(`el(β, i) ← … el(β, i-1) …`, 8 loops) and an accumulator. Both are `iterate`
-over a pair.
+The expectation was that these were folds. Reading all eleven says otherwise,
+and design note §8.43 records it: nine are multi-statement programs, two are a
+two-dimensional recurrence filling a matrix in place, and exactly **one** is a
+genuine fold — over a triple, because its body reads the loop counter as well as
+both accumulators.
+
+Translating them needs local bindings inside an expression, indexed assignment,
+or `iterate` over a tuple of mixed dimensions: two of those are mutation by
+another name and the third is a limitation already recorded. And the one true
+fold would emit a synthesised three-element state function that no engineer
+would keep — an import that produces that has not translated the worksheet, it
+has obfuscated it.
+
+The largest group is the useful finding: three worksheets hand-write a
+fixed-step Runge–Kutta because SMath's core has none. Nomo has `rk4` now, so
+their *intent* is one line here — but recognising a hand-rolled integrator in a
+twelve-statement body is pattern-matching on a program, which is a far less
+trustworthy translation than anything else this importer does. The marker names
+the construct and leaves the two lines to a person.
 
 ### 21. `description` (86 uses), `at` (45), `cases` (9)
 

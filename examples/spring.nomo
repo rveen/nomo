@@ -1,0 +1,110 @@
+' nomo 1
+
+' # A helical compression spring
+'
+' A spring is three constraints at once: it has to give the right force at the
+' right deflection, it has to survive the shear stress that produces, and it has
+' to fit — solid length, free length and buckling all decide whether the rate
+' that came out of the first constraint can be built.
+'
+' This one returns a valve: about 50 N at 4 mm of working deflection, in a bore
+' 24 mm across.
+
+use steel
+
+d_wire = 3 mm
+D_mean = 20 mm
+n_active = 8
+
+' Spring steel is a little stiffer in shear than structural steel; this is the
+' conventional design value for cold-drawn wire.
+G_spring = 79.3 GPa
+
+' ## The spring index
+'
+' The index is the single most useful number about a spring. Below four the
+' wire cannot be coiled without cracking; above twelve the coil tangles in
+' handling and the spring is slack in its bore. Six to eight is comfortable.
+
+C_index = D_mean/d_wire
+
+check C_index >= 4 and C_index <= 12
+
+' ## Rate and deflection
+
+k_rate = G_spring*d_wire^4/(8*D_mean^3*n_active)
+k_rate -> N/mm
+
+F_work = 50 N
+x_work = F_work/k_rate
+x_work -> mm
+
+' The requirement was a force at a deflection, so that is what gets checked —
+' the rate is only the means. A spring is wound to a tolerance on its rate, so
+' this is a band rather than a number; ±10% is ordinary for a commercial spring.
+
+x_required = 4 mm
+F_at_required = k_rate*x_required
+F_at_required -> N
+
+check F_at_required >= 0.9*F_work and F_at_required <= 1.1*F_work
+
+' ## Shear stress, with the curvature correction
+'
+' The direct shear formula understates the stress on the inside of the coil,
+' where the wire is tighter and the shear from the load adds to the torsional
+' shear. The Wahl factor corrects for both, and at this index it is worth a
+' quarter of the answer.
+
+K_wahl = (4*C_index - 1)/(4*C_index - 4) + 0.615/C_index
+
+tau_work = K_wahl*8*F_work*D_mean/(pi*d_wire^3)
+tau_work -> MPa
+
+' The allowable shear stress belongs to the wire and its diameter — a drawn wire
+' is stronger in a thin section than a thick one — so it is taken from the
+' wire's specification rather than computed. This is a music wire value.
+tau_allow = 700 MPa
+
+check tau_work <= tau_allow
+
+' ## Whether it fits
+'
+' Solid length is where the coils touch and the spring stops being a spring.
+' Two dead coils at the ends, squared and ground.
+
+n_total = n_active + 2
+L_solid = n_total*d_wire
+L_free = 40 mm
+
+L_solid -> mm
+
+' The deflection available before the coils shut, and the working deflection
+' against it. Working past about 80% of the way to solid is how a spring takes
+' a set.
+
+x_solid = L_free - L_solid
+check x_work <= 0.8*x_solid
+
+' Buckling, which a compression spring does exactly as a column does. For
+' squared and ground ends held between flat parallel surfaces, the free length
+' must stay under about 2.6 times the mean diameter.
+
+check L_free <= 2.6*D_mean
+
+' And it has to go in the bore, with clearance for the coils to spread as it
+' compresses.
+
+bore = 24 mm
+check D_mean + d_wire <= bore - 1 mm
+
+' ## Force against deflection
+'
+' Straight, which is the whole idea of a helical spring — and drawn only as far
+' as the coils allow. Past solid length there is no spring left to plot: the
+' stack becomes a short steel column, the force rises without bound, and a line
+' continued through that point would be a wrong picture of a right equation.
+
+fn force(x) = k_rate*x*mm/N
+
+plot(force, 0, 10)

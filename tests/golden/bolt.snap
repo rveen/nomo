@@ -1,0 +1,220 @@
+# nomo snapshot v1
+# worksheet: bolt
+
+=== text ===
+# A bolted joint: preload, torque, and what the external load does
+
+A bolted joint is not a bolt carrying a load. It is a spring in tension
+clamping springs in compression, and almost all of the external load is taken
+by the members relaxing rather than by the bolt stretching further. That is
+why a joint is designed around its **preload** and only then checked against
+the load it carries — and why a torque figure without a preload behind it says
+nothing.
+
+The joint: two 15 mm steel plates, one M12 × 1.75 bolt of property class 8.8,
+carrying 10 kN of external tension per bolt.
+use steel
+## The bolt
+
+The tensile stress area is the area of a circle whose diameter is the mean of
+the pitch and minor diameters — a definition, not a table lookup, so it is
+written out (ISO 724).
+d = 12 mm
+pitch = 1.75 mm
+A_s = π/4·(d - 0.9382·pitch)² = π/4·(12 mm - 0.9382·(1.75 mm))² = 8.42664e-5 m²
+A_s = 84.2664 mm²
+Property class 8.8 states its own strengths: the first digit is the tensile
+strength in hundreds of MPa, and the second is ten times the ratio of yield to
+tensile (ISO 898-1). So the class is the data, and nothing here is copied from
+a table of them.
+R_m = 800 MPa
+R_e = 0.8·R_m = 0.8·(800 MPa) = 640000000 Pa
+The proof stress is where the standard's permanent-set limit sits, close to
+nine tenths of yield. ISO 898-1 tabulates 580 MPa for this class up to M16;
+this is that number, arrived at rather than quoted.
+S_p = 0.9·R_e = 0.9·(640000000 Pa) = 576000000 Pa
+S_p = 576 MPa
+## Preload
+
+Seventy-five per cent of the proof load is the usual target for a reusable
+joint: high enough that the members stay in compression under load, low enough
+that scatter in the tightening method does not take the bolt past proof.
+F_i = 0.75·A_s·S_p = 0.75·(8.42664e-5 m²)·(576000000 Pa) = 36403.1 N
+F_i = 36.4031 kN
+The torque that produces it, through the nut factor K — which is not a
+friction coefficient but an empirical lumping of thread and face friction and
+the thread geometry. 0.2 is the conventional dry-steel value, and it is the
+least certain number on this page: K varies by ±25% with lubrication, plating
+and reuse, and the preload varies with it.
+K_nut = 0.2
+T = K_nut·F_i·d = 0.2·(36403.1 N)·(12 mm) = 87.3674 J
+T = 87.3674 N*m
+## Stiffness, and how the external load is shared
+
+The bolt is a bar in tension over its grip length. The tensile stress area is
+used over the whole of it, which understates the stiffness of a bolt with a
+plain shank in the grip — the shank is the full 12 mm — and so overstates the
+bolt's share of the external load. That is the safe direction for this check
+and the wrong one for a fatigue calculation, which wants the two lengths in
+series.
+
+The members are the compressed cone around the hole, for which the standard
+frustum approximation is used (Shigley, for two members of the same material
+with a 30° cone half-angle).
+L_g = 30 mm
+k_b = A_s·E_steel/L_g = 8.42664e-5 m²·(200 GPa)/(30 mm) = 561776000 kg·s⁻²
+k_b = 561.776 MN/m
+k_m = 0.5774·π·E_steel·d/(2·ln(5·(0.5774·L_g + 0.5·d)/(0.5774·L_g + 2.5·d))) = 0.5774·π·(200 GPa)·(12 mm)/(2·ln(5·(0.5774·(30 mm) + 0.5·(12 mm))/(0.5774·(30 mm) + 2.5·(12 mm)))) = 2.41362e9 kg·s⁻²
+k_m = 2413.62 MN/m
+The joint constant is the fraction of an external load that reaches the bolt.
+It is small — the members are several times stiffer than the bolt — and that
+is the whole reason a preloaded joint survives a fatigue load that would break
+the same bolt loose.
+C = k_b/(k_b + k_m) = 561776000 kg·s⁻²/(561776000 kg·s⁻² + 2.41362e9 kg·s⁻²) = 0.188807
+## Under the external load
+P_ext = 10 kN
+F_bolt = F_i + C·P_ext = 36403.1 N + 0.188807·(10 kN) = 38291.1 N
+F_bolt = 38.2911 kN
+sigma_bolt = F_bolt/A_s = 38291.1 N/(8.42664e-5 m²) = 454406000 Pa
+sigma_bolt = 454.406 MPa
+The bolt must stay below yield with the external load applied.
+check sigma_bolt ≤ R_e = 454406000 Pa ≤ 640000000 Pa — pass
+## Separation
+
+The joint opens when the external load has relieved all of the clamp. Past
+that point the bolt carries the load directly, the members no longer share it,
+and the fatigue argument above stops being true.
+P_sep = F_i/(1 - C) = 36403.1 N/(1 - 0.188807) = 44876 N
+P_sep = 44.876 kN
+check P_ext ≤ 0.75·P_sep = 10 kN ≤ 0.75·(44876 N) — pass
+## Bolt force against external load
+
+Two straight lines with a corner between them, and the corner is separation.
+Below it the bolt sees only its share of the load and the line is nearly flat
+— which is the point of the whole arrangement. Above it the members have let
+go and the bolt carries everything, so the line turns and follows the load.
+
+The horizontal axis is the external load in kN and the vertical is the bolt
+force in the same unit.
+fn bolt_force defined
+plot(bolt_force, 0, 60) = [plot bolt_force: 0 to 60, 257 points, 36.4031 to 60]
+
+=== html ===
+<h1 class="prose">A bolted joint: preload, torque, and what the external load does</h1>
+<p class="prose">A bolted joint is not a bolt carrying a load. It is a spring in tension clamping springs in compression, and almost all of the external load is taken by the members relaxing rather than by the bolt stretching further. That is why a joint is designed around its **preload** and only then checked against the load it carries — and why a torque figure without a preload behind it says nothing.</p>
+<p class="prose">The joint: two 15 mm steel plates, one M12 × 1.75 bolt of property class 8.8, carrying 10 kN of external tension per bolt.</p>
+<div class="step note">use steel</div>
+<h2 class="prose">The bolt</h2>
+<p class="prose">The tensile stress area is the area of a circle whose diameter is the mean of the pitch and minor diameters — a definition, not a table lookup, so it is written out (ISO 724).</p>
+<div class="step"><span class="name">d</span><span class="eq">=</span>12 mm</div>
+<div class="step"><span class="name">pitch</span><span class="eq">=</span>1.75 mm</div>
+<div class="step"><span class="name">A_s</span><span class="eq">=</span>π/4·(d - 0.9382·pitch)²<span class="eq">=</span><span class="subst">π/4·(12 mm - 0.9382·(1.75 mm))²</span><span class="eq">=</span><span class="result">8.42664e-5 m²</span></div>
+<div class="step">A_s<span class="eq">=</span><span class="result">84.2664 mm²</span></div>
+<p class="prose">Property class 8.8 states its own strengths: the first digit is the tensile strength in hundreds of MPa, and the second is ten times the ratio of yield to tensile (ISO 898-1). So the class is the data, and nothing here is copied from a table of them.</p>
+<div class="step"><span class="name">R_m</span><span class="eq">=</span>800 MPa</div>
+<div class="step"><span class="name">R_e</span><span class="eq">=</span>0.8·R_m<span class="eq">=</span><span class="subst">0.8·(800 MPa)</span><span class="eq">=</span><span class="result">640000000 Pa</span></div>
+<p class="prose">The proof stress is where the standard's permanent-set limit sits, close to nine tenths of yield. ISO 898-1 tabulates 580 MPa for this class up to M16; this is that number, arrived at rather than quoted.</p>
+<div class="step"><span class="name">S_p</span><span class="eq">=</span>0.9·R_e<span class="eq">=</span><span class="subst">0.9·(640000000 Pa)</span><span class="eq">=</span><span class="result">576000000 Pa</span></div>
+<div class="step">S_p<span class="eq">=</span><span class="result">576 MPa</span></div>
+<h2 class="prose">Preload</h2>
+<p class="prose">Seventy-five per cent of the proof load is the usual target for a reusable joint: high enough that the members stay in compression under load, low enough that scatter in the tightening method does not take the bolt past proof.</p>
+<div class="step"><span class="name">F_i</span><span class="eq">=</span>0.75·A_s·S_p<span class="eq">=</span><span class="subst">0.75·(8.42664e-5 m²)·(576000000 Pa)</span><span class="eq">=</span><span class="result">36403.1 N</span></div>
+<div class="step">F_i<span class="eq">=</span><span class="result">36.4031 kN</span></div>
+<p class="prose">The torque that produces it, through the nut factor K — which is not a friction coefficient but an empirical lumping of thread and face friction and the thread geometry. 0.2 is the conventional dry-steel value, and it is the least certain number on this page: K varies by ±25% with lubrication, plating and reuse, and the preload varies with it.</p>
+<div class="step"><span class="name">K_nut</span><span class="eq">=</span>0.2</div>
+<div class="step"><span class="name">T</span><span class="eq">=</span>K_nut·F_i·d<span class="eq">=</span><span class="subst">0.2·(36403.1 N)·(12 mm)</span><span class="eq">=</span><span class="result">87.3674 J</span></div>
+<div class="step">T<span class="eq">=</span><span class="result">87.3674 N*m</span></div>
+<h2 class="prose">Stiffness, and how the external load is shared</h2>
+<p class="prose">The bolt is a bar in tension over its grip length. The tensile stress area is used over the whole of it, which understates the stiffness of a bolt with a plain shank in the grip — the shank is the full 12 mm — and so overstates the bolt's share of the external load. That is the safe direction for this check and the wrong one for a fatigue calculation, which wants the two lengths in series.</p>
+<p class="prose">The members are the compressed cone around the hole, for which the standard frustum approximation is used (Shigley, for two members of the same material with a 30° cone half-angle).</p>
+<div class="step"><span class="name">L_g</span><span class="eq">=</span>30 mm</div>
+<div class="step"><span class="name">k_b</span><span class="eq">=</span>A_s·E_steel/L_g<span class="eq">=</span><span class="subst">8.42664e-5 m²·(200 GPa)/(30 mm)</span><span class="eq">=</span><span class="result">561776000 kg·s⁻²</span></div>
+<div class="step">k_b<span class="eq">=</span><span class="result">561.776 MN/m</span></div>
+<div class="step"><span class="name">k_m</span><span class="eq">=</span>0.5774·π·E_steel·d/(2·ln(5·(0.5774·L_g + 0.5·d)/(0.5774·L_g + 2.5·d)))<span class="eq">=</span><span class="subst">0.5774·π·(200 GPa)·(12 mm)/(2·ln(5·(0.5774·(30 mm) + 0.5·(12 mm))/(0.5774·(30 mm) + 2.5·(12 mm))))</span><span class="eq">=</span><span class="result">2.41362e9 kg·s⁻²</span></div>
+<div class="step">k_m<span class="eq">=</span><span class="result">2413.62 MN/m</span></div>
+<p class="prose">The joint constant is the fraction of an external load that reaches the bolt. It is small — the members are several times stiffer than the bolt — and that is the whole reason a preloaded joint survives a fatigue load that would break the same bolt loose.</p>
+<div class="step"><span class="name">C</span><span class="eq">=</span>k_b/(k_b + k_m)<span class="eq">=</span><span class="subst">561776000 kg·s⁻²/(561776000 kg·s⁻² + 2.41362e9 kg·s⁻²)</span><span class="eq">=</span><span class="result">0.188807</span></div>
+<h2 class="prose">Under the external load</h2>
+<div class="step"><span class="name">P_ext</span><span class="eq">=</span>10 kN</div>
+<div class="step"><span class="name">F_bolt</span><span class="eq">=</span>F_i + C·P_ext<span class="eq">=</span><span class="subst">36403.1 N + 0.188807·(10 kN)</span><span class="eq">=</span><span class="result">38291.1 N</span></div>
+<div class="step">F_bolt<span class="eq">=</span><span class="result">38.2911 kN</span></div>
+<div class="step"><span class="name">sigma_bolt</span><span class="eq">=</span>F_bolt/A_s<span class="eq">=</span><span class="subst">38291.1 N/(8.42664e-5 m²)</span><span class="eq">=</span><span class="result">454406000 Pa</span></div>
+<div class="step">sigma_bolt<span class="eq">=</span><span class="result">454.406 MPa</span></div>
+<p class="prose">The bolt must stay below yield with the external load applied.</p>
+<div class="step check pass"><span class="name">check</span>sigma_bolt ≤ R_e<span class="eq">=</span><span class="subst">454406000 Pa ≤ 640000000 Pa</span><span class="verdict">pass</span></div>
+<h2 class="prose">Separation</h2>
+<p class="prose">The joint opens when the external load has relieved all of the clamp. Past that point the bolt carries the load directly, the members no longer share it, and the fatigue argument above stops being true.</p>
+<div class="step"><span class="name">P_sep</span><span class="eq">=</span>F_i/(1 - C)<span class="eq">=</span><span class="subst">36403.1 N/(1 - 0.188807)</span><span class="eq">=</span><span class="result">44876 N</span></div>
+<div class="step">P_sep<span class="eq">=</span><span class="result">44.876 kN</span></div>
+<div class="step check pass"><span class="name">check</span>P_ext ≤ 0.75·P_sep<span class="eq">=</span><span class="subst">10 kN ≤ 0.75·(44876 N)</span><span class="verdict">pass</span></div>
+<h2 class="prose">Bolt force against external load</h2>
+<p class="prose">Two straight lines with a corner between them, and the corner is separation. Below it the bolt sees only its share of the load and the line is nearly flat — which is the point of the whole arrangement. Above it the members have let go and the bolt carries everything, so the line turns and follows the load.</p>
+<p class="prose">The horizontal axis is the external load in kN and the vertical is the bolt force in the same unit.</p>
+<div class="step note">fn bolt_force defined</div>
+<div class="step">plot(bolt_force, 0, 60)</div>
+<figure class="plot"><svg viewBox="0 0 640 380" role="img" aria-label="plot of bolt_force">
+<line class="plot-grid" x1="74.00" y1="14.00" x2="74.00" y2="338.00"/>
+<text class="plot-label plot-start" x="74.00" y="356.00">0</text>
+<line class="plot-grid" x1="256.67" y1="14.00" x2="256.67" y2="338.00"/>
+<text class="plot-label plot-x" x="256.67" y="356.00">20</text>
+<line class="plot-grid" x1="439.33" y1="14.00" x2="439.33" y2="338.00"/>
+<text class="plot-label plot-x" x="439.33" y="356.00">40</text>
+<line class="plot-grid" x1="622.00" y1="14.00" x2="622.00" y2="338.00"/>
+<text class="plot-label plot-end" x="622.00" y="356.00">60</text>
+<line class="plot-grid" x1="74.00" y1="338.00" x2="622.00" y2="338.00"/>
+<text class="plot-label plot-y" x="66.00" y="342.00">35</text>
+<line class="plot-grid" x1="74.00" y1="273.20" x2="622.00" y2="273.20"/>
+<text class="plot-label plot-y" x="66.00" y="277.20">40</text>
+<line class="plot-grid" x1="74.00" y1="208.40" x2="622.00" y2="208.40"/>
+<text class="plot-label plot-y" x="66.00" y="212.40">45</text>
+<line class="plot-grid" x1="74.00" y1="143.60" x2="622.00" y2="143.60"/>
+<text class="plot-label plot-y" x="66.00" y="147.60">50</text>
+<line class="plot-grid" x1="74.00" y1="78.80" x2="622.00" y2="78.80"/>
+<text class="plot-label plot-y" x="66.00" y="82.80">55</text>
+<line class="plot-grid" x1="74.00" y1="14.00" x2="622.00" y2="14.00"/>
+<text class="plot-label plot-y" x="66.00" y="18.00">60</text>
+<line class="plot-axis" x1="74.00" y1="338.00" x2="622.00" y2="338.00"/>
+<line class="plot-axis" x1="74.00" y1="14.00" x2="74.00" y2="338.00"/>
+<polyline class="plot-curve plot-curve-1" points="74.00,319.82 76.14,319.24 78.28,318.67 80.42,318.10 82.56,317.52 84.70,316.95 86.84,316.38 88.98,315.80 91.13,315.23 93.27,314.65 95.41,314.08 97.55,313.51 99.69,312.93 101.83,312.36 103.97,311.79 106.11,311.21 108.25,310.64 110.39,310.07 112.53,309.49 114.67,308.92 116.81,308.35 118.95,307.77 121.09,307.20 123.23,306.63 125.38,306.05 127.52,305.48 129.66,304.91 131.80,304.33 133.94,303.76 136.08,303.18 138.22,302.61 140.36,302.04 142.50,301.46 144.64,300.89 146.78,300.32 148.92,299.74 151.06,299.17 153.20,298.60 155.34,298.02 157.48,297.45 159.63,296.88 161.77,296.30 163.91,295.73 166.05,295.16 168.19,294.58 170.33,294.01 172.47,293.44 174.61,292.86 176.75,292.29 178.89,291.71 181.03,291.14 183.17,290.57 185.31,289.99 187.45,289.42 189.59,288.85 191.73,288.27 193.88,287.70 196.02,287.13 198.16,286.55 200.30,285.98 202.44,285.41 204.58,284.83 206.72,284.26 208.86,283.69 211.00,283.11 213.14,282.54 215.28,281.97 217.42,281.39 219.56,280.82 221.70,280.24 223.84,279.67 225.98,279.10 228.13,278.52 230.27,277.95 232.41,277.38 234.55,276.80 236.69,276.23 238.83,275.66 240.97,275.08 243.11,274.51 245.25,273.94 247.39,273.36 249.53,272.79 251.67,272.22 253.81,271.64 255.95,271.07 258.09,270.50 260.23,269.92 262.38,269.35 264.52,268.77 266.66,268.20 268.80,267.63 270.94,267.05 273.08,266.48 275.22,265.91 277.36,265.33 279.50,264.76 281.64,264.19 283.78,263.61 285.92,263.04 288.06,262.47 290.20,261.89 292.34,261.32 294.48,260.75 296.63,260.17 298.77,259.60 300.91,259.03 303.05,258.45 305.19,257.88 307.33,257.30 309.47,256.73 311.61,256.16 313.75,255.58 315.89,255.01 318.03,254.44 320.17,253.86 322.31,253.29 324.45,252.72 326.59,252.14 328.73,251.57 330.88,251.00 333.02,250.42 335.16,249.85 337.30,249.28 339.44,248.70 341.58,248.13 343.72,247.56 345.86,246.98 348.00,246.41 350.14,245.83 352.28,245.26 354.42,244.69 356.56,244.11 358.70,243.54 360.84,242.97 362.98,242.39 365.13,241.82 367.27,241.25 369.41,240.67 371.55,240.10 373.69,239.53 375.83,238.95 377.97,238.38 380.11,237.81 382.25,237.23 384.39,236.66 386.53,236.08 388.67,235.51 390.81,234.94 392.95,234.36 395.09,233.79 397.23,233.22 399.38,232.64 401.52,232.07 403.66,231.50 405.80,230.92 407.94,230.35 410.08,229.78 412.22,229.20 414.36,228.63 416.50,228.06 418.64,227.48 420.78,226.91 422.92,226.34 425.06,225.76 427.20,225.19 429.34,224.61 431.48,224.04 433.63,223.47 435.77,222.89 437.91,222.32 440.05,221.75 442.19,221.17 444.33,220.60 446.47,220.03 448.61,219.45 450.75,218.88 452.89,218.31 455.03,217.73 457.17,217.16 459.31,216.59 461.45,216.01 463.59,215.44 465.73,214.87 467.88,214.29 470.02,213.72 472.16,213.14 474.30,212.57 476.44,212.00 478.58,211.42 480.72,210.85 482.86,210.28 485.00,208.40 487.14,205.36 489.28,202.33 491.42,199.29 493.56,196.25 495.70,193.21 497.84,190.18 499.98,187.14 502.13,184.10 504.27,181.06 506.41,178.03 508.55,174.99 510.69,171.95 512.83,168.91 514.97,165.88 517.11,162.84 519.25,159.80 521.39,156.76 523.53,153.73 525.67,150.69 527.81,147.65 529.95,144.61 532.09,141.58 534.23,138.54 536.38,135.50 538.52,132.46 540.66,129.42 542.80,126.39 544.94,123.35 547.08,120.31 549.22,117.28 551.36,114.24 553.50,111.20 555.64,108.16 557.78,105.13 559.92,102.09 562.06,99.05 564.20,96.01 566.34,92.98 568.48,89.94 570.63,86.90 572.77,83.86 574.91,80.83 577.05,77.79 579.19,74.75 581.33,71.71 583.47,68.67 585.61,65.64 587.75,62.60 589.89,59.56 592.03,56.52 594.17,53.49 596.31,50.45 598.45,47.41 600.59,44.38 602.73,41.34 604.88,38.30 607.02,35.26 609.16,32.23 611.30,29.19 613.44,26.15 615.58,23.11 617.72,20.08 619.86,17.04 622.00,14.00"/>
+</svg></figure>
+
+=== values ===
+E_steel = 200000000000.0 m^-1·kg·s^-2
+G_steel = 77000000000.0 m^-1·kg·s^-2
+nu_steel = 0.3 dimensionless
+rho_steel = 7850.0 m^-3·kg
+alpha_steel = 1.2e-5 K^-1
+Fy_A36 = 248211262.55406097 m^-1·kg·s^-2
+Fy_A992 = 344737864.658418 m^-1·kg·s^-2
+Fy_S235 = 235000000.0 m^-1·kg·s^-2
+Fy_S355 = 355000000.0 m^-1·kg·s^-2
+d = 0.012 m
+pitch = 0.00175 m
+A_s = 8.426636752380862e-5 m^2
+? = 8.426636752380862e-5 m^2
+R_m = 800000000.0 m^-1·kg·s^-2
+R_e = 640000000.0 m^-1·kg·s^-2
+S_p = 576000000.0 m^-1·kg·s^-2
+? = 576000000.0 m^-1·kg·s^-2
+F_i = 36403.070770285325 m·kg·s^-2
+? = 36403.070770285325 m·kg·s^-2
+K_nut = 0.2 dimensionless
+T = 87.36736984868479 m^2·kg·s^-2
+? = 87.36736984868479 m^2·kg·s^-2
+L_g = 0.03 m
+k_b = 561775783.4920576 kg·s^-2
+? = 561775783.4920576 kg·s^-2
+k_m = 2413620040.54535 kg·s^-2
+? = 2413620040.54535 kg·s^-2
+C = 0.1888070753321709 dimensionless
+P_ext = 10000.0 m·kg·s^-2
+F_bolt = 38291.14152360703 m·kg·s^-2
+? = 38291.14152360703 m·kg·s^-2
+sigma_bolt = 454405982.46730226 m^-1·kg·s^-2
+? = 454405982.46730226 m^-1·kg·s^-2
+P_sep = 44875.9717488806 m·kg·s^-2
+? = 44875.9717488806 m·kg·s^-2
+? = plot 0.0..60.0 (chosen) dimensionless over dimensionless {bolt_force: [36.403070770285325, 36.4473224285663, 36.49157408684728, 36.53582574512826, 36.580077403409234, 36.62432906169022, 36.668580719971196, 36.712832378252166, 36.75708403653314, 36.80133569481412, 36.8455873530951, 36.889839011376075, 36.93409066965705, 36.97834232793804, 37.022593986219015, 37.06684564449999, 37.11109730278097, 37.15534896106195, 37.19960061934292, 37.243852277623894, 37.28810393590487, 37.33235559418585, 37.37660725246683, 37.42085891074781, 37.46511056902879, 37.509362227309765, 37.55361388559074, 37.59786554387172, 37.6421172021527, 37.686368860433674, 37.73062051871465, 37.77487217699563, 37.819123835276606, 37.863375493557584, 37.90762715183856, 37.95187881011954, 37.996130468400516, 38.04038212668149, 38.08463378496247, 38.128885443243455, 38.17313710152443, 38.21738875980541, 38.26164041808638, 38.30589207636736, 38.350143734648334, 38.39439539292931, 38.43864705121029, 38.48289870949127, 38.52715036777225, 38.57140202605323, 38.615653684334205, 38.65990534261518, 38.70415700089616, 38.74840865917714, 38.79266031745811, 38.836911975739085, 38.88116363402007, 38.92541529230105, 38.969666950582024, 39.013918608863, 39.05817026714398, 39.102421925424956, 39.14667358370593, 39.19092524198691, 39.235176900267895, 39.27942855854887, 39.32368021682984, 39.36793187511082, 39.4121835333918, 39.456435191672774, 39.50068684995375, 39.54493850823473, 39.589190166515706, 39.63344182479669, 39.67769348307767, 39.721945141358646, 39.76619679963962, 39.81044845792059, 39.85470011620157, 39.89895177448255, 39.943203432763525, 39.98745509104451, 40.03170674932549, 40.075958407606464, 40.12021006588744, 40.16446172416842, 40.208713382449396, 40.25296504073037, 40.29721669901135, 40.34146835729232, 40.385720015573305, 40.42997167385428, 40.47422333213526, 40.51847499041624, 40.562726648697215, 40.60697830697819, 40.65122996525917, 40.69548162354015, 40.73973328182113, 40.78398494010211, 40.828236598383086, 40.872488256664056, 40.91673991494503, 40.96099157322601, 41.00524323150699, 41.049494889787965, 41.09374654806894, 41.13799820634993, 41.182249864630904, 41.22650152291188, 41.27075318119286, 41.315004839473836, 41.35925649775481, 41.403508156035784, 41.44775981431676, 41.492011472597746, 41.53626313087872, 41.5805147891597, 41.62476644744068, 41.669018105721655, 41.71326976400263, 41.75752142228361, 41.80177308056459, 41.846024738845564, 41.890276397126534, 41.93452805540752, 41.978779713688496, 42.02303137196947, 42.06728303025045, 42.11153468853143, 42.155786346812405, 42.20003800509338, 42.24428966337437, 42.288541321655345, 42.33279297993632, 42.3770446382173, 42.42129629649827, 42.46554795477925, 42.509799613060224, 42.5540512713412, 42.59830292962218, 42.642554587903156, 42.68680624618414, 42.73105790446512, 42.775309562746095, 42.81956122102707, 42.86381287930805, 42.90806453758903, 42.95231619587, 42.99656785415098, 43.04081951243196, 43.085071170712936, 43.129322828993914, 43.17357448727489, 43.21782614555587, 43.262077803836846, 43.30632946211782, 43.3505811203988, 43.394832778679785, 43.439084436960755, 43.48333609524173, 43.52758775352271, 43.57183941180369, 43.616091070084664, 43.66034272836564, 43.70459438664662, 43.7488460449276, 43.79309770320858, 43.83734936148956, 43.881601019770535, 43.92585267805151, 43.97010433633248, 44.01435599461346, 44.05860765289444, 44.102859311175415, 44.14711096945639, 44.19136262773738, 44.235614286018354, 44.27986594429933, 44.32411760258031, 44.368369260861286, 44.41262091914226, 44.45687257742324, 44.50112423570422, 44.545375893985195, 44.58962755226617, 44.63387921054715, 44.67813086882813, 44.722382527109104, 44.76663418539008, 44.81088584367106, 44.855137501952036, 45.0, 45.234375, 45.46875, 45.703125, 45.9375, 46.171875, 46.40625, 46.640625, 46.875, 47.109375, 47.34375, 47.578125, 47.8125, 48.046875, 48.28125, 48.515625, 48.75, 48.984375, 49.21875, 49.453125, 49.6875, 49.921875, 50.15625, 50.390625, 50.625, 50.859375, 51.09375, 51.328125, 51.5625, 51.796875, 52.03125, 52.265625, 52.5, 52.734375, 52.96875, 53.203125, 53.4375, 53.671875, 53.90625, 54.140625, 54.375, 54.609375, 54.84375, 55.078125, 55.3125, 55.546875, 55.78125, 56.015625, 56.25, 56.484375, 56.71875, 56.953125, 57.1875, 57.421875, 57.65625, 57.890625, 58.125, 58.359375, 58.59375, 58.828125, 59.0625, 59.296875, 59.53125, 59.765625, 60.0]}
+
+=== diagnostics ===
+none

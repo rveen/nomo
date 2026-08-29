@@ -177,7 +177,13 @@ fn check_one(path: &str, source: &str) -> Verdict {
     let sheet = nomo_core::Sheet::new(source);
     report(path, source, sheet.diagnostics());
     if !sheet.has_errors() {
-        println!("{path}: ok ({} statements)", sheet.ast().stmts.len());
+        // The author's statements, not the pack's: a worksheet that says `use
+        // steel` did not thereby write fourteen more lines, and counting them
+        // would make the number mean nothing.
+        let written = (0..sheet.ast().stmts.len())
+            .filter(|i| !sheet.is_from_pack(*i))
+            .count();
+        println!("{path}: ok ({written} statements)");
     }
     report_checks(path, &sheet);
     Verdict::of(&sheet)

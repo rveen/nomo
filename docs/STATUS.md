@@ -26,6 +26,7 @@ function of `x`, in that order.
 | 9 Local persistence, offline | **done** | Open/save with a cross-browser fallback, draft in IndexedDB, service worker |
 | — SMath importer | **seven phases in** | `nomo-smath`: reads **both** corpora — 54 wiki worksheets (0.82–0.98) and 60 mechanics worksheets (1.3–1.5) — emits `.nomo`, and checks itself against 1179 stored answers. Agreement: 312/344 wiki, 283/283 mechanics. Design note §8.13–§8.39 |
 | — A second batch of builtins | **done** | `mod` `hypot` `nthroot` `log(x, b)` `cot` `sec` `csc` `asinh` `acosh` `atanh` `product` `mean` `median` `sort` `reverse` `trace` `submatrix`. Conventions read from SMath where it has one — `mod`'s sign, `submatrix`'s inclusive one-based bounds. `stdev` and `rank` are deliberately absent; `docs/language.md` says why. Took the wiki corpus from 304/337 to **312/344** |
+| — How-to worksheets | **first of six** | `examples/bolt.nomo` — a bolted joint carried through preload, torque, stiffness, load sharing and separation, with the verdicts a design sheet ends on. The first worksheet written *for* the language rather than to exercise it, and the first whose acceptance is an engineer agreeing with the method rather than a green gate |
 | — Packs | **done** | `use steel` brings in a curated set of definitions, compiled into the engine rather than read from disk or fetched — a browser opens a file, not a directory, and a fetch would put the network inside a determinism claim. Two packs so far, `constants` and `steel`; `nomo packs` lists them. `examples/packs.nomo` |
 | — Tables | **first phase done** | `linterp(xs, ys, x)` reads a value out of a table, with units, refusing to extrapolate. Settled by disassembling SMath's own implementation (§8.42), which extrapolates, sorts and drops units — all three decided the other way here, on purpose. `cinterp`, `ainterp` and the lookup family are not built, and §8.42 says why. `examples/tables.nomo` |
 | — Checks | **done** | `check sigma <= sigma_allow` states a limit and reports a verdict. A failed check is not an error — the arithmetic is right and the design is not — so it carries no diagnostic and gets its own exit code: `nomo check` answers 0, 1 for a worksheet that does not evaluate, 2 for one whose check failed. `examples/checks.nomo` |
@@ -38,7 +39,7 @@ function of `x`, in that order.
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Prose as Markdown | **block level done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline formatting is not built and `_` emphasis never will be. Design note §8.41, `examples/prose.nomo` |
 
-617 tests and 21 golden snapshots. `git log` is one commit per phase, and each
+617 tests and 22 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here

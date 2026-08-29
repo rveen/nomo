@@ -1,0 +1,127 @@
+' nomo 1
+
+' # A bolted joint: preload, torque, and what the external load does
+'
+' A bolted joint is not a bolt carrying a load. It is a spring in tension
+' clamping springs in compression, and almost all of the external load is taken
+' by the members relaxing rather than by the bolt stretching further. That is
+' why a joint is designed around its **preload** and only then checked against
+' the load it carries — and why a torque figure without a preload behind it says
+' nothing.
+'
+' The joint: two 15 mm steel plates, one M12 × 1.75 bolt of property class 8.8,
+' carrying 10 kN of external tension per bolt.
+
+use steel
+
+' ## The bolt
+'
+' The tensile stress area is the area of a circle whose diameter is the mean of
+' the pitch and minor diameters — a definition, not a table lookup, so it is
+' written out (ISO 724).
+
+d = 12 mm
+pitch = 1.75 mm
+
+A_s = pi/4*(d - 0.9382*pitch)^2
+A_s -> mm^2
+
+' Property class 8.8 states its own strengths: the first digit is the tensile
+' strength in hundreds of MPa, and the second is ten times the ratio of yield to
+' tensile (ISO 898-1). So the class is the data, and nothing here is copied from
+' a table of them.
+
+R_m = 800 MPa
+R_e = 0.8*R_m
+
+' The proof stress is where the standard's permanent-set limit sits, close to
+' nine tenths of yield. ISO 898-1 tabulates 580 MPa for this class up to M16;
+' this is that number, arrived at rather than quoted.
+S_p = 0.9*R_e
+S_p -> MPa
+
+' ## Preload
+'
+' Seventy-five per cent of the proof load is the usual target for a reusable
+' joint: high enough that the members stay in compression under load, low enough
+' that scatter in the tightening method does not take the bolt past proof.
+
+F_i = 0.75*A_s*S_p
+F_i -> kN
+
+' The torque that produces it, through the nut factor K — which is not a
+' friction coefficient but an empirical lumping of thread and face friction and
+' the thread geometry. 0.2 is the conventional dry-steel value, and it is the
+' least certain number on this page: K varies by ±25% with lubrication, plating
+' and reuse, and the preload varies with it.
+
+K_nut = 0.2
+
+T = K_nut*F_i*d
+T -> N*m
+
+' ## Stiffness, and how the external load is shared
+'
+' The bolt is a bar in tension over its grip length. The tensile stress area is
+' used over the whole of it, which understates the stiffness of a bolt with a
+' plain shank in the grip — the shank is the full 12 mm — and so overstates the
+' bolt's share of the external load. That is the safe direction for this check
+' and the wrong one for a fatigue calculation, which wants the two lengths in
+' series.
+'
+' The members are the compressed cone around the hole, for which the standard
+' frustum approximation is used (Shigley, for two members of the same material
+' with a 30° cone half-angle).
+
+L_g = 30 mm
+
+k_b = A_s*E_steel/L_g
+k_b -> MN/m
+
+k_m = 0.5774*pi*E_steel*d/(2*ln(5*(0.5774*L_g + 0.5*d)/(0.5774*L_g + 2.5*d)))
+k_m -> MN/m
+
+' The joint constant is the fraction of an external load that reaches the bolt.
+' It is small — the members are several times stiffer than the bolt — and that
+' is the whole reason a preloaded joint survives a fatigue load that would break
+' the same bolt loose.
+
+C = k_b/(k_b + k_m)
+
+' ## Under the external load
+
+P_ext = 10 kN
+
+F_bolt = F_i + C*P_ext
+F_bolt -> kN
+
+sigma_bolt = F_bolt/A_s
+sigma_bolt -> MPa
+
+' The bolt must stay below yield with the external load applied.
+check sigma_bolt <= R_e
+
+' ## Separation
+'
+' The joint opens when the external load has relieved all of the clamp. Past
+' that point the bolt carries the load directly, the members no longer share it,
+' and the fatigue argument above stops being true.
+
+P_sep = F_i/(1 - C)
+P_sep -> kN
+
+check P_ext <= 0.75*P_sep
+
+' ## Bolt force against external load
+'
+' Two straight lines with a corner between them, and the corner is separation.
+' Below it the bolt sees only its share of the load and the line is nearly flat
+' — which is the point of the whole arrangement. Above it the members have let
+' go and the bolt carries everything, so the line turns and follows the load.
+'
+' The horizontal axis is the external load in kN and the vertical is the bolt
+' force in the same unit.
+
+fn bolt_force(p) = if p*kN < P_sep then (F_i + C*p*kN)/kN else p
+
+plot(bolt_force, 0, 60)

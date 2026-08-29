@@ -34,11 +34,14 @@ their stored answers act as an oracle for the engine. No part of either is
 copied into Nomo's own code or examples. Design note §8 is the analysis built
 on them; the numbers it quotes are measurements, not excerpts.
 
-If you are running CI, set `NOMO_CORPORA_MIRROR` to a location holding the same
-archives by name. The wiki serves files behind a cookie-detection redirect, and
-GitHub's generated tarballs are not byte-stable, so a mirror is the reliable
-route. Per-file hashes are checked either way, which is what makes a mirror
-trustworthy.
+If you are running CI, you may set `NOMO_CORPORA_MIRROR` to a location holding
+the same archives by name. It is optional — the script fetches from the sites
+above unaided — but it is the reliable route: the wiki serves files behind a
+cookie-detection redirect, and GitHub's generated tarballs are not byte-stable.
+Per-file hashes are checked either way, which is what makes a mirror
+trustworthy. A `file://` mirror built from corpora already on disk is also how
+the fetch path is tested without asking anything of the upstream sites; the
+recipe is in `docs/STATUS.md`.
 
 ## Two industrial worksheets, no longer here
 

@@ -17,8 +17,13 @@ web/dist/
 # on demand by scripts/fetch-corpora.sh and verified against the hashes in
 # scripts/corpora/; `reference/` is two codebases to learn from, over a gigabyte
 # between them. See THIRD-PARTY.md.
-/corpora/
-/reference/
+#
+# The glob rather than the one name: CORPUS_ROOT can put a corpus anywhere, and
+# a fetch into `corpora-2/` was very nearly committed by a `git add -A` because
+# only the exact name was ignored. Nothing third-party gets committed, so the
+# ignore has to cover the names people actually use.
+/corpora*/
+/reference*/
 
 # Python bytecode from scripts/
 __pycache__/

@@ -79,18 +79,26 @@ accepts renders. Fixed seed, fixed case count: a gate, not a flake.
 
 *Gate:* `cargo test --workspace`.
 
-### 4. Fix the one red CI job
+### 4. Fix the one red CI job — **done**
 
-`corpus` has never passed on this repository, and it fails at **Fetch the
-corpora** — before any Nomo code runs. Both upstreams answer and the gate passes
-locally on the same worksheets, so the likeliest cause is the missing
-`NOMO_CORPORA_MIRROR` secret, which does not follow a repository that was
-recreated or made public. It guards the widest determinism evidence there is:
-114 worksheets written by other people over fifteen years. Reading the job log
-needs admin rights on the repository, which is the one thing here that cannot be
-done from inside it.
+`corpus` had never passed, and the guess recorded here was that a missing
+`NOMO_CORPORA_MIRROR` secret explained it. It did not. `fetch-corpora.sh`
+downloaded and verified everything correctly and then exited 1 on the way out,
+because an `EXIT` trap set inside a function named a variable that function had
+declared `local`: a trap body is expanded when it fires, by which time the name
+is out of scope, and under `set -u` that is an error during exit. It only
+appeared on a machine that actually downloaded the mechanics corpus — a fresh
+runner every time, a development machine once. Testing the fix turned up a
+second bug beside it: `verify` resolved the hash manifest relative to the corpus
+root, so any `CORPUS_ROOT` but the default reported a mismatch that was not
+there.
 
-*Gate:* a green `corpus` job.
+Verified end to end from an empty directory through a local mirror, and the
+pre-fix script confirmed to fail the same run. `docs/STATUS.md` records the
+method. The secret is not required.
+
+*Gate:* a green `corpus` job on the next push — the one thing still unproven is
+whether a runner can reach the wiki from its own address.
 
 ### 5. A performance report, before there is anything to regress
 

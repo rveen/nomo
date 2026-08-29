@@ -1358,12 +1358,14 @@ diagnosis, the CAS costing, the plot span, and what each measurement cost to
 obtain. Read the roadmap for the order of work and this section for why each
 item is where it is.
 
-**CI runs. Four of its five jobs are green and the fifth has never passed on
+**CI runs. Four of its five jobs are green and the fifth had never passed on
 this repository** — checked on 2026-08-29, on the public repository's whole run
 history, which is three runs: `e3bc8ee`, `a518bc7` and `18858f0`. `check`,
-`arm64`, `wasm` and `browser` pass on all three. `corpus` fails on all three, at
-its **Fetch the corpora** step, before `check-corpus.sh` or any Nomo code runs.
-See "The one red job" below; it is an access problem, not a result.
+`arm64`, `wasm` and `browser` pass on all three. `corpus` failed on all three, at
+its **Fetch the corpora** step, before `check-corpus.sh` or any Nomo code ran.
+**The cause is found and fixed** — see "The one red job" below. It was a bug in
+`fetch-corpora.sh`, not an access problem, and the earlier guess in this
+document that a missing secret explained it was wrong.
 
 - **`arm64`, on real aarch64 silicon** — at `dd00363` that was 489 tests, `ok:
   16 worksheets match their snapshots`, and `ok: 16 worksheets byte-identical
@@ -1382,25 +1384,59 @@ See "The one red job" below; it is an access problem, not a result.
   cannot find and a skipped gate is a green job guarding nothing. **This is the
   red one.**
 
-**The one red job, and what is known about it.** `corpus` fails while fetching
-the worksheets, so it is failing on access to third-party files rather than on
-anything this repository computes. What has been checked from a development
-machine, on 2026-08-29:
+**The one red job — found, and it was ours.** `corpus` failed while fetching
+the worksheets, and the reasonable-sounding conclusion drawn here was that it
+was failing on *access* to third-party files. It was not. The script was
+downloading and verifying everything correctly and then exiting 1 on the way
+out:
 
-- Both upstreams answer. `https://smath.com/wiki/GetFile.aspx?File=Examples/ap.zip`
-  returns 200 with a cookie jar and hashes to the value
-  `scripts/corpora/wiki.sources` records for it, and the mechanics tarball from
-  `codeload.github.com` returns 200 and 3.98 MB.
-- `./scripts/check-corpus.sh` passes on the corpora already present: 54 wiki and
-  60 mechanics worksheets match the baseline.
+```
+fetch technical-mechanics-samples
+corpora verified: 116 files under corpora
+./fetch-corpora.sh: line 1: tgz: unbound variable
+```
 
-So the gate and the data are both fine. The likeliest cause is
-`secrets.NOMO_CORPORA_MIRROR`, which the workflow passes to
-`fetch-corpora.sh` and which the script exists to use because the wiki serves
-files behind a cookie-detection redirect that loops without a jar — a secret
-does not follow a repository that was recreated or made public. **Reading the
-job log needs admin rights on the repository**, which is the next step and
-cannot be taken from outside it.
+A trap body is expanded when it *fires*, not when it is set. `fetch_mechanics`
+set a second `EXIT` trap naming a variable it had declared `local`, so by the
+time the shell exited that name was out of scope, and under `set -u` an
+unbound variable during exit is an error — which becomes the script's status.
+Everything it printed was true; the exit code was not.
+
+Two things kept it hidden. `fetch_mechanics` returns early when the mechanics
+corpus is already unpacked, so the second trap is only armed on a machine that
+actually downloads it — a fresh CI runner every time, and a development machine
+exactly once. And the failure prints *after* the success line, which reads like
+a tidy-up complaint rather than a failure.
+
+A second bug in the same path came out of testing the first: `verify` ran
+`sha256sum -c ../scripts/corpora/files.sha256` from inside the corpus root,
+which resolves only when `CORPUS_ROOT` is the default directory one level below
+the repository. For the absolute path this document invites, it named nothing
+and reported that the corpora did not match when they were fine.
+
+Both are fixed, and the whole CI path is verified end to end from an empty
+directory: fetch, verify 116 files, and both `check-corpus.sh` baselines pass,
+exit 0. The pre-fix script was confirmed to fail that same run. The method is
+worth recording — a local mirror built from the corpora already on disk, so the
+fetch path can be exercised in full without asking anything of the upstream
+sites:
+
+```bash
+mkdir -p /tmp/mirror
+cp corpora/nomo-corpus/zips/*.zip /tmp/mirror/
+tar -czf /tmp/mirror/Technische-Mechanik-mit-SMath-main.tar.gz \
+    -C corpora/technical-mechanics-samples Technische-Mechanik-mit-SMath-main
+CORPUS_ROOT=/tmp/corpora-test NOMO_CORPORA_MIRROR=file:///tmp/mirror \
+    ./scripts/fetch-corpora.sh
+CORPUS_ROOT=/tmp/corpora-test ./scripts/check-corpus.sh
+```
+
+`secrets.NOMO_CORPORA_MIRROR` is therefore **not** required: the script fetches
+from the upstream sites unaided, as it does locally, and the mirror stays what
+it was meant to be — the reliable route when the wiki's cookie-detection
+redirect or GitHub's non-byte-stable tarballs get in the way. Whether CI can
+reach the wiki from its own address is the one thing still unproven, and the
+next run answers it.
 
 The Node 20 deprecation warning is **fixed** — `actions/checkout` and
 `actions/setup-node` are on `v7`, the current majors, which run on Node 24;

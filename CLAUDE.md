@@ -18,7 +18,9 @@ separates what was verified from what is still assumed. `docs/STATUS.md` is the
 handoff snapshot — where the work stands and how to verify it. `docs/language.md`
 is the language reference, and the worksheets under `examples/` are drawn from it.
 `docs/smath.md` is the SMath import how-to: how to run it, what translates, and
-what is refused and why.
+what is refused and why. `docs/roadmap.md` is what to build next and in what
+order; STATUS's "What is worth doing next" holds the evidence behind that
+ranking.
 
 ## Layout
 

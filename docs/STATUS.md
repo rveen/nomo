@@ -1343,6 +1343,13 @@ qualifies.** That is the finding, and it is worth more than the feature: see
 `/root/.claude/plans/bright-moseying-shannon.md` had ten phases and all ten are
 done. Nothing below is committed to; this is a list of what the work exposed.
 
+**`docs/roadmap.md` now says what to do about it, and in what order.** It is
+drawn from this section and supersedes its *ranking*; everything below stays,
+because what it holds is the evidence the ranking was made from — the CI
+diagnosis, the CAS costing, the plot span, and what each measurement cost to
+obtain. Read the roadmap for the order of work and this section for why each
+item is where it is.
+
 **CI runs. Four of its five jobs are green and the fifth has never passed on
 this repository** — checked on 2026-08-29, on the public repository's whole run
 history, which is three runs: `e3bc8ee`, `a518bc7` and `18858f0`. `check`,

@@ -1240,6 +1240,77 @@ fn the_reciprocal_and_inverse_hyperbolic_functions() {
     assert!(errors("cot(1 m)")[0].contains("dimensionless"));
 }
 
+// ---- complex vectors ----------------------------------------------------
+
+#[test]
+fn a_complex_element_makes_a_complex_vector() {
+    // The whole point: a branch of impedances is one value rather than three
+    // scalars, and it sums to the series impedance.
+    let src = "\
+R = 10 ohm
+X_L = 12 ohm
+X_C = 34 ohm
+Z = [R + 0i*ohm, 0 ohm + X_L*1i, 0 ohm - X_C*1i]
+sum(Z)
+";
+    let total = last_query(src);
+    let nomo_core::value::Value::Complex(c) = total else {
+        panic!("expected a complex total, got {total:?}");
+    };
+    assert_close(c.re, 10.0, "the resistance");
+    assert_close(c.im, -22.0, "the net reactance");
+}
+
+#[test]
+fn complex_vectors_do_arithmetic_elementwise() {
+    // A real scalar broadcasts, a real vector joins elementwise, and another
+    // complex vector pairs up — the same rules the real path already has.
+    let magnitudes = |src: &str| magnitudes(&last_query(src));
+    assert_eq!(magnitudes("abs([3 + 4i, 6 + 8i])"), vec![5.0, 10.0]);
+    assert_eq!(magnitudes("abs(2*[3 + 4i, 6 + 8i])"), vec![10.0, 20.0]);
+    assert_eq!(magnitudes("abs([3 + 4i, 3 + 4i]*[1, 2])"), vec![5.0, 10.0]);
+    assert_eq!(
+        magnitudes("abs([3 + 4i, 0i] + [0i, 6 + 8i])"),
+        vec![5.0, 10.0]
+    );
+    // Taking one apart, elementwise, into real vectors.
+    assert_eq!(magnitudes("Re([1 + 2i, 3 - 4i])"), vec![1.0, 3.0]);
+    assert_eq!(magnitudes("Im([1 + 2i, 3 - 4i])"), vec![2.0, -4.0]);
+    // And indexing gives back a complex scalar.
+    assert_close(
+        last_raw("Im([1 + 2i, 3 - 4i][2])"),
+        -4.0,
+        "the second element",
+    );
+}
+
+#[test]
+fn a_complex_vector_refuses_what_it_cannot_do_rather_than_answering() {
+    // The failure this guard exists for: a complex vector holds no `elements`,
+    // so every aggregate that reached for them saw an *empty* collection and
+    // answered confidently — `sort` gave back `[]`.
+    for src in [
+        "sort([1 + 2i, 3 - 1i])",
+        "min([1 + 2i, 3 - 1i])",
+        "mean([1 + 2i, 3 - 1i])",
+        "norm([1 + 2i, 3 - 1i])",
+        "dot([1 + 2i, 3i], [1 + 2i, 3i])",
+        "sin([1 + 2i, 3i])",
+    ] {
+        let e = errors(src);
+        assert!(
+            e[0].contains("complex"),
+            "{src} should be refused by name, got {e:?}"
+        );
+    }
+    // Lengths that do not match, and dimensions that do not agree.
+    assert!(errors("[1i, 2i] + [1, 2, 3]")[0].contains("complex vector of 2"));
+    assert!(errors("[1i*m, 2i*s]")[0].contains("one dimension"));
+    // A matrix of complex numbers is not built, and says so rather than
+    // dropping the imaginary part.
+    assert!(!errors("[[1 + 2i, 0i], [0i, 1 + 2i]]").is_empty());
+}
+
 // ---- eigenvalues --------------------------------------------------------
 
 #[test]

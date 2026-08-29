@@ -1121,6 +1121,34 @@ There is no complex temperature: a reading on an offset scale is a position on a
 scale, and an imaginary part would displace it in a direction the scale does not
 have.
 
+### A vector of complex numbers
+
+A branch of impedances is one value rather than three names:
+
+```nomo
+branch = [Z_R, Z_L, Z_C]
+Z_series = sum(branch)
+magnitudes = abs(branch) -> ohm      ' a real vector
+angles = arg(branch) -> °
+halved = branch/2
+```
+
+A vector literal with a complex element in it is a complex vector, and its
+elements share one dimension as a real vector's do. Arithmetic is elementwise
+with the rules the real path already has: a scalar broadcasts, a real vector of
+the same length joins in, another complex vector pairs up. `Re`, `Im`, `abs` and
+`arg` answer a **real** vector, since a magnitude is not complex; `conj` answers
+a complex one; `sum`, `length`, `reverse` and indexing work as they do
+elsewhere.
+
+Everything else refuses **by name**. Ordering complex numbers has no meaning, so
+`sort`, `min` and `median` say so; `norm`, `dot` and the transcendentals say so
+too. That guard exists because the alternative was worse than an error: a
+complex vector holds no real elements, so an aggregate that reached for them saw
+an empty collection and answered confidently — `sort` gave back `[]`.
+
+A **matrix** of complex numbers is not built.
+
 ## Figures
 
 A worksheet carries its images inside itself. The body refers to one by name,
@@ -1196,8 +1224,8 @@ Recorded so the omissions are deliberate rather than forgotten.
 
 - More than two tables on one plot. Two is what the arity rule leaves room for
   before a span would be ambiguous, and no corpus worksheet draws more.
-- Complex vectors and matrices. A collection holds real quantities, so a complex
-  element reports that rather than losing its imaginary part.
+- Complex **matrices**. A vector of complex numbers is built; a matrix of them
+  is not, and says so rather than losing an imaginary part.
 - Transcendentals of a complex argument — `sqrt`, `exp`, `ln`, the trigonometric
   functions — and a fractional or complex *exponent*. All of them need a complex
   logarithm, and that needs a branch cut: a decision about where `arg` jumps from

@@ -55,6 +55,17 @@ pub enum Value {
     Scalar(Quantity),
     Complex(ComplexQuantity),
     Vector(VectorValue),
+    /// A vector whose elements are complex.
+    ///
+    /// A separate variant rather than a complex element inside [`VectorValue`],
+    /// for the reason the scalar tower is separate: every real worksheet stays
+    /// on exactly the code it was on. A vector of impedances is one of these; a
+    /// vector of lengths is not, and nothing about it now goes through complex
+    /// arithmetic.
+    ///
+    /// The elements share a dimension — checked when one is built — so this is a
+    /// vector of impedances or of voltages, never a mixture.
+    ComplexVector(Vec<ComplexQuantity>),
     Matrix(MatrixValue),
     /// A string: a label, a verdict, a lookup key. It is not a quantity — it has
     /// no dimension and no arithmetic — so it is a value of its own rather than
@@ -239,6 +250,7 @@ impl Value {
         match self {
             Value::Scalar(_) => "a number",
             Value::Complex(_) => "a complex number",
+            Value::ComplexVector(_) => "a complex vector",
             Value::Vector(_) => "a vector",
             Value::Matrix(_) => "a matrix",
             Value::Plot(_) => "a plot",
@@ -252,6 +264,7 @@ impl Value {
             Value::Scalar(_) => "a number".into(),
             Value::Complex(_) => "a complex number".into(),
             Value::Vector(v) => format!("a vector of {}", v.elements.len()),
+            Value::ComplexVector(v) => format!("a complex vector of {}", v.len()),
             Value::Matrix(m) => format!("a {}×{} matrix", m.rows, m.cols),
             Value::Plot(p) => format!("a plot of {}", p.series.len()),
             Value::Text(_) => "a string".into(),
@@ -281,13 +294,13 @@ impl Value {
         let promote = |v: &Value| match v {
             Complex(c) => Some(Ok(*c)),
             Scalar(q) => Some(ComplexQuantity::promote(q).map_err(EvalError::Unit)),
-            // A complex vector is the unbuilt half of the value tower, and
-            // saying so is better than dropping an imaginary part into a
-            // collection that cannot hold one.
+            // A complex *vector* is not promoted to a complex scalar: an
+            // elementwise operation is not a scalar one, and `Value::add` and
+            // its siblings handle that pairing themselves before they get here.
             // A complex derivative is a coherent thing and not this one: the
             // two towers are built for different questions and combining them
             // would need rules nobody here has written.
-            Vector(_) | Matrix(_) | Plot(_) | Dual(_) | Text(_) => None,
+            ComplexVector(_) | Vector(_) | Matrix(_) | Plot(_) | Dual(_) | Text(_) => None,
         };
         if !matches!((self, other), (Complex(_), _) | (_, Complex(_))) {
             return None;
@@ -318,7 +331,7 @@ impl Value {
             // Everything the body reads that is not the variable is a constant
             // for this derivative, whatever it is elsewhere.
             Scalar(q) => Some(DualQuantity::constant(*q)),
-            Complex(_) | Vector(_) | Matrix(_) | Plot(_) | Text(_) => None,
+            Complex(_) | ComplexVector(_) | Vector(_) | Matrix(_) | Plot(_) | Text(_) => None,
         };
         Some(match (promote(self), promote(other)) {
             (Some(a), Some(b)) => Ok((a, b)),
@@ -414,7 +427,82 @@ impl Value {
         }
     }
 
+    /// Both sides as complex vectors of equal length, when either is one.
+    ///
+    /// The collection counterpart of [`Value::complex_pair`], and it runs in
+    /// front of it for the same reason it exists: an elementwise operation is
+    /// not a scalar one, so a complex vector must neither be promoted to a
+    /// scalar nor fall through to the real path, which has nowhere to put an
+    /// imaginary part.
+    ///
+    /// A scalar on either side is broadcast — which is what `2*z` and `z/R` mean
+    /// and what the real path already does for a real vector — and a real vector
+    /// of the same length joins elementwise.
+    fn complex_vector_pair(
+        &self,
+        other: &Value,
+        op: &'static str,
+    ) -> Option<R<(Vec<ComplexQuantity>, Vec<ComplexQuantity>)>> {
+        use Value::*;
+        if !matches!((self, other), (ComplexVector(_), _) | (_, ComplexVector(_))) {
+            return None;
+        }
+        let mismatch = || EvalError::ShapeMismatch {
+            op,
+            lhs: self.shape_name(),
+            rhs: other.shape_name(),
+        };
+        let n = match (self, other) {
+            (ComplexVector(a), ComplexVector(b)) if a.len() != b.len() => {
+                return Some(Err(mismatch()))
+            }
+            (ComplexVector(a), _) => a.len(),
+            (_, ComplexVector(b)) => b.len(),
+            _ => unreachable!("guarded above"),
+        };
+        let spread = |v: &Value| -> Option<R<Vec<ComplexQuantity>>> {
+            Some(match v {
+                ComplexVector(c) => Ok(c.clone()),
+                Vector(r) if r.elements.len() == n => r
+                    .elements
+                    .iter()
+                    .map(|q| ComplexQuantity::promote(q).map_err(EvalError::Unit))
+                    .collect(),
+                Complex(c) => Ok(vec![*c; n]),
+                Scalar(q) => ComplexQuantity::promote(q)
+                    .map(|c| vec![c; n])
+                    .map_err(EvalError::Unit),
+                _ => return None,
+            })
+        };
+        Some(match (spread(self), spread(other)) {
+            (Some(Ok(a)), Some(Ok(b))) => Ok((a, b)),
+            (Some(Err(e)), _) | (_, Some(Err(e))) => Err(e),
+            _ => Err(mismatch()),
+        })
+    }
+
+    /// Both sides zipped through a complex operation, elementwise.
+    fn complex_zip(
+        &self,
+        other: &Value,
+        op: &'static str,
+        f: impl Fn(&ComplexQuantity, &ComplexQuantity) -> R<ComplexQuantity>,
+    ) -> Option<R<Value>> {
+        let pair = self.complex_vector_pair(other, op)?;
+        Some(pair.and_then(|(a, b)| {
+            let mut out = Vec::with_capacity(a.len());
+            for (x, y) in a.iter().zip(&b) {
+                out.push(f(x, y)?);
+            }
+            Ok(Value::ComplexVector(out))
+        }))
+    }
+
     pub fn add(&self, other: &Value) -> R<Value> {
+        if let Some(v) = self.complex_zip(other, "+", |a, b| a.add(b).map_err(Into::into)) {
+            return v;
+        }
         if let Some(pair) = self.dual_pair(other) {
             let (a, b) = pair?;
             return Ok(Value::Dual(a.add(&b)?));
@@ -427,6 +515,9 @@ impl Value {
     }
 
     pub fn sub(&self, other: &Value) -> R<Value> {
+        if let Some(v) = self.complex_zip(other, "-", |a, b| a.sub(b).map_err(Into::into)) {
+            return v;
+        }
         if let Some(pair) = self.dual_pair(other) {
             let (a, b) = pair?;
             return Ok(Value::Dual(a.sub(&b)?));
@@ -446,6 +537,9 @@ impl Value {
     /// product. Use `dot` for an inner product.
     pub fn mul(&self, other: &Value) -> R<Value> {
         use Value::*;
+        if let Some(v) = self.complex_zip(other, "*", |a, b| Ok(a.mul(b))) {
+            return v;
+        }
         if let Some(pair) = self.dual_pair(other) {
             let (a, b) = pair?;
             return Ok(Value::Dual(a.mul(&b)?));
@@ -471,6 +565,9 @@ impl Value {
     }
 
     pub fn div(&self, other: &Value) -> R<Value> {
+        if let Some(v) = self.complex_zip(other, "/", |a, b| Ok(a.div(b))) {
+            return v;
+        }
         if let Some(pair) = self.dual_pair(other) {
             let (a, b) = pair?;
             return Ok(Value::Dual(a.div(&b)?));
@@ -531,7 +628,7 @@ impl Value {
             // Every real-only elementwise function: `sin`, `floor`, `round`.
             // A complex argument is refused by name rather than silently taking
             // the real part.
-            Value::Complex(_) => {
+            Value::Complex(_) | Value::ComplexVector(_) => {
                 return Err(EvalError::NotImplemented(
                     "this function of a complex number",
                 ))
@@ -608,6 +705,7 @@ impl Value {
         match self {
             Value::Scalar(_) | Value::Complex(_) | Value::Dual(_) | Value::Text(_) => 1,
             Value::Vector(v) => v.elements.len(),
+            Value::ComplexVector(v) => v.len(),
             Value::Matrix(m) => m.data.len(),
             // Not its sample count: `length` asks how many elements a value
             // has, and a plot is one thing however many points were taken to
@@ -624,7 +722,15 @@ impl Value {
     pub fn elements(&self) -> Vec<Quantity> {
         match self {
             Value::Scalar(q) => vec![*q],
-            Value::Complex(_) | Value::Plot(_) | Value::Dual(_) | Value::Text(_) => vec![],
+            // A complex vector's elements are not quantities, and handing back
+            // their real parts here would let every aggregate in the language
+            // quietly drop the imaginary half. The builtins that can take one
+            // reach for it by name.
+            Value::Complex(_)
+            | Value::ComplexVector(_)
+            | Value::Plot(_)
+            | Value::Dual(_)
+            | Value::Text(_) => vec![],
             Value::Vector(v) => v.elements.clone(),
             Value::Matrix(m) => m.data.clone(),
         }

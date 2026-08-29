@@ -318,8 +318,14 @@ impl Env {
 
             Expr::Vector { elements, span } => {
                 let traces: Vec<Trace> = elements.iter().map(|e| self.eval(e)).collect();
-                let value = collect_scalars(&traces)
-                    .map(|elements| Value::Vector(VectorValue { elements }));
+                let refs: Vec<&Trace> = traces.iter().collect();
+                // A complex element makes a complex vector; anything else takes
+                // the path it always took.
+                let value = match collect_complex(&refs) {
+                    Some(c) => c.map(Value::ComplexVector),
+                    None => collect_scalars(&traces)
+                        .map(|elements| Value::Vector(VectorValue { elements })),
+                };
                 Trace::new(*span, TraceNode::Vector(traces), value)
             }
 
@@ -1752,7 +1758,79 @@ impl Env {
             }
         }
 
+        // The complex-collection arms come first, before the scalar-shaped
+        // arms of the same names: `abs` of a complex vector is not `abs` of a
+        // number and must not reach the code that assumes it is.
         match name {
+            // The aggregate a complex vector actually needs: an impedance
+            // network in series is the sum of its impedances.
+            "sum" if matches!(args.first(), Some(Value::ComplexVector(_))) => {
+                arity(1)?;
+                let Some(Value::ComplexVector(v)) = args.first() else {
+                    unreachable!("guarded above")
+                };
+                let Some(first) = v.first() else {
+                    return Err(EvalError::Singular("an empty vector has no sum"));
+                };
+                let mut total = *first;
+                for c in &v[1..] {
+                    total = total.add(c)?;
+                }
+                Ok(Value::Complex(total))
+            }
+
+            // Taking a complex vector apart, elementwise. `Re`, `Im`, `abs` and
+            // `arg` answer a real vector — a magnitude is not complex — and
+            // `conj` answers another complex one.
+            "Re" | "Im" | "abs" | "arg" | "conj"
+                if matches!(args.first(), Some(Value::ComplexVector(_))) =>
+            {
+                arity(1)?;
+                let Some(Value::ComplexVector(v)) = args.first() else {
+                    unreachable!("guarded above")
+                };
+                if name == "conj" {
+                    return Ok(Value::ComplexVector(v.iter().map(|c| c.conj()).collect()));
+                }
+                let mut out = Vec::with_capacity(v.len());
+                for c in v {
+                    out.push(match name {
+                        "Re" => Quantity::new(c.re, c.dim),
+                        "Im" => Quantity::new(c.im, c.dim),
+                        "abs" => c.abs(),
+                        _ => c.arg(),
+                    });
+                }
+                Ok(Value::Vector(VectorValue { elements: out }))
+            }
+
+            // Everything else, refused by name. A complex vector's `elements`
+            // are not quantities, so a builtin that reached for them would see
+            // an *empty* collection and answer confidently: `sort` gave `[]`
+            // rather than saying it could not order complex numbers. One guard
+            // here beats that failure repeated across every aggregate in the
+            // language.
+            _ if args.iter().any(|a| matches!(a, Value::ComplexVector(_)))
+                && !matches!(
+                    name,
+                    "sum" | "Re" | "Im" | "abs" | "arg" | "conj" | "reverse" | "length"
+                ) =>
+            {
+                Err(EvalError::NotImplemented(
+                    "this function of a complex vector",
+                ))
+            }
+
+            "reverse" if matches!(args.first(), Some(Value::ComplexVector(_))) => {
+                arity(1)?;
+                let Some(Value::ComplexVector(v)) = args.first() else {
+                    unreachable!("guarded above")
+                };
+                let mut out = v.clone();
+                out.reverse();
+                Ok(Value::ComplexVector(out))
+            }
+
             "sin" => unary_dimensionless(math::sin),
             "cos" => unary_dimensionless(math::cos),
             "tan" => unary_dimensionless(math::tan),
@@ -2654,6 +2732,31 @@ impl Env {
                             return Err(EvalError::IndexOutOfBounds { index: c, len: 1 });
                         }
                         element_at(&v.elements, resolved[0])
+                    }
+                    n => Err(EvalError::WrongIndexCount {
+                        expected: 1,
+                        found: n,
+                    }),
+                },
+                // The same rules as a real vector, one element at a time. The
+                // shared helper takes quantities, so this is the one place a
+                // complex collection is indexed by hand.
+                Value::ComplexVector(v) => match resolved.len() {
+                    1 | 2 => {
+                        if resolved.len() == 2 && resolved[1] != 1 {
+                            return Err(EvalError::IndexOutOfBounds {
+                                index: resolved[1],
+                                len: 1,
+                            });
+                        }
+                        let i = resolved[0];
+                        if i < 1 || i as usize > v.len() {
+                            return Err(EvalError::IndexOutOfBounds {
+                                index: i,
+                                len: v.len(),
+                            });
+                        }
+                        Ok(Value::Complex(v[i as usize - 1]))
                     }
                     n => Err(EvalError::WrongIndexCount {
                         expected: 1,
@@ -3776,6 +3879,46 @@ fn element_at(elements: &[Quantity], i: i64) -> Result<Value, EvalError> {
 
 fn collect_scalars(traces: &[Trace]) -> Result<Vec<Quantity>, EvalError> {
     collect_scalars_ref(&traces.iter().collect::<Vec<_>>())
+}
+
+/// The elements of a literal as complex quantities, when any of them is complex.
+///
+/// `None` means every element was real and the caller should build an ordinary
+/// vector — which keeps a real worksheet on the code it was already on, the same
+/// bargain the scalar tower makes.
+fn collect_complex(traces: &[&Trace]) -> Option<Result<Vec<ComplexQuantity>, EvalError>> {
+    if !traces
+        .iter()
+        .any(|t| matches!(&t.value, Ok(Value::Complex(_))))
+    {
+        return None;
+    }
+    let mut out = Vec::with_capacity(traces.len());
+    for t in traces {
+        let promoted = match &t.value {
+            Err(_) => return Some(Err(EvalError::Poisoned)),
+            Ok(Value::Complex(c)) => Ok(*c),
+            Ok(Value::Scalar(q)) => ComplexQuantity::promote(q).map_err(EvalError::Unit),
+            Ok(other) => Err(EvalError::TypeMismatch {
+                op: "a literal",
+                lhs: other.type_name(),
+                rhs: "a number",
+            }),
+        };
+        match promoted {
+            Ok(c) => out.push(c),
+            Err(e) => return Some(Err(e)),
+        }
+    }
+    // One dimension across the elements, as a real vector requires: a vector of
+    // impedances or of voltages, never a mixture.
+    let dim = out[0].dim;
+    if out.iter().any(|c| c.dim != dim) {
+        return Some(Err(EvalError::Singular(
+            "every element of a vector must share one dimension",
+        )));
+    }
+    Some(Ok(out))
 }
 
 fn collect_scalars_ref(traces: &[&Trace]) -> Result<Vec<Quantity>, EvalError> {

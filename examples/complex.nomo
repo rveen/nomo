@@ -56,3 +56,31 @@ f = 110000 Hz
 Zrlc = R + 2*pi*f*L*i + 1/(2*pi*f*C*i)
 abs(Zrlc) -> Ω
 arg(Zrlc)*180/pi
+
+' ## A branch of impedances, as one value
+'
+' A network is a collection of impedances, and until now each one had to be its
+' own name. A vector holds them, sums to the series impedance, and comes apart
+' elementwise into magnitudes and angles — which is what a table of the branch
+' would show.
+
+' The same branch, split into the three impedances it is made of, using the
+' resistance, inductance and capacitance already defined above.
+Z_R = R + 0i*Ω
+Z_L = 0 Ω + 2*pi*f*L*i
+Z_C = 0 Ω + 1/(2*pi*f*C*i)
+
+branch = [Z_R, Z_L, Z_C]
+
+Z_series = sum(branch)
+magnitudes = abs(branch) -> ohm
+angles = arg(branch) -> °
+
+' Scaling the whole branch is one multiplication — two of everything in
+' parallel halves each impedance.
+
+halved = branch/2
+
+' What a complex vector does not do, it says. Ordering complex numbers has no
+' meaning, so `sort` and `min` refuse one rather than answering emptily, and a
+' matrix of complex numbers is not built at all.

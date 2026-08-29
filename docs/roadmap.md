@@ -355,12 +355,21 @@ can see it.
 Tresca stress the worksheet already had from a closed formula — an independent
 check of the solver inside a real calculation rather than in a test.
 
-### 17. Complex vectors
+### 17. Complex vectors — **done**
 
-So that an impedance network is one expression rather than three scalars.
-Scalars-only is a recorded limitation and this is its next phase. It stops short
-of transcendentals of a complex argument, which stay refused for the branch-cut
-reason already written down.
+Built, and it cost exactly what §8.40 predicted a second value tower would:
+**nine exhaustive matches**, no more. A complex vector is its own variant rather
+than a complex element inside the real one, for the reason the scalar tower is
+separate — every real worksheet stays on the code it was already on.
+
+The lesson is in what it nearly shipped. A complex vector holds no real
+elements, so every aggregate that reaches for `elements()` saw an *empty*
+collection: `sort` of a complex vector answered `[]` rather than refusing. One
+guard now catches every name that is not explicitly handled, which is a better
+shape than remembering to check in thirty places.
+
+A complex matrix is still not built, and transcendentals of a complex argument
+stay refused for the branch-cut reason already written down.
 
 ## Phase 6 — how it looks, and how it edits
 

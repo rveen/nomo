@@ -51,6 +51,27 @@ f = 110000 Hz
 Zrlc = R + 2·π·f·L·i + 1/(2·π·f·C·i) = 32.3383 Ω + 2·π·(110000 Hz)·(4.58533e-5 H)·i + 1/(2·π·(110000 Hz)·(4.56546e-8 F)·i) = (32.3383 + 1.79395e-5i) Ω
 abs(Zrlc) = abs((32.3383 + 1.79395e-5i) Ω) = 32.3383 Ω
 arg(Zrlc)·180/π = arg((32.3383 + 1.79395e-5i) Ω)·180/π = 3.17844e-5
+## A branch of impedances, as one value
+
+A network is a collection of impedances, and until now each one had to be its
+own name. A vector holds them, sums to the series impedance, and comes apart
+elementwise into magnitudes and angles — which is what a table of the branch
+would show.
+The same branch, split into the three impedances it is made of, using the
+resistance, inductance and capacitance already defined above.
+Z_R = R + 0 i·Ω = 32.3383 Ω + 0 i·Ω = (32.3383 + 0i) Ω
+Z_L = 0 Ω + 2·π·f·L·i = 0 Ω + 2·π·(110000 Hz)·(4.58533e-5 H)·i = (0 + 31.6915i) Ω
+Z_C = 0 Ω + 1/(2·π·f·C·i) = 0 Ω + 1/(2·π·(110000 Hz)·(4.56546e-8 F)·i) = (0 - 31.6915i) Ω
+branch = [Z_R, Z_L, Z_C] = [(32.3383 + 0i) Ω, (0 + 31.6915i) Ω, (0 - 31.6915i) Ω]
+Z_series = sum(branch) = sum([(32.3383 + 0i) Ω, (0 + 31.6915i) Ω, (0 - 31.6915i) Ω]) = (32.3383 + 1.79395e-5i) Ω
+magnitudes = abs(branch) = abs([(32.3383 + 0i) Ω, (0 + 31.6915i) Ω, (0 - 31.6915i) Ω]) = [32.3383 ohm, 31.6915 ohm, 31.6915 ohm]
+angles = arg(branch) = arg([(32.3383 + 0i) Ω, (0 + 31.6915i) Ω, (0 - 31.6915i) Ω]) = [0°, 90°, -90°]
+Scaling the whole branch is one multiplication — two of everything in
+parallel halves each impedance.
+halved = branch/2 = [(32.3383 + 0i) Ω, (0 + 31.6915i) Ω, (0 - 31.6915i) Ω]/2 = [(16.1691 + 0i) Ω, (0 + 15.8458i) Ω, (0 - 15.8458i) Ω]
+What a complex vector does not do, it says. Ordering complex numbers has no
+meaning, so `sort` and `min` refuse one rather than answering emptily, and a
+matrix of complex numbers is not built at all.
 
 === html ===
 <h1 class="prose">Complex numbers</h1>
@@ -94,6 +115,19 @@ arg(Zrlc)·180/π = arg((32.3383 + 1.79395e-5i) Ω)·180/π = 3.17844e-5
 <div class="step"><span class="name">Zrlc</span><span class="eq">=</span>R + 2·π·f·L·i + 1/(2·π·f·C·i)<span class="eq">=</span><span class="subst">32.3383 Ω + 2·π·(110000 Hz)·(4.58533e-5 H)·i + 1/(2·π·(110000 Hz)·(4.56546e-8 F)·i)</span><span class="eq">=</span><span class="result">(32.3383 + 1.79395e-5i) Ω</span></div>
 <div class="step">abs(Zrlc)<span class="eq">=</span><span class="subst">abs((32.3383 + 1.79395e-5i) Ω)</span><span class="eq">=</span><span class="result">32.3383 Ω</span></div>
 <div class="step">arg(Zrlc)·180/π<span class="eq">=</span><span class="subst">arg((32.3383 + 1.79395e-5i) Ω)·180/π</span><span class="eq">=</span><span class="result">3.17844e-5</span></div>
+<h2 class="prose">A branch of impedances, as one value</h2>
+<p class="prose">A network is a collection of impedances, and until now each one had to be its own name. A vector holds them, sums to the series impedance, and comes apart elementwise into magnitudes and angles — which is what a table of the branch would show.</p>
+<p class="prose">The same branch, split into the three impedances it is made of, using the resistance, inductance and capacitance already defined above.</p>
+<div class="step"><span class="name">Z_R</span><span class="eq">=</span>R + 0 i·Ω<span class="eq">=</span><span class="subst">32.3383 Ω + 0 i·Ω</span><span class="eq">=</span><span class="result">(32.3383 + 0i) Ω</span></div>
+<div class="step"><span class="name">Z_L</span><span class="eq">=</span>0 Ω + 2·π·f·L·i<span class="eq">=</span><span class="subst">0 Ω + 2·π·(110000 Hz)·(4.58533e-5 H)·i</span><span class="eq">=</span><span class="result">(0 + 31.6915i) Ω</span></div>
+<div class="step"><span class="name">Z_C</span><span class="eq">=</span>0 Ω + 1/(2·π·f·C·i)<span class="eq">=</span><span class="subst">0 Ω + 1/(2·π·(110000 Hz)·(4.56546e-8 F)·i)</span><span class="eq">=</span><span class="result">(0 - 31.6915i) Ω</span></div>
+<div class="step"><span class="name">branch</span><span class="eq">=</span>[Z_R, Z_L, Z_C]<span class="eq">=</span><span class="result">[(32.3383 + 0i) Ω, (0 + 31.6915i) Ω, (0 - 31.6915i) Ω]</span></div>
+<div class="step"><span class="name">Z_series</span><span class="eq">=</span>sum(branch)<span class="eq">=</span><span class="subst">sum([(32.3383 + 0i) Ω, (0 + 31.6915i) Ω, (0 - 31.6915i) Ω])</span><span class="eq">=</span><span class="result">(32.3383 + 1.79395e-5i) Ω</span></div>
+<div class="step"><span class="name">magnitudes</span><span class="eq">=</span>abs(branch)<span class="eq">=</span><span class="subst">abs([(32.3383 + 0i) Ω, (0 + 31.6915i) Ω, (0 - 31.6915i) Ω])</span><span class="eq">=</span><span class="result">[32.3383 ohm, 31.6915 ohm, 31.6915 ohm]</span></div>
+<div class="step"><span class="name">angles</span><span class="eq">=</span>arg(branch)<span class="eq">=</span><span class="subst">arg([(32.3383 + 0i) Ω, (0 + 31.6915i) Ω, (0 - 31.6915i) Ω])</span><span class="eq">=</span><span class="result">[0°, 90°, -90°]</span></div>
+<p class="prose">Scaling the whole branch is one multiplication — two of everything in parallel halves each impedance.</p>
+<div class="step"><span class="name">halved</span><span class="eq">=</span>branch/2<span class="eq">=</span><span class="subst">[(32.3383 + 0i) Ω, (0 + 31.6915i) Ω, (0 - 31.6915i) Ω]/2</span><span class="eq">=</span><span class="result">[(16.1691 + 0i) Ω, (0 + 15.8458i) Ω, (0 - 15.8458i) Ω]</span></div>
+<p class="prose">What a complex vector does not do, it says. Ordering complex numbers has no meaning, so `sort` and `min` refuse one rather than answering emptily, and a matrix of complex numbers is not built at all.</p>
 
 === values ===
 z = 3.0+4.0i dimensionless
@@ -127,6 +161,14 @@ f = 110000.0 s^-1
 Zrlc = 32.3383+1.793945294537025e-5i m^2·kg·s^-3·A^-2
 ? = 32.33830000000497 m^2·kg·s^-3·A^-2
 ? = 3.178444570503532e-5 dimensionless
+Z_R = 32.3383+0.0i m^2·kg·s^-3·A^-2
+Z_L = 0.0+31.691525893026746i m^2·kg·s^-3·A^-2
+Z_C = 0.0-31.6915079535738i m^2·kg·s^-3·A^-2
+branch = [32.3383+0.0i, 0.0+31.691525893026746i, 0.0-31.6915079535738i] m^2·kg·s^-3·A^-2
+Z_series = 32.3383+1.793945294537025e-5i m^2·kg·s^-3·A^-2
+magnitudes = [32.3383 m^2·kg·s^-3·A^-2, 31.691525893026746 m^2·kg·s^-3·A^-2, 31.6915079535738 m^2·kg·s^-3·A^-2]
+angles = [0.0 dimensionless, 1.5707963267948966 dimensionless, -1.5707963267948966 dimensionless]
+halved = [16.16915+0.0i, 0.0+15.845762946513373i, 0.0-15.8457539767869i] m^2·kg·s^-3·A^-2
 
 === diagnostics ===
 none

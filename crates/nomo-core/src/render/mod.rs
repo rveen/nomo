@@ -315,6 +315,13 @@ impl<'a> Renderer<'a> {
             // Rendered as its value rather than as nothing, so that an escape
             // shows up as a number that is right rather than as a hole.
             Value::Dual(d) => self.quantity(&d.value, target),
+            Value::ComplexVector(v) if v.len() > SHOWN => {
+                format!("[{} complex values]", v.len())
+            }
+            Value::ComplexVector(v) => {
+                let parts: Vec<String> = v.iter().map(|c| self.complex(c, target)).collect();
+                format!("[{}]", parts.join(", "))
+            }
             Value::Vector(v) if v.elements.len() > SHOWN => {
                 format!("[{} values]", v.elements.len())
             }

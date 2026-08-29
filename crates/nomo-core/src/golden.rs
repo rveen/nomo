@@ -118,6 +118,16 @@ fn exact(value: &Value) -> String {
     match value {
         Value::Scalar(q) => quantity(q),
         Value::Complex(c) => format!("{:?}{:+?}i {}", c.re, c.im, c.dim),
+        Value::ComplexVector(v) => {
+            let parts: Vec<String> = v
+                .iter()
+                .map(|c| format!("{:?}{:+?}i", c.re, c.im))
+                .collect();
+            let dim = v
+                .first()
+                .map_or_else(String::new, |c| format!(" {}", c.dim));
+            format!("[{}]{dim}", parts.join(", "))
+        }
         // Quoted and verbatim: a string has no magnitude to record at full
         // precision, and the bytes are the whole of what could drift.
         Value::Text(t) => format!("{t:?}"),

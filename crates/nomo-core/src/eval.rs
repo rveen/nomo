@@ -121,6 +121,7 @@ pub const BUILTINS: &[&str] = &[
     "inv",
     "iterate",
     "length",
+    "linterp",
     "ln",
     "log10",
     "log2",
@@ -1987,6 +1988,110 @@ impl Env {
             // The Euclidean norm. Units survive it — the norm of a vector of
             // stresses is a stress — because the squares and the square root
             // cancel in the dimension exactly as they do in the number.
+            // Interpolation in a table, which is how a worksheet reads a
+            // material property, a section table or a measured curve.
+            //
+            // **Three deliberate differences from SMath**, all recorded in
+            // design note §8.42 and all read out of `SMath.Math.Numeric.dll`
+            // rather than guessed:
+            //
+            // * SMath drops units — its `linterp` takes `ToDouble()` of every
+            //   entry and returns a bare `float64`. This one carries them, and
+            //   the corpus shows why that is the better bargain: the one
+            //   dimensioned use in either corpus writes
+            //   `linterp(x.s/m, Q.s/N, x/m)*N`, dividing the units out by hand
+            //   and multiplying them back, which is the workaround the missing
+            //   feature forces. That line still evaluates here, unchanged.
+            // * SMath **extrapolates** outside the table, silently: its
+            //   `splineinterpolation` has no range check, so a point below the
+            //   first knot is evaluated on the first segment's slope. This
+            //   refuses instead. Extrapolating a material table is how a
+            //   worksheet gets a confident number for a condition the table
+            //   never covered.
+            // * SMath **sorts** the pairs before interpolating. This requires
+            //   them to be increasing and says so. Sorting silently repairs a
+            //   table whose columns were passed the wrong way round, which is
+            //   the mistake most worth seeing.
+            "linterp" => {
+                arity(3)?;
+                let xs = args[0].elements();
+                let ys = args[1].elements();
+                let at = args[2]
+                    .as_scalar()
+                    .ok_or(EvalError::Singular("`linterp` interpolates at one point"))?;
+
+                if xs.len() < 2 {
+                    return Err(EvalError::Singular(
+                        "`linterp` needs a table of at least two points",
+                    ));
+                }
+                if xs.len() != ys.len() {
+                    return Err(EvalError::ShapeMismatch {
+                        op: "linterp",
+                        lhs: format!("{} values", xs.len()),
+                        rhs: format!("{} values", ys.len()),
+                    });
+                }
+                // An offset scale has no place in the arithmetic below: the
+                // interpolation is a weighted sum, and a weighted sum of
+                // temperatures on a relative scale is meaningless. Same rule
+                // and same reason as a unit declaration.
+                if xs.iter().chain(ys.iter()).any(Quantity::is_point) {
+                    return Err(EvalError::Singular(
+                        "`linterp` cannot interpolate a temperature on an offset scale; use an absolute scale such as K",
+                    ));
+                }
+                for w in xs.windows(2) {
+                    if w[0].dim != w[1].dim {
+                        return Err(EvalError::Singular(
+                            "every value in `linterp`'s first column must share one dimension",
+                        ));
+                    }
+                    // Strictly less, asked as a comparison rather than as a
+                    // negated one: a NaN in the column compares to nothing at
+                    // all, and `None` here refuses it, which is the right
+                    // answer for a table that has one.
+                    if w[0].value.partial_cmp(&w[1].value) != Some(core::cmp::Ordering::Less) {
+                        return Err(EvalError::Singular(
+                            "`linterp` needs its first column strictly increasing",
+                        ));
+                    }
+                }
+                if ys.windows(2).any(|w| w[0].dim != w[1].dim) {
+                    return Err(EvalError::Singular(
+                        "every value in `linterp`'s second column must share one dimension",
+                    ));
+                }
+                if at.dim != xs[0].dim {
+                    return Err(EvalError::Unit(UnitError::DimensionMismatch {
+                        lhs: xs[0].dim,
+                        rhs: at.dim,
+                    }));
+                }
+                let (first, last) = (xs[0].value, xs[xs.len() - 1].value);
+                if at.value < first || at.value > last {
+                    return Err(EvalError::Singular(
+                        "`linterp` was asked for a point outside its table, and will not extrapolate",
+                    ));
+                }
+                // The segment containing `at`, found by walking rather than by
+                // bisecting: a worksheet's table is a handful of rows, and a
+                // linear scan is the same answer with less to get wrong.
+                let mut i = 0;
+                while i + 2 < xs.len() && xs[i + 1].value < at.value {
+                    i += 1;
+                }
+                let (x0, x1) = (xs[i].value, xs[i + 1].value);
+                let (y0, y1) = (ys[i], ys[i + 1]);
+                let t = (at.value - x0) / (x1 - x0);
+                // y0 + t*(y1 - y0), in that order and through `Quantity`, so the
+                // dimension rules apply and the reduction order is the one §3
+                // fixes.
+                let span = y1.sub(&y0)?;
+                let value = y0.add(&Quantity::new(t * span.value, span.dim))?;
+                Ok(Value::Scalar(value))
+            }
+
             "norm" => {
                 arity(1)?;
                 let mut acc: Option<Quantity> = None;

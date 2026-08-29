@@ -2797,6 +2797,80 @@ Not decided here, and to be measured on its own: SMath's `Area` regions carry a 
 section heading in the original document and would translate to `## `. That changes emitted prose,
 so it moves the corpus baselines and belongs in its own commit.
 
+### 8.42 Interpolation, read out of the numeric assembly (2026-08-29)
+
+A worksheet reads engineering data out of a table — a property against a
+temperature, a section against a depth, a measured curve against a load — and
+the engine could not do it at all. Three questions decide what `linterp` means,
+and the corpus can settle none of them: what happens **outside** the tabulated
+range, what happens when the first column is not increasing, and what happens to
+**units**. SMath 1.5 is on this machine, so all three were read rather than
+inferred, the way §8.21 settled the plot span and §8.39 settled `·` between two
+columns.
+
+`TMatrix::Linterp(x, y, pnt)` in `SMath.Math.Numeric.dll` is four instructions:
+refuse a table shorter than two rows (`Errors` 64), `buildlinearspline`, then
+`splineinterpolation`. The answers are in the last two.
+
+**Outside the table, SMath extrapolates — silently.**
+`splineinterpolation` is the ALGLIB shape: `c[2]` holds the row count, a binary
+search over the knots narrows `l`/`r` to one segment, and the value is Horner on
+`x - c[l]` over four coefficients. There is **no range check anywhere in it**.
+For a point below the first knot the search leaves `l` at the first segment and
+the offset goes negative; above the last knot it leaves `l` at the last and the
+offset overshoots. Either way the answer is the end segment's slope continued.
+
+**An unsorted first column is sorted, silently.** `buildlinearspline` clones
+both arrays and calls a private compare-and-swap over the pair before it builds
+anything, so the caller's order is irrelevant.
+
+**Units are dropped.** `TNumber::Linterp` calls `ToDouble()` on every entry and
+returns `op_Implicit(float64)` — a bare number. The corpus shows what that costs
+its users: the one dimensioned use in either corpus, `5.2-4.sm`, writes
+`linterp(x.s/m, Q.s/N, x/m)*N`, dividing the units out by hand and multiplying
+them back.
+
+**Nomo differs on all three, deliberately.** Reading the implementation settles
+what SMath *does*; it does not settle what this engine *should* do, and here the
+two part company:
+
+- **Units are carried.** Dimensional analysis is the product. The divided-out
+  idiom above still evaluates unchanged — it is dimensionless arithmetic either
+  way — so nothing that worked stops working.
+- **Outside the table is refused.** A material table asked for a condition it
+  never covered is exactly where a confident wrong number does harm, and this
+  project's rule is that a construct which is right most of the time is worse
+  than one that reports it cannot tell.
+- **The first column must be increasing.** Sorting quietly repairs a table whose
+  columns were passed the wrong way round, which is the mistake most worth
+  seeing.
+
+Each difference is a place where an imported worksheet could answer differently
+from SMath, and each fails loudly rather than quietly, which is the only kind of
+difference this importer is willing to have.
+
+**What it cost, measured.** Registering the name let the emitter translate the
+construct it had been refusing: `5.2-4.sm`, both editions, lost one import
+marker each and gained the line `fn Q_int(x) = linterp(x_s/m, Q_s/N, x/m) N`.
+No stored answer moved — those twelve were already failing on other constructs.
+
+**And one correction to the registry.** `SMath.Manager`'s function-name table
+holds `Linterp`, `Cinterp` and `Ainterp` and **no lookup function of any kind**.
+`hlookup`, `vlookup`, `hmatch` and `vmatch` were in `builtins.rs` as SMath
+built-ins on the strength of general knowledge; they are not. They come from a
+plugin this installation does not carry, they are 18 calls in exactly one
+worksheet — `SimplySupportedTimberBeam_Eurocode5_v1.0.sm`, a timber grade table
+— and the registry now leaves them out, so the report calls them unknown. That
+is the honest word: "SMath provides this and Nomo does not" and "nobody here
+knows what this does" are different answers, and only the second is true.
+
+They are therefore **not implemented**, and cannot be until their semantics can
+be read somewhere: what a lookup returns when several rows match is exactly the
+kind of question this project refuses to guess at. `cinterp` (8 calls) and
+`ainterp` (3) are also left out for now — a cubic or Akima spline through a
+material table overshoots between rows, and whether a worksheet wants that is a
+design question with its own evidence to gather.
+
 ### 8.8 Strategy: corpus-driven
 
 Build the importer as a separate crate emitting the Nomo document format, then run it across every

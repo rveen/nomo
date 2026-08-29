@@ -14,10 +14,21 @@
 //!
 //! **Provenance, so this is not trusted further than it deserves:** the list
 //! below is assembled from the names appearing across the 54-worksheet corpus
-//! plus general knowledge of SMath's function set. It has **not** been checked
-//! against SMath's own documentation or a running copy. Its errors are visible
-//! in the coverage report — a built-in missing from it shows up as an unknown
-//! function — which is the reason the report exists.
+//! plus general knowledge of SMath's function set. Most of it has **not** been
+//! checked against SMath's own documentation or a running copy. Its errors are
+//! visible in the coverage report — a built-in missing from it shows up as an
+//! unknown function — which is the reason the report exists.
+//!
+//! **One entry has been corrected by reading the installed copy** (design note
+//! §8.42): `hlookup`, `vlookup`, `hmatch` and `vmatch` were here and are not
+//! SMath functions at all. `SMath.Manager`'s function-name table holds
+//! `Linterp`, `Cinterp` and `Ainterp` and no lookup of any kind, so those four
+//! come from a plugin this installation does not carry. They are 18 calls in
+//! exactly one worksheet — `SimplySupportedTimberBeam_Eurocode5_v1.0.sm`, which
+//! reads a timber grade table — and the coverage report now calls them unknown,
+//! which is what they are. "SMath provides this and Nomo does not" and "nobody
+//! here knows what this does" are different answers, and only the second is
+//! true of these.
 
 /// Names SMath is believed to provide.
 ///
@@ -46,8 +57,11 @@ const BUILTINS: &[&str] = &[
     "if", "for", "while", "line", "range", "break", "continue", "return", "eval", "error",
     // Numerics
     "solve", "roots", "diff", "int", "bisection", "Jacobi", "numbering",
-    // Interpolation and lookup
-    "linterp", "cinterp", "ainterp", "minterp", "hlookup", "vlookup", "hmatch", "vmatch",
+    // Interpolation. Read out of the installed copy rather than assumed: these
+    // three are `TMatrix::Linterp`, `Cinterp` and `Ainterp` in
+    // `SMath.Math.Numeric.dll`, and `SMath.Manager`'s name table has entries for
+    // exactly them. `minterp` stays on the strength of the corpus alone.
+    "linterp", "cinterp", "ainterp", "minterp",
     // Strings
     "num2str", "str2num", "substr", "findstr", "strlen", "IsString", "IsDefined", "UoM",
     // Data

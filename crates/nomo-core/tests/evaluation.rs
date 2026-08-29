@@ -1047,6 +1047,74 @@ f(2)
     );
 }
 
+// ---- interpolation ------------------------------------------------------
+
+#[test]
+fn linterp_reads_a_table() {
+    // Midpoint of the second segment: 235 MPa at 100 K, 205 at 200 K.
+    let table = "T = [20, 100, 200, 300] K\nFy = [250, 235, 205, 170] MPa\n";
+    assert_close(
+        last_in(&format!("{table}linterp(T, Fy, 150 K)"), "MPa"),
+        220.0,
+        "halfway down the second segment",
+    );
+    // The knots themselves, including both ends.
+    for (at, want) in [("20 K", 250.0), ("200 K", 205.0), ("300 K", 170.0)] {
+        assert_close(
+            last_in(&format!("{table}linterp(T, Fy, {at})"), "MPa"),
+            want,
+            at,
+        );
+    }
+}
+
+#[test]
+fn linterp_carries_dimensions_where_smath_drops_them() {
+    // SMath's `linterp` takes `ToDouble()` of every entry and hands back a bare
+    // number, which is why the one dimensioned use in either corpus divides the
+    // units out by hand and multiplies them back. That form still works —
+    assert_close(
+        last_raw("x = [0, 1, 2]\ny = [0, 10, 20]\nlinterp(x, y, 1.5)"),
+        15.0,
+        "the dimensionless form SMath forces",
+    );
+    // — and so does the one it forced people to avoid.
+    assert_close(
+        last_in(
+            "x = [0, 1, 2] m\ny = [0, 10, 20] kN\nlinterp(x, y, 1.5 m)",
+            "kN",
+        ),
+        15.0,
+        "a table that keeps its units",
+    );
+}
+
+#[test]
+fn linterp_refuses_what_it_cannot_answer() {
+    let table = "T = [20, 100, 200] K\nFy = [250, 235, 205] MPa\n";
+    // Outside the table. SMath extrapolates here, silently, off the slope of
+    // the first or last segment; a material table asked for a temperature it
+    // never covered is exactly where a confident wrong number does harm.
+    for at in ["10 K", "500 K"] {
+        let e = errors(&format!("{table}linterp(T, Fy, {at})"));
+        assert!(
+            e.iter().any(|m| m.contains("will not extrapolate")),
+            "{at} should be refused, got {e:?}"
+        );
+    }
+    // Not increasing. SMath sorts the pairs instead, which quietly repairs a
+    // table whose columns were passed the wrong way round.
+    assert!(errors("linterp([3, 2, 1], [1, 2, 3], 2)")[0].contains("strictly increasing"));
+    assert!(errors("linterp([1, 1, 2], [1, 2, 3], 1)")[0].contains("strictly increasing"));
+    // Shapes and dimensions.
+    assert!(errors("linterp([1, 2, 3], [1, 2], 2)")[0].contains("linterp"));
+    assert!(errors("linterp([1], [1], 1)")[0].contains("at least two points"));
+    assert!(errors(&format!("{table}linterp(T, Fy, 5 m)"))[0].contains("cannot combine"));
+    // An offset scale cannot take part in a weighted sum, the same rule a unit
+    // declaration follows.
+    assert!(errors("linterp([20 °C, 30 °C], [1, 2], 25 °C)")[0].contains("offset scale"));
+}
+
 // ---- checks -------------------------------------------------------------
 
 /// The verdicts a worksheet reached.

@@ -144,7 +144,7 @@ nobody could work out are different. And the keyword's cost was measured before
 it was spent: `check` is used as a name in **zero** of the 114 SMath worksheets
 the importer reads, and in exactly one worksheet here, which was renamed.
 
-### 7. `linterp`, and table lookup — settled from SMath, not guessed
+### 7. `linterp`, and table lookup — settled from SMath, not guessed — **done**
 
 Material and section tables are what every how-to in Phase 3 needs, and the
 engine cannot interpolate at all. Two questions the corpus cannot settle decide
@@ -156,7 +156,13 @@ settles both, which is the method that settled the plot span (§8.21), `solve`
 states; refuse with a marker whatever it leaves ambiguous. The findings go in the
 design note as §8.42, and the importer maps the names it now has a target for.
 
-*Gate:* `cargo test`, golden, `scripts/check-corpus.sh`.
+Done, and the disassembly answered more than it was asked. SMath extrapolates
+outside the table silently, sorts an unsorted column silently, and drops units
+altogether; Nomo decides all three the other way, and design note §8.42 records
+the evidence and the reasoning. The lookup family turned out **not to be SMath
+functions at all** — `SMath.Manager`'s name table has no lookup of any kind — so
+they are unimplementable from here on principle rather than on priority, and the
+importer's registry no longer claims them.
 
 ### 8. The cheap missing builtins, in one batch
 

@@ -426,11 +426,40 @@ that a worksheet gives the same last bits on every machine.
 | Shape | `rows` `cols` `row` `col` `augment` `stack` |
 | Repetition | `range` `map` `iterate` |
 | Numerical | `root` `roots` `derivative` `integral` `solve_linear` |
+| Tables | `linterp` |
 
 Trigonometric and exponential functions require a dimensionless argument. Since
 `rad`, `°` and `%` are dimensionless, `sin(30 °)` works and gives `0.5`.
 
 `sqrt` halves the dimension, so `sqrt(16 m^2)` is `4 m`.
+
+### Reading a table
+
+`linterp(xs, ys, x)` interpolates linearly between the rows either side of `x`.
+Engineering data arrives as a table — a property against a temperature, a
+section against a depth, a measured curve against a load — and this is how a
+worksheet reads one.
+
+```nomo
+T  = [293, 373, 473, 573] K
+Fy = [250, 235, 205, 170] MPa
+linterp(T, Fy, 423 K)                ' 220 MPa
+```
+
+Both columns carry units, and so does the answer. Three rules, each of which
+SMath decides the other way — the differences are deliberate and design note
+§8.42 records what its implementation actually does:
+
+- **A point outside the table is refused**, not extrapolated. A table asked for a
+  condition it never covered is where a confident wrong number does the most
+  harm.
+- **The first column must be strictly increasing.** A table whose columns were
+  passed the wrong way round is a mistake worth seeing rather than sorting away.
+- **An offset temperature scale is refused.** Interpolation is a weighted sum,
+  and a weighted sum of readings on a relative scale means nothing; use `K`.
+
+The columns must be the same length, at least two rows long, and each internally
+of one dimension.
 
 ### Strings
 

@@ -1,0 +1,92 @@
+# nomo snapshot v1
+# worksheet: tables
+
+=== text ===
+# Reading a table
+
+Engineering data arrives as a table: a property against a temperature, a
+section against a depth, a measured curve against a load. `linterp` reads a
+value out of one, interpolating linearly between the rows either side.
+
+It carries units, which is worth saying because SMath's does not — its
+`linterp` reduces every entry to a bare number and hands one back, so
+worksheets that use it divide the units out by hand and multiply them back in.
+That form still works here; it is simply no longer necessary.
+## Yield strength of a steel against temperature
+
+Four rows from a material datasheet. The temperatures are absolute, because an
+interpolation is a weighted sum and a weighted sum of readings on an offset
+scale means nothing — `°C` is refused here for the same reason it cannot be
+scaled.
+T = [293, 373, 473, 573] K
+Fy = [250, 235, 205, 170] MPa
+The design condition sits between two rows.
+T_design = 423 K
+Fy_design = linterp(T, Fy, T_design) = linterp([293 K, 373 K, 473 K, 573 K], [250000000 Pa, 235000000 Pa, 205000000 Pa, 170000000 Pa], 423 K) = 220000000 Pa
+Fy_design = 220 MPa
+## And the check that goes with it
+sigma = 180 MPa
+check sigma ≤ Fy_design = 180 MPa ≤ 220000000 Pa — pass
+## The table is read, not extrapolated
+
+`linterp` refuses a point outside the rows it was given rather than
+continuing the last segment's slope. A table asked for a condition it never
+covered is where a confident wrong number does the most harm, and SMath
+answers that one silently.
+T_beyond = 800 K
+linterp(T, Fy, T_beyond) would be refused: 800 K is off the end of the table.
+## A measured curve
+Deflection measured against load, and the load that produced 1 mm of it read
+back the other way round — the same function, with the columns exchanged.
+P = [0, 5, 10, 15, 20] kN
+delta = [0, 0.42, 0.86, 1.35, 1.9] mm
+delta_at_12 = linterp(P, delta, 12 kN) = linterp([0 N, 5000 N, 10000 N, 15000 N, 20000 N], [0 m, 0.00042 m, 0.00086 m, 0.00135 m, 0.0019 m], 12 kN) = 0.001056 m
+P_at_1mm = linterp(delta, P, 1 mm) = linterp([0 m, 0.00042 m, 0.00086 m, 0.00135 m, 0.0019 m], [0 N, 5000 N, 10000 N, 15000 N, 20000 N], 1 mm) = 11428.6 N
+delta_at_12 = 1.056 mm
+P_at_1mm = 11.4286 kN
+
+=== html ===
+<h1 class="prose">Reading a table</h1>
+<p class="prose">Engineering data arrives as a table: a property against a temperature, a section against a depth, a measured curve against a load. `linterp` reads a value out of one, interpolating linearly between the rows either side.</p>
+<p class="prose">It carries units, which is worth saying because SMath's does not — its `linterp` reduces every entry to a bare number and hands one back, so worksheets that use it divide the units out by hand and multiply them back in. That form still works here; it is simply no longer necessary.</p>
+<h2 class="prose">Yield strength of a steel against temperature</h2>
+<p class="prose">Four rows from a material datasheet. The temperatures are absolute, because an interpolation is a weighted sum and a weighted sum of readings on an offset scale means nothing — `°C` is refused here for the same reason it cannot be scaled.</p>
+<div class="step"><span class="name">T</span><span class="eq">=</span>[293, 373, 473, 573] K</div>
+<div class="step"><span class="name">Fy</span><span class="eq">=</span>[250, 235, 205, 170] MPa</div>
+<p class="prose">The design condition sits between two rows.</p>
+<div class="step"><span class="name">T_design</span><span class="eq">=</span>423 K</div>
+<div class="step"><span class="name">Fy_design</span><span class="eq">=</span>linterp(T, Fy, T_design)<span class="eq">=</span><span class="subst">linterp([293 K, 373 K, 473 K, 573 K], [250000000 Pa, 235000000 Pa, 205000000 Pa, 170000000 Pa], 423 K)</span><span class="eq">=</span><span class="result">220000000 Pa</span></div>
+<div class="step">Fy_design<span class="eq">=</span><span class="result">220 MPa</span></div>
+<h2 class="prose">And the check that goes with it</h2>
+<div class="step"><span class="name">sigma</span><span class="eq">=</span>180 MPa</div>
+<div class="step check pass"><span class="name">check</span>sigma ≤ Fy_design<span class="eq">=</span><span class="subst">180 MPa ≤ 220000000 Pa</span><span class="verdict">pass</span></div>
+<h2 class="prose">The table is read, not extrapolated</h2>
+<p class="prose">`linterp` refuses a point outside the rows it was given rather than continuing the last segment's slope. A table asked for a condition it never covered is where a confident wrong number does the most harm, and SMath answers that one silently.</p>
+<div class="step"><span class="name">T_beyond</span><span class="eq">=</span>800 K</div>
+<p class="prose">linterp(T, Fy, T_beyond) would be refused: 800 K is off the end of the table.</p>
+<h2 class="prose">A measured curve</h2>
+<p class="prose">Deflection measured against load, and the load that produced 1 mm of it read back the other way round — the same function, with the columns exchanged.</p>
+<div class="step"><span class="name">P</span><span class="eq">=</span>[0, 5, 10, 15, 20] kN</div>
+<div class="step"><span class="name">delta</span><span class="eq">=</span>[0, 0.42, 0.86, 1.35, 1.9] mm</div>
+<div class="step"><span class="name">delta_at_12</span><span class="eq">=</span>linterp(P, delta, 12 kN)<span class="eq">=</span><span class="subst">linterp([0 N, 5000 N, 10000 N, 15000 N, 20000 N], [0 m, 0.00042 m, 0.00086 m, 0.00135 m, 0.0019 m], 12 kN)</span><span class="eq">=</span><span class="result">0.001056 m</span></div>
+<div class="step"><span class="name">P_at_1mm</span><span class="eq">=</span>linterp(delta, P, 1 mm)<span class="eq">=</span><span class="subst">linterp([0 m, 0.00042 m, 0.00086 m, 0.00135 m, 0.0019 m], [0 N, 5000 N, 10000 N, 15000 N, 20000 N], 1 mm)</span><span class="eq">=</span><span class="result">11428.6 N</span></div>
+<div class="step">delta_at_12<span class="eq">=</span><span class="result">1.056 mm</span></div>
+<div class="step">P_at_1mm<span class="eq">=</span><span class="result">11.4286 kN</span></div>
+
+=== values ===
+T = [293.0 K, 373.0 K, 473.0 K, 573.0 K]
+Fy = [250000000.0 m^-1·kg·s^-2, 235000000.0 m^-1·kg·s^-2, 205000000.0 m^-1·kg·s^-2, 170000000.0 m^-1·kg·s^-2]
+T_design = 423.0 K
+Fy_design = 220000000.0 m^-1·kg·s^-2
+? = 220000000.0 m^-1·kg·s^-2
+sigma = 180000000.0 m^-1·kg·s^-2
+T_beyond = 800.0 K
+P = [0.0 m·kg·s^-2, 5000.0 m·kg·s^-2, 10000.0 m·kg·s^-2, 15000.0 m·kg·s^-2, 20000.0 m·kg·s^-2]
+delta = [0.0 m, 0.00042 m, 0.00086 m, 0.00135 m, 0.0019 m]
+delta_at_12 = 0.001056 m
+P_at_1mm = 11428.57142857143 m·kg·s^-2
+? = 0.001056 m
+? = 11428.57142857143 m·kg·s^-2
+
+=== diagnostics ===
+none

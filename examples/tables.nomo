@@ -1,0 +1,57 @@
+' nomo 1
+
+' # Reading a table
+'
+' Engineering data arrives as a table: a property against a temperature, a
+' section against a depth, a measured curve against a load. `linterp` reads a
+' value out of one, interpolating linearly between the rows either side.
+'
+' It carries units, which is worth saying because SMath's does not — its
+' `linterp` reduces every entry to a bare number and hands one back, so
+' worksheets that use it divide the units out by hand and multiply them back in.
+' That form still works here; it is simply no longer necessary.
+
+' ## Yield strength of a steel against temperature
+'
+' Four rows from a material datasheet. The temperatures are absolute, because an
+' interpolation is a weighted sum and a weighted sum of readings on an offset
+' scale means nothing — `°C` is refused here for the same reason it cannot be
+' scaled.
+
+T = [293, 373, 473, 573] K
+Fy = [250, 235, 205, 170] MPa
+
+' The design condition sits between two rows.
+T_design = 423 K
+Fy_design = linterp(T, Fy, T_design)
+
+Fy_design -> MPa
+
+' ## And the check that goes with it
+
+sigma = 180 MPa
+check sigma <= Fy_design
+
+' ## The table is read, not extrapolated
+'
+' `linterp` refuses a point outside the rows it was given rather than
+' continuing the last segment's slope. A table asked for a condition it never
+' covered is where a confident wrong number does the most harm, and SMath
+' answers that one silently.
+
+T_beyond = 800 K
+' linterp(T, Fy, T_beyond) would be refused: 800 K is off the end of the table.
+
+' ## A measured curve
+
+' Deflection measured against load, and the load that produced 1 mm of it read
+' back the other way round — the same function, with the columns exchanged.
+
+P = [0, 5, 10, 15, 20] kN
+delta = [0, 0.42, 0.86, 1.35, 1.9] mm
+
+delta_at_12 = linterp(P, delta, 12 kN)
+P_at_1mm = linterp(delta, P, 1 mm)
+
+delta_at_12 -> mm
+P_at_1mm -> kN

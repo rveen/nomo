@@ -10,7 +10,7 @@ Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/4.1.sm	ans
 Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/4.2.sm	answers=15 agreed=0 disagreed=0 unevaluated=15 unsupported=18 values=38a4c39eaee5ef17 source=659f65cb70288d4e
 Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/4.3.sm	answers=17 agreed=0 disagreed=0 unevaluated=17 unsupported=20 values=c01a98ca16554bc5 source=dd72673d429b01dc
 Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/5.1.sm	answers=3 agreed=0 disagreed=0 unevaluated=3 unsupported=32 values=2fc5f74e0e2febb9 source=202210ada0e43ec3
-Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/5.2-4.sm	answers=12 agreed=0 disagreed=0 unevaluated=12 unsupported=23 values=1efc01ecb6d8bb53 source=53f5c4f75ea5f7fe
+Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/5.2-4.sm	answers=12 agreed=0 disagreed=0 unevaluated=12 unsupported=22 values=1efc01ecb6d8bb53 source=69afeddc588d1bdd
 Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/5.6.sm	answers=9 agreed=0 disagreed=0 unevaluated=9 unsupported=8 values=978f17ca8f322b2f source=989312190cd975b4
 Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/5.7.sm	answers=8 agreed=0 disagreed=0 unevaluated=8 unsupported=8 values=e6b73fd140b0198a source=241107d2292d1bc6
 Technische-Mechanik-mit-SMath-main/1st edition, trilingual worksheets/6.1.sm	answers=4 agreed=2 disagreed=0 unevaluated=2 unsupported=7 values=c84500b590fd863b source=8acc6cfd63183b25
@@ -39,7 +39,7 @@ Technische-Mechanik-mit-SMath-main/Auflage 1/4.1.sm	answers=6 agreed=0 disagreed
 Technische-Mechanik-mit-SMath-main/Auflage 1/4.2.sm	answers=15 agreed=0 disagreed=0 unevaluated=15 unsupported=18 values=38a4c39eaee5ef17 source=7112e36724a66fab
 Technische-Mechanik-mit-SMath-main/Auflage 1/4.3.sm	answers=17 agreed=0 disagreed=0 unevaluated=17 unsupported=20 values=c01a98ca16554bc5 source=09edbe688f820eae
 Technische-Mechanik-mit-SMath-main/Auflage 1/5.1.sm	answers=3 agreed=0 disagreed=0 unevaluated=3 unsupported=23 values=264f41d9415dc8b6 source=2d22ca12569a9e13
-Technische-Mechanik-mit-SMath-main/Auflage 1/5.2-4.sm	answers=12 agreed=0 disagreed=0 unevaluated=12 unsupported=24 values=17f1af90de9c8ebd source=16e591d132685fcf
+Technische-Mechanik-mit-SMath-main/Auflage 1/5.2-4.sm	answers=12 agreed=0 disagreed=0 unevaluated=12 unsupported=23 values=17f1af90de9c8ebd source=385feb0f4a2151b0
 Technische-Mechanik-mit-SMath-main/Auflage 1/5.5.sm	answers=8 agreed=1 disagreed=0 unevaluated=7 unsupported=19 values=9e29b2bade0971b0 source=94f658d4172ceb18
 Technische-Mechanik-mit-SMath-main/Auflage 1/5.6.sm	answers=9 agreed=0 disagreed=0 unevaluated=9 unsupported=7 values=4bd12b9f19350b13 source=2c32b9e5189f45fd
 Technische-Mechanik-mit-SMath-main/Auflage 1/5.7.sm	answers=8 agreed=0 disagreed=0 unevaluated=8 unsupported=8 values=ad1d99bf69edd006 source=57efa639bbebcba9

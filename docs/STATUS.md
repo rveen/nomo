@@ -1,7 +1,11 @@
 # Status
 
-Snapshot for picking the work back up. Last updated after CI was confirmed green. The nine numbered phases were complete before any of the language work
-below; the most recent commits are the importer's seventh phase, figure sizing,
+Snapshot for picking the work back up. Last updated after prose became Markdown
+(design note §8.41) and after CI was checked on the public repository, where four
+of its five jobs pass and `corpus` has never got past fetching the worksheets —
+see "The plan is finished. What is worth doing next". The nine numbered phases
+were complete before any of the language work below; the most recent commits are
+the importer's seventh phase, figure sizing,
 complex numbers, plots, several curves on one plot, a plot of a table of
 measured points, the importer's side of it, and a definition that is really a
 function of `x`, in that order.
@@ -137,7 +141,9 @@ pins. `check` evaluates — it did not until the commit that says so, and report
 An imported converter worksheet used to be the second such case, for its `diff`
 chain; it exited zero by §8.28.
 
-All of the above were green at the last commit.
+All of the above were green at the last commit, run locally. That is not the
+same as CI being green: the `corpus` job cannot fetch the worksheets on a
+runner, and this list assumes they are already on the machine.
 
 ## The golden-file suite
 
@@ -1337,10 +1343,12 @@ qualifies.** That is the finding, and it is worth more than the feature: see
 `/root/.claude/plans/bright-moseying-shannon.md` had ten phases and all ten are
 done. Nothing below is committed to; this is a list of what the work exposed.
 
-**CI runs, and it is green — confirmed on a push.** This paragraph used to say
-that every gate here was something a person ran by hand until somebody checked
-the jobs on a real push. Somebody has: run `33103984067`, on `dd00363`, all four
-jobs of the day passing. There are **five** now.
+**CI runs. Four of its five jobs are green and the fifth has never passed on
+this repository** — checked on 2026-08-29, on the public repository's whole run
+history, which is three runs: `e3bc8ee`, `a518bc7` and `18858f0`. `check`,
+`arm64`, `wasm` and `browser` pass on all three. `corpus` fails on all three, at
+its **Fetch the corpora** step, before `check-corpus.sh` or any Nomo code runs.
+See "The one red job" below; it is an access problem, not a result.
 
 - **`arm64`, on real aarch64 silicon** — at `dd00363` that was 489 tests, `ok:
   16 worksheets match their snapshots`, and `ok: 16 worksheets byte-identical
@@ -1353,21 +1361,38 @@ jobs of the day passing. There are **five** now.
   native byte for byte.
 - **`browser`** — all six Chrome checks, on CI's own Chrome rather than this
   machine's.
-- **`corpus`** — the three `check-corpus.sh` baselines and the coverage report,
+- **`corpus`** — the two `check-corpus.sh` baselines and the coverage report,
   added in `cde475f` once the worksheets were in the repository. It asserts the
   corpora are present before running, because `check-corpus.sh` skips what it
-  cannot find and a skipped gate is a green job guarding nothing.
+  cannot find and a skipped gate is a green job guarding nothing. **This is the
+  red one.**
 
-Two things to know about it. The Node 20 deprecation warning is **fixed** —
-`actions/checkout` and `actions/setup-node` are on `v7`, the current majors,
-which run on Node 24; `checkout@v7`'s one breaking change refuses a fork's head
-for `pull_request_target` and `workflow_run`, and this workflow uses neither
+**The one red job, and what is known about it.** `corpus` fails while fetching
+the worksheets, so it is failing on access to third-party files rather than on
+anything this repository computes. What has been checked from a development
+machine, on 2026-08-29:
+
+- Both upstreams answer. `https://smath.com/wiki/GetFile.aspx?File=Examples/ap.zip`
+  returns 200 with a cookie jar and hashes to the value
+  `scripts/corpora/wiki.sources` records for it, and the mechanics tarball from
+  `codeload.github.com` returns 200 and 3.98 MB.
+- `./scripts/check-corpus.sh` passes on the corpora already present: 54 wiki and
+  60 mechanics worksheets match the baseline.
+
+So the gate and the data are both fine. The likeliest cause is
+`secrets.NOMO_CORPORA_MIRROR`, which the workflow passes to
+`fetch-corpora.sh` and which the script exists to use because the wiki serves
+files behind a cookie-detection redirect that loops without a jar — a secret
+does not follow a repository that was recreated or made public. **Reading the
+job log needs admin rights on the repository**, which is the next step and
+cannot be taken from outside it.
+
+The Node 20 deprecation warning is **fixed** — `actions/checkout` and
+`actions/setup-node` are on `v7`, the current majors, which run on Node 24;
+`checkout@v7`'s one breaking change refuses a fork's head for
+`pull_request_target` and `workflow_run`, and this workflow uses neither
 trigger. `node-version: 22` is a different thing and stays pinned: it is the
-engine the determinism scripts run under, not the actions' runtime. And the
-green run above is from `dd00363`, which is **older than the `corpus` job**:
-five jobs run and four of them have been watched passing on a real push.
-Confirming the fifth is a push away, and so is confirming the version bump —
-nobody has looked yet.
+engine the determinism scripts run under, not the actions' runtime.
 
 **The SMath importer — continue it.** Reader, emitter and oracle all exist and
 the numbers are above. Conditionals and loops were the answer to "what would

@@ -979,7 +979,9 @@ CAS function**, and the worst-affected file is 28% CAS. **786 of the 877 numeric
 nine tenths of every sheet's mathematics and can check itself against 786 stored answers *from the
 corpus that supposedly cannot be imported* — plus the wiki corpus's 553.
 
-**Decision.** No CAS, as §2 settled. The 211 CAS regions become visible unsupported markers per item
+**Decision.** *(The parked candidate below is re-costed in §8.40, which withdraws "bounded and
+well understood": it holds only over an exact coefficient field, and these coefficients are
+`f64`.)* No CAS, as §2 settled. The 211 CAS regions become visible unsupported markers per item
 23; the 164 `<result action="symbolic">` values are recorded as provenance, never as assertions. The
 one capability worth keeping on the shelf — **exact linear solve over symbolic coefficients**, plus
 substitution and enough normalisation to display a result — is parked as a candidate, not scheduled.
@@ -2548,6 +2550,113 @@ evaluate*, which is the same wrongness stated honestly, and the blocker behind t
 and named: **a vector whose elements carry different dimensions, with a bare zero in it**. That is a
 question about Nomo's arithmetic rather than about the importer, and it is not answered here.
 
+### 8.40 A CAS, costed against the built engine (2026-08-29)
+
+**Not a proposal, and the third time this has been asked.** §8.12 settled the scope decision against
+the corpora; §8.34 costed the items *before* automatic differentiation, `roots` and `solve_linear`
+existed. This asks it against the engine as built, and measures the blast radius rather than
+estimating it. The scope decision is unchanged. Two of §8.12's supporting claims are not, and the
+corrections are the reason this section exists.
+
+**"CAS" is four separable layers and they do not cost the same.**
+
+| layer | what it is | cost |
+|---|---|---|
+| **A** Symbolic values | free names in the value tower, substitution, printing | small — measured below |
+| **B** Symbolic differentiation | `d/dx` over the AST | small; §1's "roughly a weekend" holds |
+| **C** Symbolic linear algebra | exact solve over symbolic coefficients — §8.12's parked item | **larger than §8.12 says** |
+| **D** Rewriting | `simp`, expand, factor, symbolic integration | incompatible with §9's gates |
+
+#### What the architecture makes cheap, measured
+
+A `Value::Symbolic(Box<Expr>)` variant was added and the workspace compiled, to count what a fourth
+tower actually touches. **Nine distinct exhaustive-match sites break, workspace-wide** — seven in
+`value.rs`, one in `render/mod.rs`, one in `golden.rs`. Nothing in `eval.rs`, `doc.rs`, `graph.rs`,
+`nomo-wasm` or `nomo-smath` fails to compile. That is not luck, and three existing decisions are why:
+
+- **`complex_pair` and `dual_pair` are the pattern, already instantiated twice.** Their own comment
+  states it — *a second numeric tower joins the arithmetic at one place rather than at every
+  operator*. A `symbolic_pair` is the third instance of a shape the file already carries.
+- **The trace and the AST already keep what a symbolic layer needs.** §5 keeps expression structure
+  with spans to render time, and `ast.rs` retains semantically redundant syntax — `Paren`,
+  `ImplicitMul` — expressly so the symbolic column reproduces what was written. Displaying a
+  symbolic result needs no new rendering architecture.
+- **There is no `HashMap` in `nomo-core`.** Ordering is `BTreeMap` and `BTreeSet` throughout, so the
+  canonical term ordering a symbolic layer needs would inherit a deterministic container discipline
+  rather than introduce one.
+
+Layers A and B are feasible at roughly one to two weeks, without touching the numeric path.
+
+#### What blocks it, ranked
+
+**1. A free symbol has no dimension, and dimensional analysis is the product.** Every `Quantity` is
+`Copy`, in base SI, with its dimension known when it is built. `x + 1 m` cannot be decided without a
+dimension for `x`. The two ways out are inference — unification over an abelian group, a subsystem
+rather than a weekend — or declaration. **The declaration convention is already in the tree**:
+`solve_linear(f, kinds)` takes a vector whose *dimensions* name each unknown and whose magnitudes
+are never read (§8.35). A symbolic layer should reuse exactly that rather than invent a second way
+to say the same thing.
+
+**2. The linear algebra that exists cannot be reused, and "bounded and well understood" does not
+survive it.** `Value::det` and `Value::inv` are Gaussian and Gauss-Jordan elimination **with partial
+pivoting by magnitude, ties broken by the lower row index**. A symbolic matrix has no magnitude, so
+that code is structurally unusable for layer C, which needs fraction-free (Bareiss) elimination and
+a **zero-test on the pivot**. Over exact rationals that test is decidable. Over this engine's `f64`
+coefficients mixed with symbols it is a *heuristic* — and a heuristic zero-test yields exactly the
+failure this project refuses everywhere else: an answer that is quietly wrong, in the one place
+nothing downstream can catch it. **This is where a bounded symbolic solve becomes an unbounded one.**
+§8.12 called the parked capability bounded and well understood; the boundedness was assumed rather
+than measured, and it holds only if the coefficient field is exact.
+
+**3. Rewriting contradicts the reduction-order invariant head-on.** §3 makes reduction order part of
+the language — nodes are `a + i*step` rather than repeated addition, and an iteration applies one
+step at a time, *because reassociating would show in the last bits*. Reassociating is a simplifier's
+entire job. Layer D is survivable only under a rule decided up front: **the symbolic layer never
+feeds a rewritten expression into numeric evaluation without the rewrite being visible.** Discovered
+later rather than decided first, that is a rewrite of the engine.
+
+**4. A byte-exact gate and an open-ended rule set pull against each other.** §9's first gate compares
+Nomo's own output bit-exactly and is never loosened. Symbolic output falls under it, so the canonical
+printed form must be frozen — and every simplification rule added afterwards churns snapshots. A
+CAS's rule set is open-ended by nature. Workable only if the symbolic surface is closed and versioned
+like a language feature, which is the opposite of how these systems are usually grown.
+
+**5. Tower interactions grow faster than the towers.** Complex-in-a-collection and
+differentiating-through-a-matrix are both deliberately unbuilt and say so by name. A fourth tower
+multiplies the combinations that must each be either built or refused.
+
+**Not a blocker: size.** The artifact is 649 KB today and a hand-written symbolic core is tens of KB.
+The trap is the other direction: there is no mature `no_std`, no-I/O, deterministic Rust computer
+algebra crate, so this is build-your-own and maintain-forever, and anything vendored would have to
+pass `check-no-host-math.sh` before it is even a candidate.
+
+#### The demand side, which is the decisive half
+
+- **The representative corpus says about 2%.** One CAS-like call in 54 wiki-corpus files (§8.12).
+  The 7.7%-of-regions figure comes from the corpus written by SMath's principal plugin author, which
+  measures expert capability rather than field usage.
+- **Twice now the CAS-shaped requirement has dissolved into exact numerics.** `diff` became
+  forward-mode AD with no step size (§8.27, §8.33); the statics solve became coefficients recovered
+  by residual evaluation (§8.35). Neither needed algebra and both are exact.
+- **The one attempt was built and reverted for four answers** (§8.37).
+- **`5.1.sm` is the tell.** It stores the symbolic root `L·(−3 + √39)/6` and then solves the same
+  equation numerically two lines later and uses `1.08 m`. The engineer wanted the number.
+
+#### The conclusion
+
+**Do not add one**, and the reason is not effort — layers A and B are cheap and now measured. It is
+that a CAS attacks the differentiator. Bit-reproducible dimensioned numerics is what this project has
+and a general-purpose algebra system does not; a CAS is where the comparable projects gave that away,
+EP by handing the sheet to SymPy on a server, which is the architecture §2 exists to refuse.
+
+**If a door is to be kept open, it is layer A alone, fenced**: symbols declared with a dimension by
+the `kinds` convention, substitution, and a symbolic `derivative` shown *beside* the AD number rather
+than instead of it — with no rewriting whatsoever. Nine match sites, one new tower, no change to the
+numeric path, and it stops short of the pivot zero-test, which is the actual cliff.
+
+The trigger for reopening is unchanged from §8.12 and is a demand question, never a capability one:
+evidence from the target user's own files, not from the corpora.
+
 ### 8.8 Strategy: corpus-driven
 
 Build the importer as a separate crate emitting the Nomo document format, then run it across every
@@ -2618,8 +2727,10 @@ Importer-specific, ranked by risk:
 9a. ~~**What does an import do with a CAS worksheet?**~~ **Resolved (§8.12).** The target user is
    the practising engineer doing dimensioned calculations, so no CAS, and the 7.7% of regions that
    need it become visible markers. What replaces it, parked rather than open: **is exact linear
-   solve over symbolic coefficients ever worth adding?** Bounded, well understood, and what two
-   thirds of the mechanics corpus exercises — but justified only by the target user's own files.
+   solve over symbolic coefficients ever worth adding?** What two thirds of the mechanics corpus
+   exercises — but justified only by the target user's own files, and **no longer described as
+   bounded**: §8.40 measures the layers, finds the cheap ones cheap, and finds this one gated on a
+   pivot zero-test that is decidable only over an exact coefficient field.
 9b. **Which language does an import keep** when a worksheet carries all of them? The trilingual
    edition holds ger/eng/rus in the same file (§8.9, §8.10).
 10. **Does Nomo's own syntax expose global definitions**, or does it only reconstruct SMath's `≡` on

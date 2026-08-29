@@ -1417,7 +1417,7 @@ construction: of the 18 multiplications in either corpus with a stated shape on
 both sides, 13 were matrix products both languages already agreed on and five
 were this.
 
-**The CAS items, costed rather than assumed (§8.34).** Asked as a feasibility
+**The CAS items, costed rather than assumed (§8.34, §8.40).** Asked as a feasibility
 question and it split into three, only the last of which is a computer algebra
 system.
 
@@ -1453,6 +1453,37 @@ One correction the measurement forced: **"uses Maxima" is not "blocked by
 Maxima"**. The four Maxima-only worksheets already agree on 112 of their 157
 answers. And `eval`, 71 calls that read like a CAS entry point, is SMath's
 *"Evaluate numerically"* — a display directive.
+
+**Re-costed against the built engine (§8.40).** The same question asked a third
+time, now with automatic differentiation, `roots` and `solve_linear` in the tree,
+and measured rather than estimated. "CAS" is four layers, and they do not cost
+the same. **Symbolic values and symbolic differentiation are small**: a
+`Value::Symbolic` variant was added and the workspace compiled, and it breaks
+**nine exhaustive-match sites** — seven in `value.rs`, one in `render/mod.rs`,
+one in `golden.rs`, and nothing at all in `eval.rs`, `doc.rs`, `graph.rs`,
+`nomo-wasm` or `nomo-smath`. It is contained because `complex_pair` and
+`dual_pair` already establish how a second tower joins the arithmetic at one
+place, and because the trace and the AST already keep what a symbolic layer would
+render.
+
+**Symbolic linear algebra is not small, and that is the correction.** `det` and
+`inv` are elimination with partial pivoting **by magnitude**, which a symbolic
+matrix has none of — so that code is structurally unusable for a symbolic solve,
+which needs fraction-free elimination and a **pivot zero-test**. That test is
+decidable over exact rationals and a *heuristic* over this engine's `f64`
+coefficients, and a heuristic zero-test is the quietly-wrong answer this project
+refuses everywhere else. §8.12's "bounded and well understood" is withdrawn on
+that ground, and §11's question 9a no longer claims it. Rewriting stays out for a
+second reason as well: reassociation is a simplifier's whole job, and §3 makes
+reduction order part of the language.
+
+**The recommendation is unchanged — do not add one** — but on demand rather than
+on effort: about 2% of the representative corpus touches anything CAS-like, and
+twice now the CAS-shaped requirement has dissolved into exact numerics. If a door
+is kept open it is symbolic *values* alone, fenced, with unknowns declared by
+dimension the way `solve_linear`'s `kinds` already does. The trigger for
+reopening is a demand question, never a capability one: the target user's own
+files.
 
 **Language features deferred to v1 scope, and where they stand.** Conditionals,
 loops, complex arithmetic and plots are all built to a first phase. What is left

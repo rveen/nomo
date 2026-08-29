@@ -225,13 +225,22 @@ a plot where one earns its place. Each gets a golden snapshot. Each is **ours to
 publish**, unlike the corpora and unlike the two customer worksheets that had to
 be removed — which is the other reason to write them.
 
-### 10. Six mechanical how-tos
+### 10. Six mechanical how-tos — **done**
 
 Bolted joint preload and torque; a shaft under combined bending and torsion;
 Euler and Johnson column buckling; bearing L10 life; a helical compression
-spring; thin- and thick-wall pressure vessels. One at a time, one commit each.
-The acceptance criterion is not that the arithmetic runs — it is that a
-practising engineer agrees with the method and with the source it cites.
+spring; thin- and thick-wall pressure vessels. One commit each, and every
+figure checked against a hand calculation before it was committed.
+
+Three habits came out of writing them and are worth keeping in the ones that
+follow. **Each says what it leaves out**, at the same length as the calculation
+where that is honest — a shaft worksheet that does not mention keyways and
+fatigue is more dangerous than one that answers nothing. **Each names its least
+certain number** rather than presenting six digits of equal weight: the nut
+factor, the allowable shear of a drawn wire, the estimated bearing load.
+**A plot stops where its equation does** — the first bolted-joint plot ran a
+straight line through separation and the first spring plot ran one through solid
+length, both of them a wrong picture of a right equation.
 
 ### 11. What the how-tos broke
 

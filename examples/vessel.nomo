@@ -1,0 +1,105 @@
+' nomo 1
+
+' # A pressure vessel, and when the thin-wall formula stops being true
+'
+' The thin-wall hoop stress is one of the most useful approximations in
+' engineering and one of the most quietly misused. It is exact in the limit of a
+' membrane and good to a few per cent while the wall is thin; it understates the
+' stress at the bore of a thick one, and the error grows with the wall.
+'
+' This worksheet works a cylinder both ways and puts the two answers side by
+' side, so the approximation is checked rather than assumed.
+'
+' The vessel: a 600 mm bore receiver at 2 MPa, 12 mm wall, S355.
+
+use steel
+
+r_i = 300 mm
+t_wall = 12 mm
+p = 2 MPa
+
+r_o = r_i + t_wall
+
+' ## Is it thin?
+'
+' The usual rule is that the wall is thin below a tenth of the radius. It is a
+' rule about the answer rather than about the geometry: what it really says is
+' that the through-thickness variation of hoop stress is small enough to ignore.
+
+ratio = t_wall/r_i
+
+check ratio <= 0.1
+
+' ## Thin wall
+'
+' Hoop stress from a cut along the axis, longitudinal from a cut across it. The
+' factor of two between them is why a cylinder that fails from internal pressure
+' splits along its length rather than round its circumference.
+
+sigma_hoop_thin = p*r_i/t_wall
+sigma_long_thin = p*r_i/(2*t_wall)
+
+sigma_hoop_thin -> MPa
+sigma_long_thin -> MPa
+
+' ## Thick wall
+'
+' Lamé's solution, evaluated at the bore where the hoop stress is largest. It
+' makes no assumption about the wall being thin and is what the thin-wall
+' formula approaches as the wall gets thinner.
+
+sigma_hoop_bore = p*(r_o^2 + r_i^2)/(r_o^2 - r_i^2)
+sigma_hoop_bore -> MPa
+
+' The radial stress at the bore is not zero — it is the pressure itself, in
+' compression — and the thin-wall treatment drops it. At this wall it is 4% of
+' the hoop stress; at a quarter-radius wall it is not negligible at all.
+
+sigma_radial_bore = -p
+
+' How much the approximation is out by, which is the number this worksheet
+' exists to produce.
+
+error_thin = (sigma_hoop_thin - sigma_hoop_bore)/sigma_hoop_bore
+error_thin -> %
+
+' ## The check
+'
+' Against the thick-wall stress, because it is the true one, and on the
+' distortion-energy criterion with all three principal stresses — hoop, radial
+' and longitudinal. Dropping the radial term is the same approximation again and
+' this worksheet has just finished measuring it.
+
+sigma_long = p*r_i/(2*t_wall)
+s1 = sigma_hoop_bore
+s2 = sigma_long
+s3 = sigma_radial_bore
+
+sigma_vm = sqrt(((s1 - s2)^2 + (s2 - s3)^2 + (s3 - s1)^2)/2)
+sigma_vm -> MPa
+
+n_design = 1.5
+sigma_allow = Fy_S355/n_design
+sigma_allow -> MPa
+
+check sigma_vm <= sigma_allow
+
+' ## Where the approximation goes wrong
+'
+' Hoop stress at the bore against wall thickness, both ways, on one plot. They
+' agree while the wall is thin and part company as it thickens — and the
+' thin-wall line is the lower of the two, which is the dangerous direction.
+
+fn thin(t) = p*r_i/(t*mm)/MPa
+fn thick(t) = p*((r_i + t*mm)^2 + r_i^2)/((r_i + t*mm)^2 - r_i^2)/MPa
+
+plot(thin, thick, 5, 120)
+
+' ## What this leaves out
+'
+' A plain cylinder, away from its ends. The heads, the nozzles and the joints
+' between them are where a real vessel is governed, the stress concentrations
+' there are not small, and a vessel is signed off against a code — ASME VIII,
+' EN 13445 — that fixes the allowable stress, the joint efficiency and the
+' corrosion allowance rather than leaving them to a factor of safety chosen on
+' the page.

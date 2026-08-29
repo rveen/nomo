@@ -50,6 +50,16 @@ jobs:
       - name: No host math, no I/O in the engine
         run: ./scripts/check-no-host-math.sh
 
+      # A report rather than a gate, like the importer's coverage report: it
+      # exits zero however slow the news is. A wall-clock threshold on a shared
+      # runner would be a flake generator, and a flaky gate teaches people to
+      # re-run rather than to look. What it buys is the number in the log on
+      # every push, next to the change that moved it. The debug build, because
+      # this job has already compiled it, and the report says so — a debug
+      # number compared against a release one is worse than no number.
+      - name: Timings
+        run: cargo run -p nomo-cli -- bench
+
   wasm:
     runs-on: ubuntu-latest
     steps:

@@ -78,6 +78,7 @@ cargo build -p nomo-core --target wasm32-unknown-unknown
 cargo run -p nomo-cli -- render examples/beam.nomo
 cargo run -p nomo-cli -- html   examples/beam.nomo
 cargo run -p nomo-cli -- test                          # golden-file suite
+cargo run --release -p nomo-cli -- bench               # timings; a report, exits 0
 ./scripts/compare-targets.sh                            # native vs WebAssembly
 ./scripts/compare-arch.sh                               # x86-64 vs aarch64 (needs qemu-user)
 ./scripts/build-web.sh                                  # front end; also runs the seven
@@ -145,6 +146,45 @@ chain; it exited zero by §8.28.
 All of the above were green at the last commit, run locally. That is not the
 same as CI being green: the `corpus` job cannot fetch the worksheets on a
 runner, and this list assumes they are already on the machine.
+
+## Timings
+
+`nomo bench` generates worksheets of fixed shape and times the whole pipeline —
+parse, evaluate, render both views — through the same `snapshot` function the
+WebAssembly build exports. It is a **report, not a gate**: it exits zero however
+slow the news is, and CI runs it on every push the way it runs the coverage
+report. A wall-clock threshold on a shared runner would be a flake generator,
+and a flaky gate teaches people to re-run rather than to look.
+
+Release build, this machine, 2026-08-29:
+
+| case | time | per unit |
+|---|---|---|
+| wide, 1000 statements | 14.3 ms | 14.3 µs / line |
+| wide, 5000 statements | 76.6 ms | 15.3 µs / line |
+| chain, 3000 deep | 40.9 ms | 13.6 µs / line |
+| map over 100k elements | 792 ms | 7.9 µs / element |
+| eight plots | 13.1 ms | 1.6 ms / plot |
+| edit one line of 5000 | 5.0 ms | 1 of 5000 evaluated |
+
+The debug build is about three times slower across every case, and the report
+names the profile it ran under so the two are not compared by accident.
+
+Two of these are worth reading rather than just recording:
+
+- **A call costs about 8 µs**, which is the environment copy `MAX_CALLS`
+  already documents: a call clones the variables, functions, hints and unit
+  table it runs in. A hundred thousand of them is 0.8 s, which is exactly the
+  "second or so" that budget was chosen to bound. It is the obvious thing to
+  make faster — the maps are read-only in the child scope and could be shared
+  rather than copied — and nothing yet needs it.
+- **Editing one line of a 5 000-line worksheet costs 5.0 ms** against 77 ms for
+  the whole sheet, so the incremental path is worth about fifteen times. It is
+  not fifteen *thousand*: `Sheet::update` re-parses the document, rebuilds the
+  dependency graph and rescans resources on every edit, and only the
+  *evaluation* is incremental. At the editor's 60 ms debounce that is invisible;
+  it is the number that decides whether it stays invisible on a worksheet ten
+  times longer.
 
 ## The golden-file suite
 

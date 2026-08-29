@@ -100,14 +100,16 @@ method. The secret is not required.
 *Gate:* a green `corpus` job on the next push — the one thing still unproven is
 whether a runner can reach the wiki from its own address.
 
-### 5. A performance report, before there is anything to regress
+### 5. A performance report, before there is anything to regress — **done**
 
-Measured 2026-08-29: 5 000 statements render in 40 ms, a 3 000-deep dependency
-chain in 20 ms. `nomo bench` records that on fixed generated shapes and CI runs
-it as a **report, not a gate** — exactly as the coverage report is run, and for
-the same reason a wall-clock threshold on a shared runner is a flake generator.
-
-*Gate:* `cargo test --workspace`; the report prints in CI.
+`nomo bench` times six fixed shapes through the same `snapshot` function the
+WebAssembly build exports, and CI prints it on every push as a report rather
+than a gate. The numbers and what they say are in `docs/STATUS.md`; two are
+worth acting on eventually — a user-function call costs about 8 µs because it
+copies the environment it runs in, and an edit to one line of a 5 000-line
+worksheet costs 5 ms because only the evaluation is incremental, not the parse
+or the graph rebuild. Neither is urgent, and both are now measured rather than
+suspected.
 
 ## Phase 2 — the three things a design sheet needs
 

@@ -5,9 +5,10 @@
 //!
 //! Commands grow with the phases. Today: `check`, which evaluates a worksheet
 //! and reports its diagnostics; `render` and `html`, which produce output;
-//! `ast`, which dumps the syntax tree; and `test`, the golden-file regression
-//! suite.
+//! `ast`, which dumps the syntax tree; `test`, the golden-file regression
+//! suite; and `bench`, which times the engine and reports rather than gates.
 
+mod bench;
 mod diff;
 mod harness;
 
@@ -29,6 +30,7 @@ fn main() -> ExitCode {
         "render" => run_over(rest, render_text),
         "html" => run_over(rest, render_html),
         "test" => harness::run(rest),
+        "bench" => bench::run(rest),
         "--help" | "-h" | "help" => {
             usage();
             ExitCode::SUCCESS
@@ -49,7 +51,8 @@ fn usage() {
          nomo render <file.nomo>...   evaluate and print worked results\n    \
          nomo html   <file.nomo>...   write a standalone HTML file\n    \
          nomo ast    <file.nomo>...   print the syntax tree\n    \
-         nomo test   [--write]        check every example against its snapshot\n\n\
+         nomo test   [--write]        check every example against its snapshot\n    \
+         nomo bench                   time the engine on worksheets of fixed shape\n\n\
          `test` runs from the repository root; --examples and --golden override\n\
          the directories it uses.\n"
     );

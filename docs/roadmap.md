@@ -442,11 +442,27 @@ twelve-statement body is pattern-matching on a program, which is a far less
 trustworthy translation than anything else this importer does. The marker names
 the construct and leaves the two lines to a person.
 
-### 21. `description` (86 uses), `at` (45), `cases` (9)
+### 21. `description` (86 uses), `at` (45), `cases` (9) — **split three ways**
 
-The first is prose and nearly free, the second is substitute-then-evaluate, and
-the third is a conditional in disguise. Together they are the largest remaining
-non-CAS block in the mechanics corpus.
+Reading them split the block into three different things, and design note §8.44
+records it.
+
+**`at` is translated and blocked.** It is the substitution operator, and the
+shape is `at(f, x ≡ v)` with a bare name on the left. The emitter writes `f(v)`
+for it, guarded on the name being a function *and* its parameter being the
+substituted name. It gains nothing today: of 31 substitutions, 16 are into a
+formula-valued name, which is §8.37's wall rather than anything about `at`. What
+it does gain is refusals that say which of three cases each one is — they were
+all "the function `at`" before.
+
+**`description` is not computation.** Every call is plot configuration: an axis
+label or a curve name. What those worksheets want is a *plot feature this
+language lacks*, and by corpus ranking it is the most-wanted one. That is a
+language step, and it should not be smuggled in under an importer heading.
+
+**`cases` waits on `ltle`.** Its conditions are that family, whose boundary
+convention is unverified — a piecewise function whose boundaries might be the
+wrong way round is exactly what this project refuses to guess.
 
 ### 22. `ltle`, `ltlt`, `lele` — 29 uses, settled by disassembly
 

@@ -2929,6 +2929,57 @@ importer does.
 The marker stays what it is: it names the construct, counts it, and leaves the
 reader to write the two lines that replace it.
 
+### 8.44 `at`, `description` and `cases`, measured (2026-08-29)
+
+The roadmap ranked these three together as "the largest remaining non-CAS block"
+— 140 calls. Reading them splits the block into three quite different things,
+and only one of them is an importer question at all.
+
+**`at` is SMath's substitution operator, and it is translated — and blocked.**
+A worksheet in the mechanics corpus documents it in its own prose: *"local
+values are substituted into variables without changing the variables in the
+worksheet"*. The shape is `at(f, x ≡ v)`, with a **bare name** on the left — the
+argument arrives through the substitution rather than as a call — so
+`at(B, t ≡ t_max·s)` is what a worksheet writes where this language writes
+`B(t_max·s)`.
+
+That translation is now in the emitter, guarded twice: the name must be a
+function this worksheet defines, *and* its parameter must be the name being
+substituted. Without the second guard, `at(B, t ≡ v)` where `B` takes `u` would
+silently answer a different question.
+
+It gains nothing yet, and the reason is worth more than the gain would have
+been. Of 31 substitutions across both corpora:
+
+| | |
+|---|---|
+| into a name that is not a function here | 16 |
+| whose right side is not `name ≡ value` | 8 |
+| into an expression rather than a name | 7 |
+
+The first group — the majority — is **§8.37 exactly**: the name being
+substituted into is a formula-valued name, free in the variable, which this
+importer deliberately does not infer. So `at` is blocked by the wall §8.37
+already measured and reverted, not by anything about `at`. The refusals now say
+which of the three cases each one is, which is what a coverage report is for:
+before this they were all "the function `at`".
+
+**`description` is not computation at all.** All sixteen regions that call it are
+plot configuration — `XYPlot'Labels'YLabel : description(text)` and
+`XYPlot'Traces#0'Name : description(text)`. What those worksheets are asking for
+is **a labelled axis and a named curve**, which is a *plot feature this language
+does not have* rather than a construct the importer is failing to translate.
+Nomo names a curve after the function that drew it and labels an axis with its
+unit. Ranked by the corpus, that is the most-wanted plot feature there is; it is
+a language step, not an importer one, and it is written down here rather than
+attempted under the heading of an import.
+
+**`cases` is entangled with `ltle`.** Nine calls, and their conditions are the
+`ltle`/`ltlt`/`lele` family whose boundary convention is still unverified
+(§8.7 item 24). A piecewise function whose boundaries might be the wrong way
+round is precisely the construct this project refuses to guess at, so `cases`
+waits on that question rather than being answered ahead of it.
+
 ### 8.8 Strategy: corpus-driven
 
 Build the importer as a separate crate emitting the Nomo document format, then run it across every

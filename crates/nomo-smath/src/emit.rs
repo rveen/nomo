@@ -148,7 +148,7 @@ struct Emitter {
     bound: Bound,
     /// The functions this worksheet defines for itself, so a call to one can be
     /// written out instead of reported as unknown. See [`defined_functions`].
-    functions: BTreeSet<String>,
+    functions: BTreeMap<String, Vec<String>>,
     /// The names a plot draws that are candidates for being functions of `x`.
     /// See [`curves_of_x`] and [`Emitter::curve_of_x`].
     curves: BTreeSet<String>,
@@ -442,7 +442,7 @@ impl Emitter {
             // it in terms of itself, and the calls then mean the built-in — the
             // whole point of refusing it.
             Expr::Call { name, .. }
-                if self.functions.contains(name) && nomo_function(name).is_none() =>
+                if self.functions.contains_key(name) && nomo_function(name).is_none() =>
             {
                 want(name)
             }
@@ -947,7 +947,7 @@ impl Emitter {
         let Expr::Call { name, args } = e else {
             return None;
         };
-        if !self.functions.contains(name) || args.len() != 1 {
+        if !self.functions.contains_key(name) || args.len() != 1 {
             return None;
         }
         match &args[0] {
@@ -958,7 +958,7 @@ impl Emitter {
 
     fn defined_function(&self, name: &str) -> Option<String> {
         self.functions
-            .contains(name)
+            .contains_key(name)
             .then(|| self.names.get(name))?
     }
 
@@ -974,6 +974,55 @@ impl Emitter {
                 }
                 Ok((format!("{base}[{}]", idx.join(", ")), ATOM))
             }
+            // `at(f, x ≡ v)` — SMath's substitution operator, which a worksheet
+            // in the mechanics corpus documents in its own prose: "local values
+            // are substituted into variables without changing the variables in
+            // the worksheet".
+            //
+            // The left side is a bare *name*, not a call: SMath supplies the
+            // argument through the substitution itself, so `at(B, t ≡ t_max·s)`
+            // is what a worksheet writes where this language writes `B(t_max·s)`.
+            //
+            // Translated only when that name is a function this worksheet
+            // defines **and its parameter is the name being substituted**. Both
+            // halves matter: without the first there is nothing to call, and
+            // without the second `at(B, t ≡ v)` where `B` takes `u` would be
+            // silently answering a different question. Anything else — a
+            // substitution into an expression, or into a name that is not a
+            // function — would need a local binding, which this language does
+            // not have, and is refused by name.
+            "at" if args.len() == 2 => {
+                let Expr::Op { glyph, args: eq } = &args[1] else {
+                    return Err("a substitution whose right side is not `name ≡ value`".into());
+                };
+                if glyph != "≡" || eq.len() != 2 {
+                    return Err("a substitution whose right side is not `name ≡ value`".into());
+                }
+                let Expr::Name(bound) = &eq[0] else {
+                    return Err("a substitution into something that is not a name".into());
+                };
+                let Expr::Name(target) = &args[0] else {
+                    return Err(
+                        "a substitution into an expression rather than a name, which would need a \
+                         local binding"
+                            .into(),
+                    );
+                };
+                let params = self.functions.get(target).ok_or_else(|| {
+                    format!("a substitution into `{target}`, which is not a function here")
+                })?;
+                if params.len() != 1 || &params[0] != bound {
+                    return Err(format!(
+                        "a substitution of `{bound}` into `{target}`, whose parameter it is not"
+                    ));
+                }
+                let name = self.names.get(target).ok_or_else(|| {
+                    format!("a substitution into `{target}`, which has no name here")
+                })?;
+                let value = self.at(&eq[1], 0)?;
+                Ok((format!("{name}({value})"), ATOM))
+            }
+
             // `mat(e11, e12, …, rows, cols)` is a literal, laid out row by row.
             // Row-major is not assumed: four corpus matrices name their elements
             // (`x1…x5`, `y1…y5`, `z1…z5` with rows=3, cols=5) and settle it.
@@ -1102,15 +1151,17 @@ impl Emitter {
             // `solve_linear` for that — but the unknowns arrive as a *name*
             // holding a vector of free symbols, so nothing in the call says what
             // they are or what dimension they have (design note §8.36).
-            "roots" if args.len() == 2 && !self.functions.contains("roots") => Err(String::from(
-                "`roots` of a system, whose unknowns are free symbols the file does not \
+            "roots" if args.len() == 2 && !self.functions.contains_key("roots") => {
+                Err(String::from(
+                    "`roots` of a system, whose unknowns are free symbols the file does not \
                  give a dimension",
-            )),
+                ))
+            }
             // `roots(expr, x, guess)` searches from a starting point. `5.1.sm`
             // writes `roots(Q(x·m), x, -1)` for `1.08` and the same with `-1.1`
             // for `-3.08`: two guesses a tenth apart landing on different roots,
             // which is what a local method does and a scan never does.
-            "roots" if !self.functions.contains("roots") => Err(String::from(
+            "roots" if !self.functions.contains_key("roots") => Err(String::from(
                 "`roots`, which in SMath searches from a starting guess rather than \
                  across a range",
             )),
@@ -1126,7 +1177,7 @@ impl Emitter {
             // (`roots`), and neither is given one here; `solve_linear` wants a
             // system whose unknowns the call names, and the multi-unknown
             // worksheets keep theirs inside another name. §8.36.
-            "FindRoot" if !self.functions.contains("FindRoot") => Err(String::from(
+            "FindRoot" if !self.functions.contains_key("FindRoot") => Err(String::from(
                 "`FindRoot`, which solves from a starting guess — and which root that \
                  finds is the method's choice, not the worksheet's",
             )),
@@ -1147,7 +1198,7 @@ impl Emitter {
             // rather than a substitution of a different one — and the earlier
             // measurement now reads as evidence *for* it, since a 200-point
             // scan sees the interior crossings an endpoint bracket test misses.
-            "solve" if args.len() == 4 && !self.functions.contains("solve") => {
+            "solve" if args.len() == 4 && !self.functions.contains_key("solve") => {
                 let Expr::Name(var) = &args[1] else {
                     return Err(String::from(
                         "`solve` over something that is not a plain variable name",
@@ -1188,10 +1239,12 @@ impl Emitter {
             // not say what range SMath searched, and neither could an import:
             // the range decides which roots are found, and inventing one would
             // invent the answer. §8.24.
-            "solve" if args.len() == 2 && !self.functions.contains("solve") => Err(String::from(
-                "`solve` with no range, which in SMath searches between two program options \
+            "solve" if args.len() == 2 && !self.functions.contains_key("solve") => {
+                Err(String::from(
+                    "`solve` with no range, which in SMath searches between two program options \
                  the worksheet does not record",
-            )),
+                ))
+            }
             // `diff(expr, x)` — SMath's derivative, which is **symbolic**: the
             // evaluator sets its optimization to symbolic and hands the
             // expression to the CAS (§8.24). Nomo's `derivative` is the other
@@ -1208,7 +1261,9 @@ impl Emitter {
             // corpus writes `diff(x.S, t, 2)` and hands the result to `Solve` —
             // they are not the same thing, and that pipeline is refused a step
             // later for needing the CAS anyway.
-            "diff" if (args.len() == 2 || args.len() == 3) && !self.functions.contains("diff") => {
+            "diff"
+                if (args.len() == 2 || args.len() == 3) && !self.functions.contains_key("diff") =>
+            {
                 let Expr::Name(var) = &args[1] else {
                     return Err(String::from(
                         "`diff` with respect to something that is not a plain variable name",
@@ -1371,7 +1426,9 @@ impl Emitter {
         self.push(&format!("fn {n}({param}) = {v}"));
         // A function from here on: `defined_function` looks in `functions`, and
         // so does the check for whether a call has a value yet.
-        self.functions.insert(name.to_string());
+        // With its parameter, which is what `at(f, x ≡ v)` needs to know.
+        self.functions
+            .insert(name.to_string(), vec![param.to_string()]);
         self.curves_emitted.insert(name.to_string());
         if kind == Assign::Global {
             self.note(
@@ -2927,12 +2984,23 @@ fn values_bound_by(s: &Statement) -> BTreeSet<String> {
 /// writes into a matrix and `mat(a, b, 2, 1) : v` unpacks a vector into names;
 /// both are handled where they are emitted, and both would otherwise register a
 /// function this worksheet never defined.
-fn defined_functions(w: &Worksheet) -> BTreeSet<String> {
-    let mut out = BTreeSet::new();
+fn defined_functions(w: &Worksheet) -> BTreeMap<String, Vec<String>> {
+    let mut out = BTreeMap::new();
+    // The parameter names as well as the name, because the substitution
+    // operator needs them: `at(B, t ≡ v)` is `B(v)` only when `B`'s parameter
+    // *is* `t`. A parameter that is not a bare name — `f(2·x) : …`, which the
+    // emitter refuses elsewhere — records as empty and takes no part.
     let mut record = |target: &Expr| {
-        if let Expr::Call { name, .. } = target {
+        if let Expr::Call { name, args } = target {
             if name != "mat" && name != "el" {
-                out.insert(name.clone());
+                let params = args
+                    .iter()
+                    .map(|a| match a {
+                        Expr::Name(n) => n.clone(),
+                        _ => String::new(),
+                    })
+                    .collect();
+                out.insert(name.clone(), params);
             }
         }
     };

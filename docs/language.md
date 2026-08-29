@@ -92,6 +92,21 @@ worksheets imported from it map onto this directly.
 
 `-x^2` is `-(x^2)`. `-x * y` is `(-x) * y`. `2^3^2` is `2^(3^2)`.
 
+### An expression nests at most 128 levels deep
+
+Every descent into a sub-expression counts as one level: a bracket, a call
+argument, an index, a vector element, an operand, an arm of an `if`. Past 128 the
+line is refused with `SH010` and the rest of it is skipped, so a worksheet says
+what it cannot read rather than taking the process down with it.
+
+It is a fixed number for the same reason every other limit here is one — the
+answer, and the refusal, must not depend on the machine. It is set by the
+tightest target: the WebAssembly build traps at about 750 levels on its 1 MB
+stack, where the native build survives to about 6 000. Nothing written by a
+person comes close. The deepest expression among the worksheets in this
+repository is 13 levels, and the deepest across the 114 SMath worksheets the
+importer reads is 14.
+
 ## Collections
 
 ```nomo

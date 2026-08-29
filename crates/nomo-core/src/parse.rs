@@ -46,6 +46,28 @@ impl Parsed {
     }
 }
 
+/// The deepest an expression may nest.
+///
+/// A fixed number, like [`crate::eval::MAX_DEPTH`] and for the same reason: the
+/// answer must not depend on the machine, and neither must the refusal. Every
+/// descent into a sub-expression — a bracket, a call argument, an index, a
+/// vector element, an operand, an `if` arm — is one level.
+///
+/// **Chosen from the tightest target, which is WebAssembly.** Measured
+/// 2026-08-29 on `x = ((((…1…))))`: the native build aborts on its guard page
+/// somewhere between 5 000 and 7 000 levels with an 8 MB stack, and the
+/// WebAssembly build traps between 750 and 800 with its 1 MB one. The trap is
+/// the worse failure by far — it leaves the instance's allocator in an
+/// undefined state, so in the browser every *later* edit fails too and the
+/// editor stops recalculating for the life of the tab.
+///
+/// 128 sits an order of magnitude below that cliff and an order of magnitude
+/// above anything real: the deepest expression under `examples/` is 13 levels
+/// (`plots.nomo`, `llc.nomo`) and the deepest across all 114 worksheets the
+/// SMath importer emits is 14. A worksheet reaching this limit was generated,
+/// not written.
+pub const MAX_NEST: usize = 128;
+
 pub fn parse(source: &str) -> Parsed {
     let lexed = lex(source);
     let mut p = Parser {
@@ -53,6 +75,8 @@ pub fn parse(source: &str) -> Parsed {
         tokens: lexed.tokens,
         pos: 0,
         diags: lexed.diagnostics,
+        depth: 0,
+        too_deep: false,
     };
     let ast = p.parse_worksheet();
     let mut diagnostics = p.diags;
@@ -69,6 +93,15 @@ struct Parser<'s> {
     tokens: Vec<Token>,
     pos: usize,
     diags: Vec<Diagnostic>,
+    /// How many sub-expressions deep the parser currently is. Bounded by
+    /// [`MAX_NEST`], which is what keeps the recursion off the stack's edge.
+    depth: usize,
+    /// Set when this statement hit [`MAX_NEST`], and cleared at the next one.
+    ///
+    /// It silences the diagnostics that follow. Unwinding out of 128 frames of
+    /// bracket passes 128 unclosed delimiters on the way, and reporting all of
+    /// them would bury the one message that says what actually happened.
+    too_deep: bool,
 }
 
 /// Binding powers for infix operators, as `(left, right)`. A right-associative
@@ -133,6 +166,11 @@ impl<'s> Parser<'s> {
     }
 
     fn error(&mut self, code: &'static str, span: Span, msg: impl Into<String>) {
+        // Everything after a nesting refusal is a consequence of it. See
+        // `too_deep`.
+        if self.too_deep {
+            return;
+        }
         self.diags.push(Diagnostic::error(code, span, msg));
     }
 
@@ -164,6 +202,10 @@ impl<'s> Parser<'s> {
     }
 
     fn parse_stmt(&mut self) -> Option<Stmt> {
+        // One statement's nesting refusal must not silence the next statement's
+        // diagnostics. `depth` is already back to zero here — it unwinds — but
+        // the suppression flag has to be cleared deliberately.
+        self.too_deep = false;
         match self.peek() {
             TokenKind::Comment => {
                 let t = self.bump();
@@ -368,7 +410,40 @@ impl<'s> Parser<'s> {
         self.recover_to_line_end();
     }
 
+    /// Every descent into a sub-expression passes through here — `parse_prefix`,
+    /// `parse_primary`'s bracket, `parse_call`, `parse_index`, `parse_bracketed`
+    /// and `parse_conditional` all recurse by calling it — so counting here
+    /// counts the whole recursion, and there is one place to get right rather
+    /// than six.
     fn parse_expr(&mut self, min_bp: u8) -> Expr {
+        if self.depth >= MAX_NEST {
+            return self.refuse_nesting();
+        }
+        self.depth += 1;
+        let e = self.parse_expr_inner(min_bp);
+        self.depth -= 1;
+        e
+    }
+
+    /// Report the nesting limit and abandon the rest of the line.
+    ///
+    /// Abandoning it is not tidiness: returning an error node without consuming
+    /// anything would leave every enclosing loop looking at the same token it
+    /// already refused, and juxtaposition would spin on it forever. Skipping to
+    /// the end of the line is the existing recovery and it guarantees progress.
+    fn refuse_nesting(&mut self) -> Expr {
+        let span = self.peek_token().span;
+        self.error(
+            codes::NESTING_TOO_DEEP,
+            span,
+            format!("this expression nests more than {MAX_NEST} levels deep"),
+        );
+        self.too_deep = true;
+        self.recover_to_line_end();
+        Expr::Error { span }
+    }
+
+    fn parse_expr_inner(&mut self, min_bp: u8) -> Expr {
         let mut lhs = self.parse_prefix();
 
         loop {
@@ -1126,5 +1201,81 @@ mod tests {
             .find(|d| d.code == crate::diag::codes::UNEXPECTED_CHAR)
             .expect("expected an unexpected-character diagnostic");
         assert_eq!(d.span.text(src), "@");
+    }
+
+    /// `x = ((( … 1 … )))`, nested `n` deep.
+    fn nested(n: usize) -> String {
+        format!("x = {}1{}\n", "(".repeat(n), ")".repeat(n))
+    }
+
+    #[test]
+    fn nesting_up_to_the_limit_parses() {
+        // One level is the expression itself, so MAX_NEST brackets is the
+        // deepest thing that must still work. Real worksheets reach 14.
+        let p = parse(&nested(MAX_NEST - 1));
+        assert!(
+            p.diagnostics.is_empty(),
+            "diagnostics at the limit: {:?}",
+            p.diagnostics
+        );
+    }
+
+    #[test]
+    fn nesting_past_the_limit_is_refused_once() {
+        let p = parse(&nested(MAX_NEST + 50));
+        let errors: Vec<&str> = p.diagnostics.iter().map(|d| d.code).collect();
+        assert_eq!(
+            errors,
+            vec![codes::NESTING_TOO_DEEP],
+            "one refusal and no cascade, got {:?}",
+            p.diagnostics
+        );
+        assert!(p.diagnostics[0].message.contains("nests more than 128"));
+    }
+
+    #[test]
+    fn a_refused_line_does_not_silence_the_next_one() {
+        // The suppression is per statement. A worksheet whose second line is
+        // machine-generated nonsense still reports what is wrong with its
+        // fourth.
+        let src = format!("a = 1\n{}b = 2 +\n", nested(MAX_NEST + 1));
+        let p = parse(&src);
+        let codes_seen: Vec<&str> = p.diagnostics.iter().map(|d| d.code).collect();
+        assert_eq!(
+            codes_seen,
+            vec![codes::NESTING_TOO_DEEP, codes::EXPECTED_EXPRESSION],
+            "{:?}",
+            p.diagnostics
+        );
+        // And the good line before it survived as a statement.
+        assert!(matches!(p.ast.stmts.first(), Some(Stmt::Assign { .. })));
+    }
+
+    #[test]
+    fn every_way_of_nesting_is_counted() {
+        // The guard sits in `parse_expr`, so each of these must trip it. If one
+        // of them ever stops routing through there it becomes a way to build a
+        // deep tree without being counted, which is the crash again.
+        let deep = MAX_NEST + 5;
+        for src in [
+            format!("x = {}1{}\n", "(".repeat(deep), ")".repeat(deep)),
+            format!("x = {}1{}\n", "sin(".repeat(deep), ")".repeat(deep)),
+            format!("x = {}1{}\n", "[".repeat(deep), "]".repeat(deep)),
+            format!("x = {}1{}\n", "-".repeat(deep), "".repeat(deep)),
+            format!(
+                "x = {}1{}\n",
+                "if 1 then ".repeat(deep),
+                " else 2".repeat(deep)
+            ),
+        ] {
+            let p = parse(&src);
+            assert!(
+                p.diagnostics
+                    .iter()
+                    .any(|d| d.code == codes::NESTING_TOO_DEEP),
+                "not counted: {:?}",
+                &src[..40.min(src.len())]
+            );
+        }
     }
 }

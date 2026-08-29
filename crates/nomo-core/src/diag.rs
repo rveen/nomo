@@ -65,4 +65,6 @@ pub mod codes {
     pub const TRAILING_INPUT: &str = "SH008";
     /// A string literal with no closing quote before the end of the line.
     pub const UNTERMINATED_TEXT: &str = "SH009";
+    /// An expression nested deeper than [`crate::parse::MAX_NEST`].
+    pub const NESTING_TOO_DEEP: &str = "SH010";
 }

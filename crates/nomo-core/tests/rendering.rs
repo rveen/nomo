@@ -274,3 +274,73 @@ fn a_hint_that_does_not_fit_its_value_is_not_used() {
         "expected base units instead: {text}"
     );
 }
+
+/// The HTML body with the mathematics typeset.
+fn typeset(src: &str) -> String {
+    let sheet = nomo_core::Sheet::new(src);
+    let opts = nomo_core::RenderOptions {
+        mathml: true,
+        ..Default::default()
+    };
+    nomo_core::render::html::body(&sheet, &opts)
+}
+
+#[test]
+fn division_becomes_a_fraction_and_a_power_a_superscript() {
+    let out = typeset("w = 2 kN/m\nL = 6 m\nM = w*L^2/8\n");
+    assert!(out.contains("<mfrac>"), "no fraction: {out}");
+    assert!(out.contains("<msup>"), "no superscript: {out}");
+    // The unit is upright and the name is not: that distinction is most of what
+    // makes typeset mathematics readable.
+    assert!(out.contains("<mi mathvariant=\"normal\">kN</mi>"), "{out}");
+    assert!(out.contains("<mi>w</mi>"), "{out}");
+}
+
+#[test]
+fn a_fraction_bar_replaces_the_brackets_it_makes_unnecessary() {
+    // `M/(2 MPa)` is a fraction with `2 MPa` under the bar. Drawing the
+    // brackets as well would be saying the same thing twice, and it is the
+    // difference between typeset output and linear text with a bar in it.
+    let out = typeset("M = 1 J\nr = sqrt(M/(2 MPa))\n");
+    assert!(out.contains("<msqrt>"), "no radical: {out}");
+    let fraction = out
+        .split("<mfrac>")
+        .nth(1)
+        .and_then(|s| s.split("</mfrac>").next())
+        .expect("a fraction");
+    assert!(
+        !fraction.contains("<mo>(</mo>"),
+        "the fraction kept brackets it does not need: {fraction}"
+    );
+}
+
+#[test]
+fn a_subscripted_name_is_drawn_as_one() {
+    let out = typeset("sigma_allow = 1 MPa\nx = sigma_allow*2\n");
+    assert!(
+        out.contains("<msub><mi>sigma</mi><mi>allow</mi></msub>"),
+        "the underscore should become a subscript: {out}"
+    );
+}
+
+#[test]
+fn what_has_no_typeset_form_falls_back_rather_than_leaving_a_hole() {
+    // A conditional has no standard typeset form here, so the linear text is
+    // carried through as text — a sentence in the middle of a formula beats a
+    // gap in the middle of a worksheet.
+    let out = typeset("x = if 1 > 0 then 2 m else 3 m\n");
+    assert!(out.contains("<mtext>"), "no fallback: {out}");
+    assert!(
+        out.contains("if"),
+        "the fallback lost the expression: {out}"
+    );
+}
+
+#[test]
+fn typesetting_is_off_unless_asked_for() {
+    let plain = render("M = 2 kN*3 m\n");
+    assert!(
+        !plain.contains("<math"),
+        "MathML leaked into the default: {plain}"
+    );
+}

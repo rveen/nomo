@@ -13,7 +13,7 @@
 //! signed and filed, and retrofitting print styles is much harder than keeping
 //! them.
 
-use super::{plot, RenderOptions, Renderer};
+use super::{escape, plot, RenderOptions, Renderer};
 use crate::doc::Sheet;
 use crate::eval::OutcomeKind;
 use crate::prose::{self, Block};
@@ -109,20 +109,6 @@ figcaption { font-size: 0.8rem; opacity: 0.55; margin-top: 0.3rem; }
   h1.prose, h2.prose, h3.prose, h4.prose, h5.prose, h6.prose { break-after: avoid; }
 }
 "#;
-
-fn escape(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for c in s.chars() {
-        match c {
-            '&' => out.push_str("&amp;"),
-            '<' => out.push_str("&lt;"),
-            '>' => out.push_str("&gt;"),
-            '"' => out.push_str("&quot;"),
-            _ => out.push(c),
-        }
-    }
-    out
-}
 
 /// Render an evaluated worksheet as a standalone HTML document.
 ///
@@ -244,7 +230,7 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                     body.push_str(&format!(
                         "<div class=\"step\"><span class=\"name\">{}</span>{eq}{}</div>\n",
                         escape(name),
-                        escape(&r.symbolic(trace))
+                        r.symbolic_markup(trace)
                     ));
                     body.push_str(&plot::svg(p, r.units, &r.numbers));
                     continue;
@@ -252,12 +238,12 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                 let mut line = format!(
                     "<div class=\"step\"><span class=\"name\">{}</span>{eq}{}",
                     escape(name),
-                    escape(&r.symbolic(trace))
+                    r.symbolic_markup(trace)
                 );
                 if r.substitution_is_informative(trace) {
                     line.push_str(&format!(
                         "{eq}<span class=\"subst\">{}</span>",
-                        escape(&r.substituted(trace))
+                        r.substituted_markup(trace)
                     ));
                 }
                 if !r.is_literal_quantity(trace) {
@@ -303,12 +289,12 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                 };
                 let mut line = format!(
                     "<div class=\"step check {class}\"><span class=\"name\">check</span>{}",
-                    escape(&r.symbolic(trace))
+                    r.symbolic_markup(trace)
                 );
                 if r.substitution_is_informative(trace) {
                     line.push_str(&format!(
                         "{eq}<span class=\"subst\">{}</span>",
-                        escape(&r.substituted(trace))
+                        r.substituted_markup(trace)
                     ));
                 }
                 line.push_str(&format!("<span class=\"verdict\">{word}</span></div>\n"));
@@ -323,16 +309,16 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                 if let Ok(Value::Plot(p)) = &trace.value {
                     body.push_str(&format!(
                         "<div class=\"step\">{}</div>\n",
-                        escape(&r.symbolic(trace))
+                        r.symbolic_markup(trace)
                     ));
                     body.push_str(&plot::svg(p, r.units, &r.numbers));
                     continue;
                 }
-                let mut line = format!("<div class=\"step\">{}", escape(&r.symbolic(trace)));
+                let mut line = format!("<div class=\"step\">{}", r.symbolic_markup(trace));
                 if r.substitution_is_informative(trace) {
                     line.push_str(&format!(
                         "{eq}<span class=\"subst\">{}</span>",
-                        escape(&r.substituted(trace))
+                        r.substituted_markup(trace)
                     ));
                 }
                 let result = r.result(trace);
@@ -344,7 +330,7 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                 body.push_str(&format!(
                     "<div class=\"step note\">unit {} = {}</div>\n",
                     escape(name),
-                    escape(&r.symbolic(trace))
+                    r.symbolic_markup(trace)
                 ));
             }
 

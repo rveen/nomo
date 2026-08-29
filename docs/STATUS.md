@@ -29,6 +29,7 @@ function of `x`, in that order.
 | — Releasing | **written, unrun** | A tag builds a binary per architecture with no cross-compilation, each published only after passing the golden suite on the machine that built it; the wasm module goes out with its hash after agreeing with native byte for byte; the editor and gallery deploy to Pages. The shell was tested against stand-in artifacts; the runners have never run it |
 | — The gallery, and migration shown | **done** | `build-gallery.sh` renders every example into a browsable set of self-contained pages, and `docs/smath.md` finally *shows* an import: an SMath worksheet written here — ours to publish, unlike the corpora — beside what Nomo makes of it and what it computes. That fixture is also the only importer test that runs without the corpora |
 | — How-to worksheets | **six of six** | `bolt`, `shaft`, `column`, `bearing`, `spring`, `vessel` — a bolted joint, a shaft in combined bending and torsion, a column across the buckling transition, bearing life, a compression spring against six constraints, and a pressure vessel worked thin-wall and thick-wall side by side. The first worksheets written *for* the language rather than to exercise it; their acceptance is an engineer agreeing with the method rather than a green gate. Each says what it leaves out |
+| — Typeset output | **first phase done** | `nomo html --mathml` renders the symbolic and substituted columns as MathML: division becomes a fraction, a power a superscript, `sqrt` a radical, and a bracket the fraction bar makes unnecessary is dropped. Off by default. `check-mathml.mjs` asks Chrome where the numerator ended up, because a browser without MathML draws it *beside* the denominator rather than failing |
 | — Complex vectors | **done** | A vector literal with a complex element is a complex vector: elementwise arithmetic, `sum`, `abs`/`arg`/`Re`/`Im`/`conj`, indexing. Everything else refuses by name — the alternative was an aggregate seeing an empty collection and answering, which is how `sort` gave back `[]`. A complex *matrix* is still not built. Nine exhaustive matches, exactly as §8.40 predicted for a second value tower |
 | — Eigenvalues | **done** | `eigenvalues(m)` and `eigenvectors(m)` for a symmetric matrix, by cyclic Jacobi at a fixed twelve sweeps. Exactly symmetric or refused, with the remedy named — a nearly-symmetric matrix is the heuristic zero-test §8.40 refuses. `examples/shaft.nomo` now computes its principal stresses and checks them against the Tresca stress it already had, which is an independent check of the solver inside a real calculation |
 | — Initial value problems | **first phase done** | `rk4(f, y0, a, b, steps)` integrates `y' = f(x, y)` at a fixed step and answers with a table `plot` can draw and `linterp` can read. The method is named and the step count stated because both change the answer. First-order and scalar only. `examples/transient.nomo` checks it against a case whose answer is known: 6 µK at fifty steps, 0.14 K at five |
@@ -46,7 +47,7 @@ function of `x`, in that order.
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Prose as Markdown | **block level done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline formatting is not built and `_` emphasis never will be. Design note §8.41, `examples/prose.nomo` |
 
-640 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+645 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -97,7 +98,7 @@ cargo run --release -p nomo-cli -- bench               # timings; a report, exit
 ./scripts/compare-arch.sh                               # x86-64 vs aarch64 (needs qemu-user)
 ./scripts/build-gallery.sh                              # the worked examples as a
                                                         # browsable set of pages
-./scripts/build-web.sh                                  # front end; also runs the seven
+./scripts/build-web.sh                                  # front end; also runs the eight
                                                         # browser checks, including
                                                         # check-figures.mjs,
                                                         # check-plots.mjs and
@@ -540,6 +541,12 @@ it fail, which was checked.
   media and asks the page what is visible. Header, footer and editor must be
   gone; the worksheet must remain, must not clip and must wrap. Both checks were
   confirmed to fail when the thing they check is broken.
+- `check-mathml.mjs` — renders a worksheet with `--mathml`, then asks the page
+  where the numerator of a fraction ended up. It is the one check that could not
+  be replaced by an assertion on the markup: a browser that does not implement
+  MathML draws `<mfrac>` as a run of characters rather than failing, so the
+  worksheet would read `w · L 2 8` and every markup assertion would still pass.
+  Confirmed to fail against output rendered without the flag.
 - `check-recovery.mjs` — sabotages the engine so that one `update` throws, as a
   trap would, and asserts the editor replaces the instance and carries on with
   the buffer intact. It exists because the failure it guards against was
@@ -1469,7 +1476,7 @@ document that a missing secret explained it was wrong.
   no-host-math guard.
 - **`wasm`** — the module builds for `wasm32-unknown-unknown` and agrees with
   native byte for byte.
-- **`browser`** — all seven Chrome checks, on CI's own Chrome rather than this
+- **`browser`** — all eight Chrome checks, on CI's own Chrome rather than this
   machine's.
 - **`corpus`** — the two `check-corpus.sh` baselines and the coverage report,
   added in `cde475f` once the worksheets were in the repository. It asserts the

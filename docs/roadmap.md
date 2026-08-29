@@ -373,14 +373,26 @@ stay refused for the branch-cut reason already written down.
 
 ## Phase 6 — how it looks, and how it edits
 
-### 18. Typeset output
+### 18. Typeset output — **first phase done**
 
-The HTML renderer emits linear text in spans — `w·L²/8`, no fraction bars, no
-radicals. This project's bet is that engineers accept a text *syntax*; that bet
-is much easier to win when the *output* is typeset. A deterministic MathML
-emitter from the trace the engine already builds adds no dependency and is
-byte-comparable in the golden suite exactly as the plot SVG is. Behind a render
-option until the browser checks confirm it in Chrome, Firefox and Safari.
+Built as `render/mathml.rs`, walking the same trace the linear renderer walks:
+fractions, superscripts, radicals, upright units against italic names, and a
+subscript for the underscore in `sigma_allow`. A bracket that only existed to
+say "divide all of this" is dropped, because the fraction bar says it — which is
+the whole visual difference between typeset output and linear text with a bar
+drawn through it.
+
+Off by default (`nomo html --mathml`), and the reason to keep it off is the
+verification: `check-mathml.mjs` confirms it in **Chrome only**, because this
+machine has one browser. Firefox and Safari implement MathML Core and are not
+checked, which is a gap in the evidence rather than a claim about them.
+
+What that browser check is for, and why an assertion on the markup would not do:
+a browser without MathML does not fail. It draws `<mfrac>` as a run of
+characters, so the worksheet reads `w · L 2 8` and every markup test still
+passes. The check therefore asks the page where the numerator *ended up* —
+above the denominator, and taller than a letter — and was confirmed to fail
+against output rendered without the flag.
 
 ### 19. The editor
 

@@ -23,6 +23,7 @@
 //! substituted text would otherwise regroup — `(5 cm)²`, never `5 cm²`.
 
 pub mod html;
+pub mod mathml;
 pub mod number;
 pub mod plot;
 pub mod text;
@@ -41,6 +42,12 @@ use number::NumberFormat;
 #[derive(Debug, Clone)]
 pub struct RenderOptions {
     pub numbers: NumberFormat,
+    /// Typeset the symbolic column as MathML rather than as linear text.
+    ///
+    /// Off by default, and deliberately: it changes every rendered worksheet,
+    /// and it is verified in one browser on this machine. See
+    /// [`crate::render::mathml`].
+    pub mathml: bool,
     /// Include the substituted-values column. Turning it off gives a terse
     /// `name = result` listing.
     pub show_substitution: bool,
@@ -50,6 +57,7 @@ impl Default for RenderOptions {
     fn default() -> Self {
         RenderOptions {
             numbers: NumberFormat::default(),
+            mathml: false,
             show_substitution: true,
         }
     }
@@ -134,6 +142,26 @@ impl Piece {
 /// This is about what a person is shown.
 const SHOWN: usize = 20;
 
+/// Escape text for HTML and MathML alike.
+///
+/// Shared rather than copied a third time: the HTML renderer had one, the SVG
+/// renderer has its own for a different set of characters, and a typeset
+/// expression carries author-written names into markup exactly as the HTML
+/// renderer does.
+pub(crate) fn escape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            _ => out.push(c),
+        }
+    }
+    out
+}
+
 pub struct Renderer<'a> {
     pub opts: &'a RenderOptions,
     /// How numbers are shown *now*.
@@ -167,6 +195,30 @@ impl<'a> Renderer<'a> {
     /// The expression as written.
     pub fn symbolic(&self, trace: &Trace) -> String {
         self.walk(trace, Mode::Symbolic).text
+    }
+
+    /// The expression as written, typeset when the options ask for it.
+    ///
+    /// One place rather than a branch at each call site: a renderer that
+    /// typesets one column and not another would be worse than one that
+    /// typesets none.
+    pub fn symbolic_markup(&self, trace: &Trace) -> String {
+        let linear = self.symbolic(trace);
+        if self.opts.mathml {
+            mathml::render(self, trace, &linear, false)
+        } else {
+            escape(&linear)
+        }
+    }
+
+    /// The same for the substituted column, which is the one an engineer audits.
+    pub fn substituted_markup(&self, trace: &Trace) -> String {
+        let linear = self.substituted(trace);
+        if self.opts.mathml {
+            mathml::render(self, trace, &linear, true)
+        } else {
+            escape(&linear)
+        }
     }
 
     /// The expression with variables replaced by their values.

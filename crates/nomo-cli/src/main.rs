@@ -28,7 +28,15 @@ fn main() -> ExitCode {
         "check" => run_over(rest, check_one),
         "ast" => run_over(rest, dump_ast),
         "render" => run_over(rest, render_text),
-        "html" => run_over(rest, render_html),
+        "html" => {
+            // A flag rather than a worksheet statement: how a document is
+            // typeset is a fact about the rendering asked for, not about the
+            // engineering in it.
+            let mathml = rest.iter().any(|a| a == "--mathml");
+            let files: Vec<String> = rest.iter().filter(|a| *a != "--mathml").cloned().collect();
+            MATHML.with(|m| m.set(mathml));
+            run_over(&files, render_html)
+        }
         "test" => harness::run(rest),
         "bench" => bench::run(rest),
         "packs" => list_packs(),
@@ -55,6 +63,7 @@ fn usage() {
          nomo check  <file.nomo>...   evaluate and report diagnostics\n    \
          nomo render <file.nomo>...   evaluate and print worked results\n    \
          nomo html   <file.nomo>...   write a standalone HTML file\n    \
+         nomo html --mathml <file>    the same, with the mathematics typeset\n    \
          nomo ast    <file.nomo>...   print the syntax tree\n    \
          nomo test   [--write]        check every example against its snapshot\n    \
          nomo bench                   time the engine on worksheets of fixed shape\n    \
@@ -216,10 +225,22 @@ fn render_text(path: &str, source: &str) -> Verdict {
     Verdict::of(&sheet)
 }
 
+thread_local! {
+    /// Whether `html` was asked for typeset output.
+    ///
+    /// A thread-local because `run_over` takes a plain function pointer, and
+    /// threading an options struct through every command to carry one flag
+    /// would be a worse trade than this is.
+    static MATHML: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
 /// Render a worksheet to a standalone HTML file beside the source.
 fn render_html(path: &str, source: &str) -> Verdict {
     let sheet = nomo_core::Sheet::new(source);
-    let opts = nomo_core::RenderOptions::default();
+    let opts = nomo_core::RenderOptions {
+        mathml: MATHML.with(std::cell::Cell::get),
+        ..Default::default()
+    };
     let title = std::path::Path::new(path)
         .file_stem()
         .map_or_else(|| path.to_string(), |s| s.to_string_lossy().into_owned());

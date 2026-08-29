@@ -1,5 +1,79 @@
 # Changelog
 
+## 0.1.0 — the first release
+
+The first build anybody outside this repository can have: a command-line tool
+for linux-x86_64, linux-aarch64 and macos-aarch64, the WebAssembly module with
+its hash, and the editor and worked examples deployed as a static site. Every
+binary is built on a runner that owns its architecture and published only after
+passing the golden suite on the machine that built it.
+
+### The language
+
+- **`check sigma <= sigma_allow`** — a worksheet states its own verdicts. A
+  failed check is not an error: the arithmetic is right and the design is not,
+  so it carries no diagnostic and gets its own exit code (2, against 1 for a
+  worksheet that does not evaluate).
+- **`use steel`** — packs of curated definitions, compiled into the engine
+  rather than read from disk or fetched, because a browser opens a file and not
+  a directory and a fetch would put the network inside a determinism claim.
+- **`digits 4`** — significant figures from a line downwards. Presentation only;
+  the full-precision values the cross-target comparison reads are untouched.
+- **`axis x log`, `axis y 0, 100`** — a logarithmic axis and a drawn window. The
+  log axis changes the *sampling* as well as the drawing: 257 samples spaced
+  linearly across four decades put four of them in the first one.
+- **A conversion in an assignment is remembered.** `sigma = M/S -> ksi` makes
+  every later use read in ksi, compound targets included, so a worksheet's
+  verdict lines read `10 ksi ≤ 30 ksi` rather than in pascals.
+- **New functions**: `linterp` for reading a table, `rk4` for an initial value
+  problem, `eigenvalues`/`eigenvectors` for a symmetric matrix, and seventeen
+  more a worksheet expects to have — `mod`, `hypot`, `nthroot`, `log(x, b)`,
+  `cot`/`sec`/`csc`, the inverse hyperbolics, `product`, `mean`, `median`,
+  `sort`, `reverse`, `trace`, `submatrix`.
+- **Complex vectors**, so a branch of impedances is one value.
+
+### The editor
+
+- Completion offering a name with what it holds and a unit with its dimension,
+  hover explaining a name, and F12 to where it was defined — all from the
+  engine's own symbol table, with no second parser in the front end.
+- A **Typeset** toggle: the mathematics as MathML, with fractions, superscripts
+  and radicals. `nomo html --mathml` does the same for a standalone document.
+- The editor now **replaces a failed engine** rather than dying with it.
+
+### Worked examples
+
+Six mechanical how-tos written for the language rather than to exercise it — a
+bolted joint, a shaft in combined bending and torsion, a column across the
+buckling transition, bearing life, a compression spring, a pressure vessel worked
+thin-wall and thick-wall side by side — plus a Bode plot and a cooling transient.
+Each says what it leaves out, names its least certain number, and stops its plots
+where their equations stop. `build-gallery.sh` renders all of them into a
+browsable set of self-contained pages.
+
+### Fixed
+
+- **Two crashes reachable from ordinary typing.** A matrix literal with one
+  comma missing built a matrix claiming a shape its data did not have and
+  indexed out of bounds; and bracket depth times call depth, each within its own
+  ceiling, ran the stack out — the two limits multiplied and nothing bounded the
+  product. Both were found by a new randomized test within seconds of its
+  existing, in an engine with 581 passing tests.
+- **A worksheet could kill the editor permanently.** A trapped WebAssembly
+  instance stays broken, so it was not the deep edit that failed but every edit
+  after it, while the page went on looking like it was working.
+- **The `corpus` CI job**, red since it was written, was failing on a trap in
+  our own fetch script rather than on access to the corpora.
+
+### Added for the sake of the record
+
+- `nomo bench` — six fixed shapes timed and printed in CI as a report, not a
+  gate.
+- A randomized robustness test: fixed seed, no dependency, asserting the
+  properties that must hold whatever the input is.
+- `docs/roadmap.md`, and design note §8.42–§8.45 recording four investigations,
+  two of which ended in a refusal rather than a feature.
+
 ## Unreleased
 
 The repository was re-founded on a clean licensing basis. Everything in it is

@@ -142,6 +142,12 @@ in the wiki set.
 The corpora are fetched rather than committed. CI runs `fetch-corpora.sh` and
 then this as its `corpus` job; set `CORPUS_ROOT` if they are elsewhere.
 
+Note that `nomo check examples/bearing.nomo` exits **2** on purpose: its
+bearing does not reach the life the duty asks for, the worksheet says so and
+goes on to compute the rating that would, and 2 is the code for "this evaluates
+and a check failed" as distinct from 1 for "this does not evaluate". It is the
+one worksheet that exercises that path end to end.
+
 Note that `nomo check examples/diagnostics.nomo` exits non-zero on purpose:
 that worksheet is a page of deliberate mistakes whose error messages the suite
 pins. `check` evaluates — it did not until the commit that says so, and reported

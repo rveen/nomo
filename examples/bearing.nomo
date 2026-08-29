@@ -1,0 +1,72 @@
+' nomo 1
+
+' # Bearing life, and what a life figure actually claims
+'
+' A bearing's rated life is not how long it lasts. It is the life that nine
+' bearings in ten exceed — the tenth fails earlier, by design, and the spread is
+' wide. A calculated 20 000 hours means half of them are still running at about
+' 100 000 and one in ten has failed before 20 000.
+'
+' This is a deep-groove ball bearing on a fan shaft: 4 kN of radial load at 1500
+' rev/min, wanted for five years of continuous duty.
+
+unit rpm = 1/min
+
+' The basic dynamic load rating comes from the manufacturer's catalogue for the
+' bearing being considered — it is a measured property of that part, not
+' something a calculation can produce. This is a 6208.
+C_dyn = 32.5 kN
+
+P_load = 4 kN
+speed = 1500 rpm
+
+' ## Rated life
+'
+' The exponent is 3 for ball bearings and 10/3 for roller bearings, and it is
+' the whole character of the calculation: life goes as the cube of the load
+' margin, so a 25% overload costs half the life.
+
+p_exp = 3
+
+L_10 = (C_dyn/P_load)^p_exp
+L_10_hours = L_10*1e6/speed
+
+L_10_hours -> h
+
+' ## Against what is wanted
+
+years = 5
+wanted = years*8760 h
+
+check L_10_hours >= wanted
+
+' ## What rating the duty needs
+'
+' The check above fails, so the question becomes which bearing to fit. The load
+' rating required for a wanted life inverts the same relation — and this is the
+' number to take back to the catalogue.
+
+C_required = P_load*nthroot(wanted*speed/1e6, p_exp)
+C_required -> kN
+
+' A rating half again as large is one or two sizes up in the same bore, or the
+' same bearing in a heavier series. It is also worth asking whether the load is
+' really 4 kN: the cube means a 20% overestimate of the load costs 40% of the
+' calculated life, and bearing loads are usually estimated rather than measured.
+
+' ## Life against load
+'
+' The cube is the reason this curve falls away so fast, and the reason a bearing
+' that is comfortable at its design load is not comfortable at 30% more.
+
+fn life_hours(load) = (C_dyn/(load*kN))^p_exp*1e6/speed/h
+
+plot(life_hours, 2, 8)
+
+' ## What this leaves out
+'
+' The basic rating life, and nothing else. It assumes a radial load only — an
+' axial component turns `P` into an equivalent load with two catalogue factors
+' in it — and it takes no account of lubrication, contamination or temperature,
+' which the modified rating life handles with a factor that can move the answer
+' by an order of magnitude in either direction.

@@ -71,6 +71,12 @@ pub struct Env {
     /// spends the same budget twice over, and a per-frame counter would not
     /// notice.
     budget: Rc<Cell<usize>>,
+    /// How deep evaluation is nested right now. See [`MAX_EVAL_NEST`].
+    ///
+    /// Shared for the same reason the budget is, and a sharper one: a called
+    /// function's body runs in a child scope but on the *same* native stack, so
+    /// a counter that started again at zero per scope would bound nothing.
+    nesting: Rc<Cell<usize>>,
 }
 
 impl Default for Env {
@@ -182,6 +188,7 @@ impl Env {
             units: UnitTable::new(),
             depth: 0,
             budget: Rc::new(Cell::new(MAX_CALLS)),
+            nesting: Rc::new(Cell::new(0)),
         }
     }
 
@@ -192,6 +199,10 @@ impl Env {
     /// document.
     fn refresh_budget(&mut self) {
         self.budget.set(MAX_CALLS);
+        // Balanced increments already leave this at zero between statements.
+        // Set it anyway: a leak here would refuse later lines for work an
+        // earlier one did, and that failure would be very hard to read.
+        self.nesting.set(0);
     }
 
     pub fn units(&self) -> &UnitTable {
@@ -208,7 +219,27 @@ impl Env {
 
     // ---- expressions ---------------------------------------------------
 
+    /// Evaluate an expression, counting how deep the engine's own recursion is.
+    ///
+    /// The counter, not the match below, is what keeps this off the end of the
+    /// stack. Everything recursive routes through here — operands, arguments,
+    /// elements, the arms of an `if`, and a called function's body — so one
+    /// place counts the whole descent. See [`MAX_EVAL_NEST`] for why counting
+    /// calls was not enough.
     pub fn eval(&self, expr: &Expr) -> Trace {
+        let outer = self.nesting.get();
+        if outer >= MAX_EVAL_NEST {
+            return Trace::new(expr.span(), TraceNode::Malformed, Err(EvalError::TooNested));
+        }
+        self.nesting.set(outer + 1);
+        let trace = self.eval_expr(expr);
+        // Restored rather than decremented: the value is a depth, and putting
+        // back what was there cannot drift however this returned.
+        self.nesting.set(outer);
+        trace
+    }
+
+    fn eval_expr(&self, expr: &Expr) -> Trace {
         match expr {
             Expr::Error { span } => {
                 Trace::new(*span, TraceNode::Malformed, Err(EvalError::Malformed))
@@ -618,6 +649,7 @@ impl Env {
             units: self.units.clone(),
             depth: self.depth + 1,
             budget: Rc::clone(&self.budget),
+            nesting: Rc::clone(&self.nesting),
         };
         for (p, a) in f.params.iter().zip(args) {
             inner.vars.insert(p.clone(), a.clone());
@@ -2401,6 +2433,33 @@ fn range(args: &[Value]) -> Result<Value, EvalError> {
 /// room to spare, and far above anything an engineering worksheet nests: the
 /// deepest chain of calls in either SMath corpus is under ten.
 pub const MAX_DEPTH: usize = 64;
+
+/// How deeply evaluation may nest, counting every recursive step.
+///
+/// [`MAX_DEPTH`] counts *calls* and [`crate::parse::MAX_NEST`] counts brackets,
+/// and neither bounds the stack on its own, because the two multiply:
+///
+/// ```text
+/// fn f(x) = ((((( … f(x) … )))))
+/// ```
+///
+/// is 120 brackets inside 64 calls, which is some 7 700 nested evaluations —
+/// both limits respected, and the WebAssembly build traps. Found by
+/// `tests/robustness.rs` and confirmed against the shipped release module, so
+/// it was reachable from a worksheet rather than only in theory.
+///
+/// This counts what actually consumes the stack, and the number comes from the
+/// tightest target as usual. Measured 2026-08-29 on the release WebAssembly
+/// build, varying calls against bracket depth: it answers to roughly 900 nested
+/// evaluations and traps beyond about 1 000, and the cliff sits at the same
+/// place however the nesting is composed — 64 calls of 8 brackets, 8 calls of
+/// 120, and 16 of 64 all fail together. 512 is half of that, which is the
+/// margin available rather than a generous one: the ceiling is pressed from
+/// below as well, since [`MAX_DEPTH`] recursion of an ordinary definition costs
+/// four or five nested evaluations per call and must keep working. A worksheet
+/// hits this only by combining deep brackets with deep recursion, and the
+/// deepest expression in either SMath corpus is 14 with call chains under ten.
+pub const MAX_EVAL_NEST: usize = 512;
 
 /// How many user-function calls one statement may make.
 ///

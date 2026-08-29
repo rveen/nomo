@@ -1048,6 +1048,50 @@ f(2)
 }
 
 #[test]
+fn brackets_and_calls_multiply_and_are_bounded_together() {
+    // Both ceilings were respected here and the stack ran out anyway: 120
+    // brackets is under `MAX_NEST`, one call is under `MAX_DEPTH`, and 120
+    // brackets *inside* 64 calls is some 7 700 nested evaluations. The shipped
+    // WebAssembly build trapped on it, which in the browser took the editing
+    // session with it. `MAX_EVAL_NEST` counts what actually consumes the stack.
+    // On a thread with room, because a *debug* test thread gets 2 MiB and frames
+    // several times larger than release — so it can overflow on the very
+    // worksheet this checks is refused, and report a stack overflow instead of
+    // the refusal. The limit is set from what the release WebAssembly build
+    // carries; see `MAX_EVAL_NEST`.
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let deep = format!(
+                "fn f(x) = {}f(x){}\ny = f(1)\n",
+                "(".repeat(120),
+                ")".repeat(120)
+            );
+            assert!(!errors(&deep).is_empty(), "the product must be refused");
+        })
+        .expect("spawn")
+        .join()
+        .expect("refusing must not take the process down");
+
+    // The other side of the same number: the limit has to leave room for what
+    // the language says works. `MAX_DEPTH` recursion of an ordinary definition
+    // costs several nested evaluations per call, and it still answers.
+    assert_close(
+        last_raw("fn fact(n) = if n <= 1 then 1 else n*fact(n - 1)\nfact(60)"),
+        8.320987112741392e81,
+        "60! at the call ceiling",
+    );
+
+    // And an expression that is deep but not recursive is untouched: this is a
+    // bound on the product, not a second bracket limit.
+    assert_close(
+        last_raw(&format!("{}2 + 3{}", "(".repeat(120), ")".repeat(120))),
+        5.0,
+        "120 brackets and no calls",
+    );
+}
+
+#[test]
 fn a_vector_takes_its_column_index() {
     // `rows` and `cols` have always answered `n` and `1` for a vector, and
     // `augment`, `stack` and `reshape` all treat it as that column. Indexing

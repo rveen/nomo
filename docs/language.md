@@ -107,6 +107,14 @@ person comes close. The deepest expression among the worksheets in this
 repository is 13 levels, and the deepest across the 114 SMath worksheets the
 importer reads is 14.
 
+Nesting and recursion are bounded **together** as well as separately, because
+they multiply: brackets 120 deep inside a definition that calls itself 64 times
+respects both ceilings and is still some 7 700 nested evaluations. Evaluation
+stops at 512 nested steps and says so. A worksheet reaches that only by
+combining deep brackets with deep recursion — ordinary recursion is unaffected,
+and `fn fact(n) = if n <= 1 then 1 else n*fact(n - 1)` still answers at the
+call ceiling.
+
 ## Collections
 
 ```nomo

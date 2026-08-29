@@ -312,6 +312,25 @@ fn nesting_around_the_limit_is_survivable() {
 }
 
 #[test]
+fn nesting_times_recursion_is_survivable() {
+    // The two limits multiply, which is how a worksheet respecting both of them
+    // still ran the stack out: brackets up to `MAX_NEST` inside calls up to
+    // `MAX_DEPTH` is some 7 700 nested evaluations, and the shipped WebAssembly
+    // build trapped on it. `MAX_EVAL_NEST` is what bounds the product; these
+    // straddle it from both directions.
+    on_a_deep_stack(|| {
+        let mut rng = Rng(seed(0x9ABC));
+        for case in 0..cases(100) {
+            let brackets = rng.below(nomo_core::parse::MAX_NEST - 4) + 1;
+            let calls = rng.below(80) + 1;
+            let body = format!("{}f(n - 1){}", "(".repeat(brackets), ")".repeat(brackets));
+            let source = format!("fn f(n) = if n <= 0 then 1 else {body}\ny = f({calls})\n");
+            exercise(&format!("product-{case}"), &source);
+        }
+    });
+}
+
+#[test]
 fn a_long_worksheet_is_survivable() {
     on_a_deep_stack(|| {
         // Length rather than depth: a thousand statements, each of which may or may

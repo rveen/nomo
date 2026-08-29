@@ -134,6 +134,13 @@ pub enum EvalError {
     /// is a ceiling rather than a ban, and it names the function the ceiling
     /// was hit in.
     TooDeep(String),
+    /// Evaluation nested deeper than [`crate::eval::MAX_EVAL_NEST`].
+    ///
+    /// Different from `TooDeep`, which counts calls: this counts every
+    /// recursive step, because brackets and calls multiply and neither limit
+    /// bounds the stack alone. It names nothing, because there is nothing
+    /// useful to name — the depth belongs to the expression as a whole.
+    TooNested,
     /// The name is bound by this worksheet, but the statement that binds it did
     /// not produce a value.
     ///
@@ -176,6 +183,11 @@ impl core::fmt::Display for EvalError {
                 f,
                 "`{n}` is nested more than {} calls deep, so it never reaches an answer",
                 crate::eval::MAX_DEPTH
+            ),
+            EvalError::TooNested => write!(
+                f,
+                "this expression nests more than {} evaluations deep",
+                crate::eval::MAX_EVAL_NEST
             ),
             EvalError::WrongArity {
                 name,

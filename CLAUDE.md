@@ -62,9 +62,11 @@ check binaries.
   `a + i*step` rather than by repeated addition, and an iteration applies one
   step at a time because reassociating would show in the last bits.
 - **Every limit is a fixed number, and the tightest target sets it.** Sample
-  counts, panel counts, the million-element range cap, `MAX_DEPTH` and
-  `MAX_CALLS` are all counts rather than tolerances, so the answer cannot depend
-  on the machine. `MAX_DEPTH` is 64 because a recursion 200 calls deep *answered*
+  counts, panel counts, the million-element range cap, `MAX_NEST`, `MAX_DEPTH`,
+  `MAX_EVAL_NEST` and `MAX_CALLS` are all counts rather than tolerances, so the
+  answer cannot depend on the machine. They also have to be chosen *together*:
+  bracket depth and call depth each had a ceiling and the product of the two
+  still ran the stack out, which is what `MAX_EVAL_NEST` bounds. `MAX_DEPTH` is 64 because a recursion 200 calls deep *answered*
   natively and *trapped* in WebAssembly — raising one of these is a cross-target
   decision, never a tuning knob.
 - **Two gates, and they are different.** The golden suite compares Nomo's own

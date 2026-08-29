@@ -1,0 +1,83 @@
+' nomo 1
+
+' # A column: which buckling formula, and why the answer changes at a slenderness
+'
+' A short column crushes and a long one buckles, and the two have entirely
+' different formulas. Which applies is not a judgement call — it is decided by
+' the slenderness ratio against a transition value that follows from the
+' material, and getting it wrong overestimates a long column's capacity by a
+' factor that grows without limit.
+'
+' This is a solid round strut: 50 mm diameter, 2 m long, pinned at both ends,
+' S355, carrying 40 kN in compression.
+
+use steel
+
+d = 50 mm
+L = 2 m
+P = 40 kN
+
+' The effective length factor. Pinned at both ends is the reference case and the
+' one that is safe to assume when the real restraint is uncertain: a fixed end
+' that works loose becomes a pin, and a pin never becomes a fixed end.
+K_eff = 1
+
+' ## The section
+
+A = pi*d^2/4
+I = pi*d^4/64
+r_gyr = sqrt(I/A)
+
+A -> mm^2
+r_gyr -> mm
+
+' ## Slenderness, and the transition
+'
+' The transition is where Euler's curve meets the parabola through the yield
+' point — below it the column is in the inelastic range and Euler overstates
+' what it can carry, above it Euler is the answer.
+
+lambda = K_eff*L/r_gyr
+lambda_c = sqrt(2*pi^2*E_steel/Fy_S355)
+
+is_long = lambda >= lambda_c
+
+' ## The critical stress
+'
+' One expression with the decision inside it, so the worksheet cannot be read
+' as having chosen a formula and forgotten to say which.
+
+sigma_cr = if is_long then pi^2*E_steel/lambda^2 else Fy_S355 - (Fy_S355*lambda/(2*pi))^2/E_steel
+
+sigma_cr -> MPa
+
+P_cr = sigma_cr*A
+P_cr -> kN
+
+' ## The check
+'
+' Three against buckling rather than the two a yield check takes. Buckling is
+' sudden, it has no ductile reserve past the peak, and the load that causes it
+' depends on straightness and end restraint that nobody measures.
+
+n_buckling = 3
+
+check P <= P_cr/n_buckling
+
+' ## Critical stress against slenderness
+'
+' Both regimes on one curve, with the corner at the transition. The flat part on
+' the left is the parabola approaching yield; the falling part on the right is
+' Euler.
+
+fn critical(lam) = (if lam >= lambda_c then pi^2*E_steel/lam^2 else Fy_S355 - (Fy_S355*lam/(2*pi))^2/E_steel)/MPa
+
+plot(critical, 20, 250)
+
+' ## What this leaves out
+'
+' A perfectly straight, centrally loaded, prismatic strut. A real one is none of
+' those, and the codes handle it with a column curve that folds initial bow,
+' residual stress and eccentricity into a reduction factor rather than with the
+' Euler load and a factor of safety. This is the calculation that shows what is
+' happening; a code check is what a drawing is signed against.

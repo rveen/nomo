@@ -1,0 +1,160 @@
+# nomo snapshot v1
+# worksheet: column
+
+=== text ===
+# A column: which buckling formula, and why the answer changes at a slenderness
+
+A short column crushes and a long one buckles, and the two have entirely
+different formulas. Which applies is not a judgement call — it is decided by
+the slenderness ratio against a transition value that follows from the
+material, and getting it wrong overestimates a long column's capacity by a
+factor that grows without limit.
+
+This is a solid round strut: 50 mm diameter, 2 m long, pinned at both ends,
+S355, carrying 40 kN in compression.
+use steel
+d = 50 mm
+L = 2 m
+P = 40 kN
+The effective length factor. Pinned at both ends is the reference case and the
+one that is safe to assume when the real restraint is uncertain: a fixed end
+that works loose becomes a pin, and a pin never becomes a fixed end.
+K_eff = 1
+## The section
+A = π·d²/4 = π·(50 mm)²/4 = 0.0019635 m²
+I = π·d⁴/64 = π·(50 mm)⁴/64 = 3.06796e-7 m⁴
+r_gyr = sqrt(I/A) = sqrt(3.06796e-7 m⁴/(0.0019635 m²)) = 0.0125 m
+A = 1963.5 mm²
+r_gyr = 12.5 mm
+## Slenderness, and the transition
+
+The transition is where Euler's curve meets the parabola through the yield
+point — below it the column is in the inelastic range and Euler overstates
+what it can carry, above it Euler is the answer.
+lambda = K_eff·L/r_gyr = 1·(2 m)/(0.0125 m) = 160
+lambda_c = sqrt(2·π²·E_steel/Fy_S355) = sqrt(2·π²·(200 GPa)/(355 MPa)) = 105.455
+is_long = lambda ≥ lambda_c = 160 ≥ 105.455 = 1
+## The critical stress
+
+One expression with the decision inside it, so the worksheet cannot be read
+as having chosen a formula and forgotten to say which.
+sigma_cr = if is_long then π²·E_steel/lambda² else Fy_S355 - (Fy_S355·lambda/(2·pi))²/E_steel = if 1 then π²·(200 GPa)/160² else Fy_S355 - (Fy_S355·lambda/(2·pi))²/E_steel = 77106300 Pa
+sigma_cr = 77.1063 MPa
+P_cr = sigma_cr·A = 77106300 Pa·(0.0019635 m²) = 151398 N
+P_cr = 151.398 kN
+## The check
+
+Three against buckling rather than the two a yield check takes. Buckling is
+sudden, it has no ductile reserve past the peak, and the load that causes it
+depends on straightness and end restraint that nobody measures.
+n_buckling = 3
+check P ≤ P_cr/n_buckling = 40 kN ≤ 151398 N/3 — pass
+## Critical stress against slenderness
+
+Both regimes on one curve, with the corner at the transition. The flat part on
+the left is the parabola approaching yield; the falling part on the right is
+Euler.
+fn critical defined
+plot(critical, 20, 250) = [plot critical: 20 to 250, 257 points, 31.5827 to 348.615]
+## What this leaves out
+
+A perfectly straight, centrally loaded, prismatic strut. A real one is none of
+those, and the codes handle it with a column curve that folds initial bow,
+residual stress and eccentricity into a reduction factor rather than with the
+Euler load and a factor of safety. This is the calculation that shows what is
+happening; a code check is what a drawing is signed against.
+
+=== html ===
+<h1 class="prose">A column: which buckling formula, and why the answer changes at a slenderness</h1>
+<p class="prose">A short column crushes and a long one buckles, and the two have entirely different formulas. Which applies is not a judgement call — it is decided by the slenderness ratio against a transition value that follows from the material, and getting it wrong overestimates a long column's capacity by a factor that grows without limit.</p>
+<p class="prose">This is a solid round strut: 50 mm diameter, 2 m long, pinned at both ends, S355, carrying 40 kN in compression.</p>
+<div class="step note">use steel</div>
+<div class="step"><span class="name">d</span><span class="eq">=</span>50 mm</div>
+<div class="step"><span class="name">L</span><span class="eq">=</span>2 m</div>
+<div class="step"><span class="name">P</span><span class="eq">=</span>40 kN</div>
+<p class="prose">The effective length factor. Pinned at both ends is the reference case and the one that is safe to assume when the real restraint is uncertain: a fixed end that works loose becomes a pin, and a pin never becomes a fixed end.</p>
+<div class="step"><span class="name">K_eff</span><span class="eq">=</span>1</div>
+<h2 class="prose">The section</h2>
+<div class="step"><span class="name">A</span><span class="eq">=</span>π·d²/4<span class="eq">=</span><span class="subst">π·(50 mm)²/4</span><span class="eq">=</span><span class="result">0.0019635 m²</span></div>
+<div class="step"><span class="name">I</span><span class="eq">=</span>π·d⁴/64<span class="eq">=</span><span class="subst">π·(50 mm)⁴/64</span><span class="eq">=</span><span class="result">3.06796e-7 m⁴</span></div>
+<div class="step"><span class="name">r_gyr</span><span class="eq">=</span>sqrt(I/A)<span class="eq">=</span><span class="subst">sqrt(3.06796e-7 m⁴/(0.0019635 m²))</span><span class="eq">=</span><span class="result">0.0125 m</span></div>
+<div class="step">A<span class="eq">=</span><span class="result">1963.5 mm²</span></div>
+<div class="step">r_gyr<span class="eq">=</span><span class="result">12.5 mm</span></div>
+<h2 class="prose">Slenderness, and the transition</h2>
+<p class="prose">The transition is where Euler's curve meets the parabola through the yield point — below it the column is in the inelastic range and Euler overstates what it can carry, above it Euler is the answer.</p>
+<div class="step"><span class="name">lambda</span><span class="eq">=</span>K_eff·L/r_gyr<span class="eq">=</span><span class="subst">1·(2 m)/(0.0125 m)</span><span class="eq">=</span><span class="result">160</span></div>
+<div class="step"><span class="name">lambda_c</span><span class="eq">=</span>sqrt(2·π²·E_steel/Fy_S355)<span class="eq">=</span><span class="subst">sqrt(2·π²·(200 GPa)/(355 MPa))</span><span class="eq">=</span><span class="result">105.455</span></div>
+<div class="step"><span class="name">is_long</span><span class="eq">=</span>lambda ≥ lambda_c<span class="eq">=</span><span class="subst">160 ≥ 105.455</span><span class="eq">=</span><span class="result">1</span></div>
+<h2 class="prose">The critical stress</h2>
+<p class="prose">One expression with the decision inside it, so the worksheet cannot be read as having chosen a formula and forgotten to say which.</p>
+<div class="step"><span class="name">sigma_cr</span><span class="eq">=</span>if is_long then π²·E_steel/lambda² else Fy_S355 - (Fy_S355·lambda/(2·pi))²/E_steel<span class="eq">=</span><span class="subst">if 1 then π²·(200 GPa)/160² else Fy_S355 - (Fy_S355·lambda/(2·pi))²/E_steel</span><span class="eq">=</span><span class="result">77106300 Pa</span></div>
+<div class="step">sigma_cr<span class="eq">=</span><span class="result">77.1063 MPa</span></div>
+<div class="step"><span class="name">P_cr</span><span class="eq">=</span>sigma_cr·A<span class="eq">=</span><span class="subst">77106300 Pa·(0.0019635 m²)</span><span class="eq">=</span><span class="result">151398 N</span></div>
+<div class="step">P_cr<span class="eq">=</span><span class="result">151.398 kN</span></div>
+<h2 class="prose">The check</h2>
+<p class="prose">Three against buckling rather than the two a yield check takes. Buckling is sudden, it has no ductile reserve past the peak, and the load that causes it depends on straightness and end restraint that nobody measures.</p>
+<div class="step"><span class="name">n_buckling</span><span class="eq">=</span>3</div>
+<div class="step check pass"><span class="name">check</span>P ≤ P_cr/n_buckling<span class="eq">=</span><span class="subst">40 kN ≤ 151398 N/3</span><span class="verdict">pass</span></div>
+<h2 class="prose">Critical stress against slenderness</h2>
+<p class="prose">Both regimes on one curve, with the corner at the transition. The flat part on the left is the parabola approaching yield; the falling part on the right is Euler.</p>
+<div class="step note">fn critical defined</div>
+<div class="step">plot(critical, 20, 250)</div>
+<figure class="plot"><svg viewBox="0 0 640 380" role="img" aria-label="plot of critical">
+<line class="plot-grid" x1="145.48" y1="14.00" x2="145.48" y2="338.00"/>
+<text class="plot-label plot-x" x="145.48" y="356.00">50</text>
+<line class="plot-grid" x1="264.61" y1="14.00" x2="264.61" y2="338.00"/>
+<text class="plot-label plot-x" x="264.61" y="356.00">100</text>
+<line class="plot-grid" x1="383.74" y1="14.00" x2="383.74" y2="338.00"/>
+<text class="plot-label plot-x" x="383.74" y="356.00">150</text>
+<line class="plot-grid" x1="502.87" y1="14.00" x2="502.87" y2="338.00"/>
+<text class="plot-label plot-x" x="502.87" y="356.00">200</text>
+<line class="plot-grid" x1="622.00" y1="14.00" x2="622.00" y2="338.00"/>
+<text class="plot-label plot-end" x="622.00" y="356.00">250</text>
+<line class="plot-grid" x1="74.00" y1="338.00" x2="622.00" y2="338.00"/>
+<text class="plot-label plot-y" x="66.00" y="342.00">0</text>
+<line class="plot-grid" x1="74.00" y1="257.00" x2="622.00" y2="257.00"/>
+<text class="plot-label plot-y" x="66.00" y="261.00">100</text>
+<line class="plot-grid" x1="74.00" y1="176.00" x2="622.00" y2="176.00"/>
+<text class="plot-label plot-y" x="66.00" y="180.00">200</text>
+<line class="plot-grid" x1="74.00" y1="95.00" x2="622.00" y2="95.00"/>
+<text class="plot-label plot-y" x="66.00" y="99.00">300</text>
+<line class="plot-grid" x1="74.00" y1="14.00" x2="622.00" y2="14.00"/>
+<text class="plot-label plot-y" x="66.00" y="18.00">400</text>
+<line class="plot-axis" x1="74.00" y1="338.00" x2="622.00" y2="338.00"/>
+<line class="plot-axis" x1="74.00" y1="14.00" x2="74.00" y2="338.00"/>
+<polyline class="plot-curve plot-curve-1" points="74.00,55.62 76.14,56.10 78.28,56.59 80.42,57.11 82.56,57.65 84.70,58.21 86.84,58.78 88.98,59.39 91.13,60.01 93.27,60.65 95.41,61.31 97.55,62.00 99.69,62.70 101.83,63.43 103.97,64.17 106.11,64.94 108.25,65.73 110.39,66.54 112.53,67.37 114.67,68.22 116.81,69.09 118.95,69.98 121.09,70.89 123.23,71.83 125.38,72.78 127.52,73.76 129.66,74.76 131.80,75.77 133.94,76.81 136.08,77.87 138.22,78.95 140.36,80.05 142.50,81.18 144.64,82.32 146.78,83.48 148.92,84.67 151.06,85.87 153.20,87.10 155.34,88.35 157.48,89.61 159.63,90.90 161.77,92.21 163.91,93.54 166.05,94.90 168.19,96.27 170.33,97.66 172.47,99.08 174.61,100.51 176.75,101.97 178.89,103.44 181.03,104.94 183.17,106.46 185.31,108.00 187.45,109.56 189.59,111.14 191.73,112.74 193.88,114.37 196.02,116.01 198.16,117.68 200.30,119.36 202.44,121.07 204.58,122.80 206.72,124.54 208.86,126.31 211.00,128.10 213.14,129.91 215.28,131.75 217.42,133.60 219.56,135.47 221.70,137.37 223.84,139.28 225.98,141.22 228.13,143.17 230.27,145.15 232.41,147.15 234.55,149.17 236.69,151.21 238.83,153.27 240.97,155.35 243.11,157.46 245.25,159.58 247.39,161.73 249.53,163.89 251.67,166.08 253.81,168.29 255.95,170.51 258.09,172.76 260.23,175.03 262.38,177.32 264.52,179.64 266.66,181.97 268.80,184.32 270.94,186.70 273.08,189.09 275.22,191.51 277.36,193.94 279.50,196.37 281.64,198.73 283.78,201.04 285.92,203.29 288.06,205.49 290.20,207.63 292.34,209.72 294.48,211.76 296.63,213.75 298.77,215.69 300.91,217.59 303.05,219.45 305.19,221.26 307.33,223.03 309.47,224.77 311.61,226.46 313.75,228.11 315.89,229.73 318.03,231.32 320.17,232.87 322.31,234.38 324.45,235.86 326.59,237.31 328.73,238.74 330.88,240.13 333.02,241.49 335.16,242.82 337.30,244.13 339.44,245.41 341.58,246.66 343.72,247.89 345.86,249.09 348.00,250.27 350.14,251.43 352.28,252.56 354.42,253.67 356.56,254.76 358.70,255.83 360.84,256.88 362.98,257.91 365.13,258.92 367.27,259.91 369.41,260.88 371.55,261.83 373.69,262.77 375.83,263.69 377.97,264.59 380.11,265.47 382.25,266.34 384.39,267.20 386.53,268.04 388.67,268.86 390.81,269.67 392.95,270.47 395.09,271.25 397.23,272.02 399.38,272.77 401.52,273.51 403.66,274.24 405.80,274.96 407.94,275.67 410.08,276.36 412.22,277.04 414.36,277.71 416.50,278.37 418.64,279.02 420.78,279.66 422.92,280.29 425.06,280.91 427.20,281.51 429.34,282.11 431.48,282.70 433.63,283.28 435.77,283.85 437.91,284.41 440.05,284.97 442.19,285.51 444.33,286.05 446.47,286.58 448.61,287.10 450.75,287.61 452.89,288.11 455.03,288.61 457.17,289.10 459.31,289.58 461.45,290.06 463.59,290.52 465.73,290.99 467.88,291.44 470.02,291.89 472.16,292.33 474.30,292.77 476.44,293.20 478.58,293.62 480.72,294.04 482.86,294.45 485.00,294.85 487.14,295.25 489.28,295.65 491.42,296.04 493.56,296.42 495.70,296.80 497.84,297.17 499.98,297.54 502.13,297.90 504.27,298.26 506.41,298.61 508.55,298.96 510.69,299.31 512.83,299.65 514.97,299.98 517.11,300.31 519.25,300.64 521.39,300.96 523.53,301.28 525.67,301.60 527.81,301.91 529.95,302.21 532.09,302.51 534.23,302.81 536.38,303.11 538.52,303.40 540.66,303.69 542.80,303.97 544.94,304.25 547.08,304.53 549.22,304.80 551.36,305.07 553.50,305.34 555.64,305.60 557.78,305.86 559.92,306.12 562.06,306.37 564.20,306.62 566.34,306.87 568.48,307.12 570.63,307.36 572.77,307.60 574.91,307.84 577.05,308.07 579.19,308.30 581.33,308.53 583.47,308.76 585.61,308.98 587.75,309.20 589.89,309.42 592.03,309.64 594.17,309.85 596.31,310.06 598.45,310.27 600.59,310.48 602.73,310.68 604.88,310.88 607.02,311.08 609.16,311.28 611.30,311.47 613.44,311.67 615.58,311.86 617.72,312.05 619.86,312.23 622.00,312.42"/>
+</svg></figure>
+<h2 class="prose">What this leaves out</h2>
+<p class="prose">A perfectly straight, centrally loaded, prismatic strut. A real one is none of those, and the codes handle it with a column curve that folds initial bow, residual stress and eccentricity into a reduction factor rather than with the Euler load and a factor of safety. This is the calculation that shows what is happening; a code check is what a drawing is signed against.</p>
+
+=== values ===
+E_steel = 200000000000.0 m^-1·kg·s^-2
+G_steel = 77000000000.0 m^-1·kg·s^-2
+nu_steel = 0.3 dimensionless
+rho_steel = 7850.0 m^-3·kg
+alpha_steel = 1.2e-5 K^-1
+Fy_A36 = 248211262.55406097 m^-1·kg·s^-2
+Fy_A992 = 344737864.658418 m^-1·kg·s^-2
+Fy_S235 = 235000000.0 m^-1·kg·s^-2
+Fy_S355 = 355000000.0 m^-1·kg·s^-2
+d = 0.05 m
+L = 2.0 m
+P = 40000.0 m·kg·s^-2
+K_eff = 1.0 dimensionless
+A = 0.001963495408493621 m^2
+I = 3.067961575771283e-7 m^4
+r_gyr = 0.0125 m
+? = 0.001963495408493621 m^2
+? = 0.0125 m
+lambda = 160.0 dimensionless
+lambda_c = 105.4546396101753 dimensionless
+is_long = 1.0 dimensionless
+sigma_cr = 77106284.3835106 m^-1·kg·s^-2
+? = 77106284.3835106 m^-1·kg·s^-2
+P_cr = 151397.83535302646 m·kg·s^-2
+? = 151397.83535302646 m·kg·s^-2
+n_buckling = 3.0 dimensionless
+? = plot 20.0..250.0 (chosen) dimensionless over dimensionless {critical: [348.6154989157372, 348.0290076338077, 347.4167488265976, 346.7787224941069, 346.11492863633566, 345.42536725328387, 344.7100383449515, 343.96894191133856, 343.20207795244505, 342.4094464682709, 341.59104745881626, 340.74688092408104, 339.87694686406525, 338.9812452787688, 338.0597761681919, 337.1125395323344, 336.13953537119625, 335.1407636847776, 334.1162244730784, 333.0659177360986, 331.9898434738382, 330.8880016862973, 329.7603923734757, 328.6070155353737, 327.427871171991, 326.2229592833278, 324.992279869384, 323.7358329301596, 322.4536184656547, 321.14563647586914, 319.811886960803, 318.4523699204564, 317.0670853548292, 315.65603326392136, 314.219213647733, 312.756626506264, 311.26827183951457, 309.7541496474845, 308.2142599301738, 306.6486026875825, 305.05717791971074, 303.43998562655844, 301.79702580812545, 300.12829846441196, 298.4338035954179, 296.7135412011432, 294.967511281588, 293.1957138367522, 291.3981488666358, 289.5748163712389, 287.72571635056136, 285.8508488046033, 283.95021373336465, 282.0238111368454, 280.07164101504566, 278.09370336796525, 276.0899981956043, 274.0605254979628, 272.00528527504076, 269.92427752683807, 267.81750225335486, 265.684959454591, 263.5266491305467, 261.34257128122175, 259.13272590661626, 256.8971130067302, 254.63573258156353, 252.34858463111632, 250.03566915538852, 247.69698615438017, 245.33253562809122, 242.94231757652173, 240.52633199967164, 238.08457889754098, 235.61705827012977, 233.123770117438, 230.60471443946562, 228.0598912362127, 225.48930050767916, 222.89294225386513, 220.27081647477047, 217.6229231703953, 214.94926234073947, 212.24983398580306, 209.52463810558618, 206.77367470008866, 203.9969437693106, 201.19444531325192, 198.36617933191275, 195.51214582529292, 192.6323447933926, 189.72677623621166, 186.79544015375018, 183.8383365460081, 180.85546541298547, 177.8468267546822, 174.85250703660037, 171.9325310161569, 169.08509277509103, 166.30780942284326, 163.5983951197247, 160.95465637201698, 158.37448759104058, 155.85586689939922, 153.396852168803, 150.99557727496915, 148.65024855611426, 146.35914146248678, 144.12059738525247, 141.93302065384336, 139.79487569161958, 137.704684320376, 135.66102320485788, 133.6625214290355, 131.70785819643098, 129.79576064729324, 127.92500178588509, 126.09439851157963, 124.30280974786619, 122.54913466374096, 120.83231098230526, 119.1513133717187, 117.5051519139565, 115.89287064710021, 114.3135461771545, 112.76628635562521, 111.25022901932253, 109.76454078906563, 108.30841592416304, 106.88107522972884, 105.48176501406753, 104.1097560935232, 102.76434284233875, 101.44484228521412, 100.1505932303843, 98.88095544116231, 97.6353088440092, 96.41305277130189, 95.21360523707222, 94.03640224408666, 92.88089712072642, 91.74655988621186, 90.63287664279532, 89.53934899362076, 88.46549348501867, 87.41084107207148, 86.37493660634605, 85.35733834474877, 84.35761747851357, 83.37535768138551, 82.4101546761106, 81.46161581838949, 80.52935969749525, 79.61301575279701, 78.71222390546957, 77.82663420470539, 76.95590648778015, 76.09971005335534, 75.25772334743188, 74.42963366139817, 73.61513684164314, 72.81393701023062, 72.02574629615644, 71.25028457673223, 70.48727922866229, 69.73646488840038, 68.99758322139348, 68.27038269983746, 67.55461838858793, 66.8500517388861, 66.1564503895751, 65.47358797549776, 64.80124394278063, 64.13920337072295, 63.48725680002216, 62.84520006707926, 62.212834144139755, 61.589964985036076, 60.976403376308625, 60.371964793491934, 59.776469262362234, 59.18974122495167, 58.611609410142925, 58.04190670866615, 57.48047005232776, 56.927140297308505, 56.38176211137436, 55.84418386485146, 55.314257525222004, 54.79183855520425, 54.27678581418588, 53.768961462884896, 53.26823087111814, 52.77446252856194, 52.28752795839468, 51.80730163371524, 51.33366089663594, 50.866485879952506, 50.4056594312978, 49.95106703968957, 49.50259676438636, 49.060139165969055, 48.623587239568685, 48.19283635016473, 47.76778416988057, 47.348330617206095, 46.934377798080156, 46.52582994876786, 46.12259338047071, 45.72457642560971, 45.33168938572388, 44.94384448092888, 44.56095580088283, 44.18293925720774, 43.809712537317836, 43.441195059607054, 43.07730792995046, 42.71797389947559, 42.36311732356149, 42.012664122024994, 41.666541740454925, 41.32467911265673, 40.98700662417109, 40.653456076831574, 40.32396065432787, 39.998454888741755, 39.676874628024834, 39.35915700438768, 39.04524040357152, 38.735064434974085, 38.42856990260299, 38.125698776830205, 37.826394166922746, 37.53060029432505, 37.238262466669795, 36.94932705249456, 36.6637414566423, 36.38145409632485, 36.102414377828936, 35.82657267384507, 35.5538803014005, 35.284289500377675, 35.01775341260077, 34.75422606147294, 34.49366233214802, 34.23601795222049, 33.98124947291843, 33.72931425078445, 33.48017042983028, 33.23377692415097, 32.990093400985266, 32.74908026420913, 32.510698638249835, 32.27491035240829, 32.04167792557798, 31.81096455134897, 31.582734083485946]}
+
+=== diagnostics ===
+none

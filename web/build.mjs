@@ -12,7 +12,7 @@
 
 import * as esbuild from "esbuild";
 import { createHash } from "node:crypto";
-import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,6 +27,12 @@ const wasm = join(
 
 const serve = process.argv.includes("--serve");
 
+// Emptied first, not merged into. A build directory that only ever gains files
+// ships whatever anybody ever put there: this one was still carrying a
+// `sheaf_wasm.wasm` from before the project was renamed — 650 kB of a dead
+// engine that every deployment would have published, and that a service worker
+// told to cache the whole origin would have handed to a browser.
+await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
 
 try {

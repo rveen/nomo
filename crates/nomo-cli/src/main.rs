@@ -32,6 +32,10 @@ fn main() -> ExitCode {
         "test" => harness::run(rest),
         "bench" => bench::run(rest),
         "packs" => list_packs(),
+        "version" | "--version" | "-V" => {
+            version();
+            ExitCode::SUCCESS
+        }
         "--help" | "-h" | "help" => {
             usage();
             ExitCode::SUCCESS
@@ -54,7 +58,8 @@ fn usage() {
          nomo ast    <file.nomo>...   print the syntax tree\n    \
          nomo test   [--write]        check every example against its snapshot\n    \
          nomo bench                   time the engine on worksheets of fixed shape\n    \
-         nomo packs                   list the packs `use` can bring in\n\n\
+         nomo packs                   list the packs `use` can bring in\n    \
+         nomo version                 this build, and the formats it speaks\n\n\
          `test` runs from the repository root; --examples and --golden override\n\
          the directories it uses.\n\n\
          EXIT: 0 all well; 1 the worksheet does not evaluate; 2 it evaluates and\n\
@@ -126,6 +131,19 @@ fn plural(n: usize) -> &'static str {
     } else {
         "s"
     }
+}
+
+/// Which build this is, and which formats it speaks.
+///
+/// Three numbers rather than one, because they answer different questions. The
+/// build says which code this is. The worksheet format says which files it can
+/// open — a worksheet declaring a later one still opens, with a warning. The
+/// snapshot format says which golden files it can be compared against, and is
+/// what the cross-target comparison agrees on before it compares anything.
+fn version() {
+    println!("nomo {}", env!("CARGO_PKG_VERSION"));
+    println!("worksheet format {}", nomo_core::doc::CURRENT_VERSION);
+    println!("snapshot format {}", nomo_core::golden::FORMAT);
 }
 
 /// What `use` can bring in, and what each one holds.

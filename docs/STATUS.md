@@ -26,6 +26,7 @@ function of `x`, in that order.
 | 9 Local persistence, offline | **done** | Open/save with a cross-browser fallback, draft in IndexedDB, service worker |
 | — SMath importer | **seven phases in** | `nomo-smath`: reads **both** corpora — 54 wiki worksheets (0.82–0.98) and 60 mechanics worksheets (1.3–1.5) — emits `.nomo`, and checks itself against 1179 stored answers. Agreement: 312/344 wiki, 283/283 mechanics. Design note §8.13–§8.39 |
 | — A second batch of builtins | **done** | `mod` `hypot` `nthroot` `log(x, b)` `cot` `sec` `csc` `asinh` `acosh` `atanh` `product` `mean` `median` `sort` `reverse` `trace` `submatrix`. Conventions read from SMath where it has one — `mod`'s sign, `submatrix`'s inclusive one-based bounds. `stdev` and `rank` are deliberately absent; `docs/language.md` says why. Took the wiki corpus from 304/337 to **312/344** |
+| — Releasing | **written, unrun** | A tag builds a binary per architecture with no cross-compilation, each published only after passing the golden suite on the machine that built it; the wasm module goes out with its hash after agreeing with native byte for byte; the editor and gallery deploy to Pages. The shell was tested against stand-in artifacts; the runners have never run it |
 | — The gallery, and migration shown | **done** | `build-gallery.sh` renders every example into a browsable set of self-contained pages, and `docs/smath.md` finally *shows* an import: an SMath worksheet written here — ours to publish, unlike the corpora — beside what Nomo makes of it and what it computes. That fixture is also the only importer test that runs without the corpora |
 | — How-to worksheets | **six of six** | `bolt`, `shaft`, `column`, `bearing`, `spring`, `vessel` — a bolted joint, a shaft in combined bending and torsion, a column across the buckling transition, bearing life, a compression spring against six constraints, and a pressure vessel worked thin-wall and thick-wall side by side. The first worksheets written *for* the language rather than to exercise it; their acceptance is an engineer agreeing with the method rather than a green gate. Each says what it leaves out |
 | — Display precision | **done** | `digits n` sets significant figures from a line downwards — presentation only, so the full-precision values the cross-target comparison uses are untouched. All six how-tos wanted it, and so does the corpus: 1279 SMath regions carry an explicit precision that Nomo could not express |
@@ -86,6 +87,7 @@ cargo run -p nomo-cli -- render examples/beam.nomo
 cargo run -p nomo-cli -- html   examples/beam.nomo
 cargo run -p nomo-cli -- test                          # golden-file suite
 cargo run -p nomo-cli -- packs                         # what `use` can bring in
+cargo run -p nomo-cli -- version                       # build, and the formats it speaks
 cargo run --release -p nomo-cli -- bench               # timings; a report, exits 0
 ./scripts/compare-targets.sh                            # native vs WebAssembly
 ./scripts/compare-arch.sh                               # x86-64 vs aarch64 (needs qemu-user)
@@ -162,6 +164,37 @@ chain; it exited zero by §8.28.
 All of the above were green at the last commit, run locally. That is not the
 same as CI being green: the `corpus` job cannot fetch the worksheets on a
 runner, and this list assumes they are already on the machine.
+
+## Releasing
+
+`.github/workflows/release.yml` runs on a tag (`v*`) and on a manual dispatch.
+Four jobs: a binary per architecture, the WebAssembly module, the Pages
+deployment, and the release itself.
+
+Three things about it are deliberate. **Nothing is cross-compiled** — each
+binary is built on a runner that owns its architecture, which is the same
+argument the `arm64` CI job makes and the reason the golden suite runs *inside*
+the release job: an artifact that has not reproduced the committed snapshots on
+the machine that built it is not published. **The module is published with its
+hash**, after `compare-targets.sh` has shown it agrees with a native build, so
+the determinism claim can be checked by a reader. And **releasing uses `gh`**
+rather than a third-party action: it is on every runner and it is GitHub's own,
+so publishing costs this repository no dependency the engine would not be
+allowed.
+
+**Two things need doing once, by hand, and cannot be done from here.** The
+repository's Pages source must be set to "GitHub Actions" in its settings, or
+the `pages` job fails at deployment. And the first tag is the first time macOS
+runs anything in this project at all: the release's golden suite on
+`macos-aarch64` is a third platform's word on the central claim, and if it
+disagrees the release fails loudly, which is what it is there for.
+
+**What has been checked here, and what has not.** The workflow's shell — the
+packaging, the checksums, the collection of artifacts into one `SHA256SUMS.txt`,
+the release notes — was extracted from the YAML and run against stand-in
+artifacts, and does what it says. The runner behaviour, the Pages deployment and
+the `gh release create` call cannot be exercised from a development machine and
+have not been.
 
 ## Timings
 

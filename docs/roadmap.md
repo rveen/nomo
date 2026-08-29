@@ -280,7 +280,7 @@ fixture is now four, and they run anywhere.
 
 ## Phase 4 — ship it
 
-### 13. A release
+### 13. A release — **written; the runners have not run it**
 
 Nothing reaches a user today: no release workflow, no hosted build, no binary.
 A tagged release deploys `web/dist` to Pages, builds CLI binaries for
@@ -289,6 +289,16 @@ its hash**, so that whoever downloads it can check the determinism claim rather
 than take it. `web/dist` gets cleaned on build first: it currently carries a
 stale 650 KB `sheaf_wasm.wasm` from the old project name, which would otherwise
 ship.
+
+Written, with its shell extracted and run against stand-in artifacts so that the
+packaging, the checksums and the collection into one `SHA256SUMS.txt` are known
+to work. What cannot be checked from here is the runner, the Pages deployment
+and the `gh` call — and one setting has to be changed by hand: the repository's
+Pages source must be "GitHub Actions".
+
+`web/dist` is emptied before each build rather than merged into, which is what
+finally removed the stale `sheaf_wasm.wasm` — 650 kB of an engine from before
+the project was renamed, which every deployment would otherwise have published.
 
 *Gate:* the workflow green on a tag; the published page loads, computes, and
 still works offline after one visit.

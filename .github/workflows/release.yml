@@ -1,0 +1,183 @@
+name: Release
+
+# On a tag, and only on a tag. Everything here publishes something, and a
+# workflow that publishes on every push publishes mistakes on every push.
+on:
+  push:
+    tags: ["v*"]
+  # So the page can be republished without cutting a release — the editor and
+  # the worked examples are worth being able to fix on their own.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one half way: an interrupted Pages
+# deployment leaves the site on whichever half of two builds arrived first.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # The command-line tool, on the three targets that can be built on a runner
+  # that owns the architecture. Cross-compilation is deliberately not used: this
+  # project's whole claim is that the answer does not depend on the machine, and
+  # the way to show that is to build on each machine and let the golden suite
+  # prove they agree.
+  binaries:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            name: linux-x86_64
+          - runner: ubuntu-24.04-arm
+            name: linux-aarch64
+          - runner: macos-latest
+            name: macos-aarch64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install toolchain
+        run: rustup show
+
+      - name: Build
+        run: cargo build --release -p nomo-cli
+
+      # The binary is published only if it reproduces the committed snapshots on
+      # the machine that built it. A release that has not passed its own golden
+      # suite is a release nobody should trust, and this is the cheapest place to
+      # insist on it.
+      - name: The golden suite, on this machine
+        run: cargo run --release -p nomo-cli -- test
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          tar -czf "dist/nomo-${{ github.ref_name }}-${{ matrix.name }}.tar.gz" \
+              -C target/release nomo
+          # Portable rather than pretty: Linux runners have `sha256sum` and
+          # macOS has `shasum`, and neither has the other.
+          sums() { if command -v sha256sum >/dev/null; then sha256sum "$@"; else shasum -a 256 "$@"; fi; }
+          cd dist && sums ./*.tar.gz > "SHA256SUMS-${{ matrix.name }}.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.name }}
+          path: dist/
+
+  # The engine as it runs in a browser, published with its hash so that the
+  # determinism claim is checkable by whoever downloads it rather than only by
+  # whoever built it.
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install toolchain
+        run: rustup show
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # Before publishing the artifact, prove it computes what the native build
+      # computes. This is the same gate CI runs on every push; it is repeated
+      # here because what is being released is this exact file.
+      - name: Native and WebAssembly agree byte for byte
+        run: ./scripts/compare-targets.sh
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          cp target/wasm32-unknown-unknown/release/nomo_wasm.wasm \
+             "dist/nomo_wasm-${{ github.ref_name }}.wasm"
+          cd dist && sha256sum ./*.wasm > SHA256SUMS-wasm.txt
+          cat SHA256SUMS-wasm.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasm
+          path: dist/
+
+  # The editor and the worked examples, as a static site.
+  pages:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install toolchain
+        run: rustup show
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # Builds the engine, bundles the front end, renders the gallery and runs
+      # every browser check. A page that fails its own checks is not deployed.
+      - name: Build and check the front end
+        run: ./scripts/build-web.sh
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  # Everything above, gathered into one release with its checksums.
+  release:
+    needs: [binaries, wasm]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect
+        run: |
+          mkdir -p dist
+          find artifacts -type f -exec cp {} dist/ \;
+          # One list, so a reader has a single thing to check against.
+          cd dist && cat SHA256SUMS-*.txt > SHA256SUMS.txt && rm SHA256SUMS-*.txt
+          ls -l
+
+      # `gh` rather than a third-party action. It is installed on every runner
+      # and it is GitHub's own, so releasing costs this repository no
+      # dependency it would otherwise not have — which is the same rule the
+      # engine is held to.
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > notes.md <<'NOTES'
+          Built by this workflow from the tag, on a runner per architecture — no
+          cross-compilation, because the claim this project makes is that the
+          answer does not depend on the machine, and the way to show that is to
+          build on each one.
+
+          Every binary here passed the golden suite on the machine that built it,
+          and the WebAssembly module was published only after being shown to agree
+          with a native build byte for byte. `SHA256SUMS.txt` covers everything in
+          the release, the module's hash among them, so the determinism claim can
+          be checked by whoever downloads it rather than only by whoever built it.
+
+          The editor and the worked examples are deployed to GitHub Pages by the
+          same workflow.
+          NOTES
+          gh release create "${{ github.ref_name }}" dist/* \
+            --repo "${{ github.repository }}" \
+            --title "${{ github.ref_name }}" \
+            --notes-file notes.md \
+            --generate-notes

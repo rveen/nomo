@@ -48,6 +48,29 @@ These are the decisions that are expensive to reverse, so they are settled first
 - **The worksheet is a dependency graph**, so recalculation is incremental and
   cycles are an error rather than a hang.
 
+## Getting it
+
+A tagged release publishes a command-line binary for linux-x86_64,
+linux-aarch64 and macos-aarch64, the WebAssembly module, and `SHA256SUMS.txt`
+covering all of them. The editor and the worked examples deploy to GitHub Pages
+from the same workflow.
+
+Each binary is built on a runner that owns its architecture — no
+cross-compilation — and **published only after passing the golden suite on the
+machine that built it**. The module is published only after being shown to agree
+with a native build byte for byte. That is the point of listing its hash: the
+determinism claim is then checkable by whoever downloads it rather than only by
+whoever built it.
+
+```bash
+tar -xzf nomo-v0.1.0-linux-x86_64.tar.gz
+./nomo version
+./nomo check my-worksheet.nomo
+```
+
+Building from source is the section below, and needs nothing but a Rust
+toolchain.
+
 ## Build
 
 ```bash

@@ -121,6 +121,19 @@ impl Piece {
     }
 }
 
+/// How many values a collection may hold before it is shown as its shape.
+///
+/// Twenty is above every table a reader reads inline — the vectors in these
+/// worksheets hold three to eight — and far below what a computed one holds: an
+/// `rk4` over a hundred steps is two hundred and two values, and printing them
+/// in the substituted column of the line that uses the table, and again in
+/// every line below it, buries the worksheet in its own intermediate results.
+///
+/// The values themselves are untouched: the golden snapshot's values section is
+/// full precision and complete, which is what the cross-target comparison reads.
+/// This is about what a person is shown.
+const SHOWN: usize = 20;
+
 pub struct Renderer<'a> {
     pub opts: &'a RenderOptions,
     /// How numbers are shown *now*.
@@ -302,6 +315,9 @@ impl<'a> Renderer<'a> {
             // Rendered as its value rather than as nothing, so that an escape
             // shows up as a number that is right rather than as a hole.
             Value::Dual(d) => self.quantity(&d.value, target),
+            Value::Vector(v) if v.elements.len() > SHOWN => {
+                format!("[{} values]", v.elements.len())
+            }
             Value::Vector(v) => {
                 let parts: Vec<String> = v
                     .elements
@@ -309,6 +325,9 @@ impl<'a> Renderer<'a> {
                     .map(|q| self.quantity(q, target))
                     .collect();
                 format!("[{}]", parts.join(", "))
+            }
+            Value::Matrix(m) if m.data.len() > SHOWN => {
+                format!("[{}x{} table]", m.rows, m.cols)
             }
             Value::Matrix(m) => {
                 let rows: Vec<String> = (0..m.rows)

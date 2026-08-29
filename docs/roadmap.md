@@ -319,12 +319,24 @@ sampling and not only the drawing, so it lives on the plot value rather than in
 the renderer. 257 samples spaced linearly across four decades put four of them
 in the first one.
 
-### 15. A fixed-step ODE
+### 15. A fixed-step ODE — **done**
 
-`rkfixed`-shaped: n steps, RK4, deterministic **by construction**, because the
-step count is exactly the fixed number this project's rule already demands.
-Dynamics, thermal transients and control follow from it. Seven corpus calls, and
-far more demand outside the corpus than in it.
+Built as `rk4(f, y0, a, b, steps)`, and *not* `rkfixed`-shaped after all: that
+name is in no plugin this installation carries, and the corpus calls it with
+three arguments four times and four arguments once, so its signature cannot be
+read here any more than the lookup family's could. With nothing to copy, the
+name states the method — which is the honest thing anyway, since the answer to
+an initial value problem depends on how it was integrated and how finely.
+
+The result is a table of `(x, y)` rows, which cost nothing to design because the
+language already had somewhere to put one: `plot` draws a table and `linterp`
+reads a value out of one.
+
+Two things fell out of it. A first-order scalar equation only, because a system
+needs a vector whose elements carry different dimensions — an existing recorded
+limitation. And a collection over twenty values now renders as its shape rather
+than its contents: an `rk4` over a hundred steps is two hundred and two numbers,
+printed in the substituted column of every line that touches the table.
 
 ### 16. Symmetric eigenvalues
 

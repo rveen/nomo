@@ -1240,6 +1240,81 @@ fn the_reciprocal_and_inverse_hyperbolic_functions() {
     assert!(errors("cot(1 m)")[0].contains("dimensionless"));
 }
 
+// ---- initial value problems ---------------------------------------------
+
+#[test]
+fn rk4_integrates_a_known_equation() {
+    // y' = y, y(0) = 1, so y(1) = e. Fourth order over ten steps should be
+    // right to about a part in a million, and it is: this is the check that the
+    // coefficients are the classical ones rather than something that merely
+    // converges.
+    //
+    // The tolerance is the method's own truncation error rather than a round
+    // number: fourth order at a step of a tenth is a few parts in a million,
+    // and asserting anything tighter would be asserting that RK4 is exact.
+    let src = "fn f(x, y) = y\ntab = rk4(f, 1, 0, 1, 10)\ntab[11, 2]";
+    assert!(
+        (last_raw(src) - std::f64::consts::E).abs() < 1e-5,
+        "got {}, wanted e to within a few parts in a million",
+        last_raw(src)
+    );
+
+    // And the nodes land on the interval: the last one is the end, not near it.
+    let end = "fn f(x, y) = y\ntab = rk4(f, 1, 0, 1, 10)\ntab[11, 1]";
+    assert_close(last_raw(end), 1.0, "the last node");
+    let start = "fn f(x, y) = y\ntab = rk4(f, 1, 0, 1, 10)\ntab[1, 1]";
+    assert_close(last_raw(start), 0.0, "the first node");
+}
+
+#[test]
+fn rk4_carries_dimensions_through_the_integration() {
+    // The slope is a rate — the ordinate's dimension over the abscissa's — and
+    // every step multiplies it by a step of the abscissa. If any of that were
+    // wrong the units would not come out as kelvin.
+    let src = "tau = 100 s
+fn cool(t, T) = -(T - 300 K)/tau
+tab = rk4(cool, 500 K, 0 s, 200 s, 50)
+tab[51, 2] -> K
+";
+    // 300 + 200 e^-2 = 327.067 K, to within the method's truncation error at
+    // fifty steps across two time constants.
+    let want = 300.0 + 200.0 * (-2.0_f64).exp();
+    let got = last_in(src, "K");
+    assert!(
+        (got - want).abs() < 1e-4,
+        "two time constants: got {got}, wanted {want}"
+    );
+}
+
+#[test]
+fn rk4_refuses_what_it_cannot_integrate() {
+    let f = "fn f(x, y) = y\n";
+    // A slope whose dimension is not the ordinate over the abscissa.
+    assert!(!errors("fn g(t, T) = 1 m\nrk4(g, 1 K, 0 s, 1 s, 4)").is_empty());
+    // Ends in different dimensions, and a step count that is not one.
+    assert!(errors(&format!("{f}rk4(f, 1, 0 s, 1 m, 4)"))[0].contains("cannot combine"));
+    assert!(errors(&format!("{f}rk4(f, 1, 0, 1, 0)"))[0].contains("at least one step"));
+    assert!(errors(&format!("{f}rk4(f, 1, 0, 1, 2.5)"))[0].contains("whole number"));
+    // An offset scale cannot take part: the equation subtracts temperatures and
+    // scales the difference, which is not what a reading on a relative scale is.
+    assert!(errors(&format!("{f}rk4(f, 20 °C, 0, 1, 4)"))[0].contains("offset"));
+}
+
+#[test]
+fn the_answer_depends_on_the_step_count_and_says_so() {
+    // Not a defect — the point of naming the method and taking the count. The
+    // coarse integration is wrong by four orders of magnitude more than the
+    // fine one, and a worksheet can see both.
+    let of = |steps: &str| {
+        let src = format!(
+            "fn f(x, y) = y\ntab = rk4(f, 1, 0, 1, {steps})\ntab[{}, 2]",
+            steps.parse::<usize>().unwrap() + 1
+        );
+        (last_raw(&src) - std::f64::consts::E).abs()
+    };
+    assert!(of("2") > of("10") * 100.0, "{} vs {}", of("2"), of("10"));
+}
+
 // ---- axes ---------------------------------------------------------------
 
 /// The plot a worksheet's last statement produced.

@@ -500,7 +500,7 @@ that a worksheet gives the same last bits on every machine.
 | Linear algebra | `transpose` `det` `inv` `identity` `diag` `dot` `cross` `norm` `trace` |
 | Shape | `rows` `cols` `row` `col` `augment` `stack` `submatrix` `sort` `reverse` |
 | Repetition | `range` `map` `iterate` |
-| Numerical | `root` `roots` `derivative` `integral` `solve_linear` |
+| Numerical | `root` `roots` `derivative` `integral` `solve_linear` `rk4` |
 | Tables | `linterp` |
 
 Trigonometric and exponential functions require a dimensionless argument. Since
@@ -533,6 +533,38 @@ silently, the language does not offer the name.
 `submatrix(m, r1, r2, c1, c2)` takes the block from row `r1` to `r2` and column
 `c1` to `c2`, inclusive, counting from one. A single column comes back as a
 vector.
+
+### An initial value problem
+
+`rk4(f, y0, a, b, steps)` integrates `y' = f(x, y)` from `y(a) = y0` to `x = b`
+by classical Runge–Kutta at a fixed step, and answers with a table of `(x, y)`
+rows — a shape the language already has somewhere to put, since `plot` draws one
+and `linterp` reads a value out of one.
+
+```nomo
+tau = 100 s
+fn cool(t, T) = -(T - 300 K)/tau
+history = rk4(cool, 500 K, 0 s, 200 s, 50)
+plot(history)
+```
+
+**The method is in the name, and the step count is in the call.** Both change the
+answer, so both are the worksheet's to state: an `odesolve` that chose a method
+and an error tolerance would answer a different question whenever the tolerance
+was met differently, which is the same reason `integral` counts panels rather
+than testing an error. Halving the step divides a fourth-order method's error by
+sixteen, and a worksheet that wants to know how much its answer moved can
+integrate twice and subtract.
+
+Dimensions travel through: `f` returns a rate — the ordinate's dimension over
+the abscissa's — and every step multiplies it by a step of the abscissa, so a
+temperature integrated against time comes back a temperature. An offset scale is
+refused, because the equation subtracts one temperature from another and scales
+the difference.
+
+Only a first-order scalar equation, for now. A system needs a vector whose
+elements carry different dimensions — a position beside a velocity — which is a
+limitation this engine already has and records.
 
 ### Reading a table
 

@@ -1,0 +1,99 @@
+' nomo 1
+
+' # A cooling curve, integrated step by step
+'
+' A part comes out of a furnace and cools in still air. If it is small enough
+' and conductive enough that its inside and its surface stay at the same
+' temperature, the whole thing is one lumped heat capacity losing heat to the
+' room, and its temperature obeys a first-order differential equation with a
+' known solution. That makes it the right problem to check a numerical
+' integrator against: the answer is already known, so the question is whether
+' the method reproduces it.
+
+use steel
+use constants
+
+digits 4
+
+' ## The part, and whether the method applies
+
+L_side = 50 mm
+V = L_side^3 -> mm^3
+A_surf = 6*L_side^2 -> mm^2
+
+m_part = rho_steel*V -> kg
+c_steel = 480 J/(kg*K)
+h_air = 25 W/(m^2*K)
+k_steel = 45 W/(m*K)
+
+' The lumped assumption holds when conduction inside the part is fast compared
+' with convection off its surface — the Biot number, on the characteristic
+' length that is volume over area. Below about a tenth, the inside and the
+' surface differ by less than the other approximations here.
+
+L_char = V/A_surf -> mm
+Bi = h_air*L_char/k_steel
+
+check Bi <= 0.1
+
+' ## The equation
+'
+' The time constant is the heat the part stores divided by the rate it loses it
+' at one kelvin of excess.
+
+tau = m_part*c_steel/(h_air*A_surf) -> s
+
+T_room = 300 K
+T_start = 500 K
+
+' Absolute temperatures throughout. An offset scale has no place in this
+' arithmetic — the equation subtracts one temperature from another and scales
+' the difference, and `°C` is refused for it — so the worksheet works in kelvin
+' and converts at the end if a reader wants degrees.
+
+fn cooling(t, T) = -(T - T_room)/tau
+
+' ## Integrating it
+'
+' `rk4` names its method and takes its step count, because both change the
+' answer. Fifty steps over five time constants is a step of a tenth of a time
+' constant, which for a smooth exponential is far finer than it needs to be.
+
+t_end = 5*tau -> s
+steps = 50
+
+history = rk4(cooling, T_start, 0 s, t_end, steps)
+
+' ## Against the answer that is already known
+
+fn exact(t) = T_room + (T_start - T_room)*exp(-t*s/tau)
+
+T_final_rk4 = history[steps + 1, 2] -> K
+T_final_exact = exact(t_end/s) -> K
+
+error_K = abs(T_final_rk4 - T_final_exact) -> K
+
+check error_K <= 0.001 K
+
+' Five hundred kelvin falling to three hundred and one, and the two methods
+' agree to a thousandth of a kelvin. That is the fourth-order method earning its
+' name: halving the step divides the error by sixteen.
+
+' ## The step count is part of the answer
+'
+' The same integration over five steps rather than fifty — a step of a whole
+' time constant, which is the sort of thing that looks reasonable and is not.
+
+coarse = rk4(cooling, T_start, 0 s, t_end, 5)
+T_final_coarse = coarse[6, 2] -> K
+error_coarse = abs(T_final_coarse - T_final_exact) -> K
+
+' Still close, because an exponential decay is the easiest case there is. A
+' worksheet integrating something stiffer would find the same step size wrong by
+' a great deal more, and nothing here would say so — which is why the step count
+' is written where a reader can see it rather than chosen by the engine.
+
+' ## The curve
+
+axis y 290, 520
+plot(history)

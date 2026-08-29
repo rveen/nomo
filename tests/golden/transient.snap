@@ -1,0 +1,243 @@
+# nomo snapshot v1
+# worksheet: transient
+
+=== text ===
+# A cooling curve, integrated step by step
+
+A part comes out of a furnace and cools in still air. If it is small enough
+and conductive enough that its inside and its surface stay at the same
+temperature, the whole thing is one lumped heat capacity losing heat to the
+room, and its temperature obeys a first-order differential equation with a
+known solution. That makes it the right problem to check a numerical
+integrator against: the answer is already known, so the question is whether
+the method reproduces it.
+use steel
+use constants
+digits 4
+## The part, and whether the method applies
+L_side = 50 mm
+V = L_side³ = (50 mm)³ = 125000 mm³
+A_surf = 6·L_side² = 6·(50 mm)² = 15000 mm²
+m_part = rho_steel·V = 7850 m⁻³·kg·(125000 mm³) = 0.9813 kg
+c_steel = 480 J/(kg·K)
+h_air = 25 W/(m²·K)
+k_steel = 45 W/(m·K)
+The lumped assumption holds when conduction inside the part is fast compared
+with convection off its surface — the Biot number, on the characteristic
+length that is volume over area. Below about a tenth, the inside and the
+surface differ by less than the other approximations here.
+L_char = V/A_surf = 125000 mm³/(15000 mm²) = 8.333 mm
+Bi = h_air·L_char/k_steel = 25 kg·s⁻³·K⁻¹·(8.333 mm)/(45 m·kg·s⁻³·K⁻¹) = 0.00463
+check Bi ≤ 0.1 = 0.00463 ≤ 0.1 — pass
+## The equation
+
+The time constant is the heat the part stores divided by the rate it loses it
+at one kelvin of excess.
+tau = m_part·c_steel/(h_air·A_surf) = 0.9813 kg·(480 m²·s⁻²·K⁻¹)/(25 kg·s⁻³·K⁻¹·(15000 mm²)) = 1256 s
+T_room = 300 K
+T_start = 500 K
+Absolute temperatures throughout. An offset scale has no place in this
+arithmetic — the equation subtracts one temperature from another and scales
+the difference, and `°C` is refused for it — so the worksheet works in kelvin
+and converts at the end if a reader wants degrees.
+fn cooling defined
+## Integrating it
+
+`rk4` names its method and takes its step count, because both change the
+answer. Fifty steps over five time constants is a step of a tenth of a time
+constant, which for a smooth exponential is far finer than it needs to be.
+t_end = 5·tau = 5·(1256 s) = 6280 s
+steps = 50
+history = rk4(cooling, T_start, 0 s, t_end, steps) = rk4(cooling, 500 K, 0 s, 6280 s, 50) = [51x2 table]
+## Against the answer that is already known
+fn exact defined
+T_final_rk4 = history[steps + 1, 2] = ([51x2 table])[50 + 1, 2] = 301.3 K
+T_final_exact = exact(t_end/s) = exact(6280 s/s) = 301.3 K
+error_K = abs(T_final_rk4 - T_final_exact) = abs(301.3 K - 301.3 K) = 6.104e-6 K
+check error_K ≤ 0.001 K = 6.104e-6 K ≤ 0.001 K — pass
+Five hundred kelvin falling to three hundred and one, and the two methods
+agree to a thousandth of a kelvin. That is the fourth-order method earning its
+name: halving the step divides the error by sixteen.
+## The step count is part of the answer
+
+The same integration over five steps rather than fifty — a step of a whole
+time constant, which is the sort of thing that looks reasonable and is not.
+coarse = rk4(cooling, T_start, 0 s, t_end, 5) = rk4(cooling, 500 K, 0 s, 6280 s, 5) = [[0 s, 500 K], [1256 s, 375 K], [2512 s, 328.1 K], [3768 s, 310.5 K], [5024 s, 304 K], [6280 s, 301.5 K]]
+T_final_coarse = coarse[6, 2] = ([[0 s, 500 K], [1256 s, 375 K], [2512 s, 328.1 K], [3768 s, 310.5 K], [5024 s, 304 K], [6280 s, 301.5 K]])[6, 2] = 301.5 K
+error_coarse = abs(T_final_coarse - T_final_exact) = abs(301.5 K - 301.3 K) = 0.1356 K
+Still close, because an exponential decay is the easiest case there is. A
+worksheet integrating something stiffer would find the same step size wrong by
+a great deal more, and nothing here would say so — which is why the step count
+is written where a reader can see it rather than chosen by the engine.
+## The curve
+axis y limits
+plot(history) = plot([51x2 table]) = [plot history: 0 to 6280 s, 51 points, 301.3 to 500 K, window x auto y 290 to 520]
+
+=== html ===
+<h1 class="prose">A cooling curve, integrated step by step</h1>
+<p class="prose">A part comes out of a furnace and cools in still air. If it is small enough and conductive enough that its inside and its surface stay at the same temperature, the whole thing is one lumped heat capacity losing heat to the room, and its temperature obeys a first-order differential equation with a known solution. That makes it the right problem to check a numerical integrator against: the answer is already known, so the question is whether the method reproduces it.</p>
+<div class="step note">use steel</div>
+<div class="step note">use constants</div>
+<div class="step note">digits 4</div>
+<h2 class="prose">The part, and whether the method applies</h2>
+<div class="step"><span class="name">L_side</span><span class="eq">=</span>50 mm</div>
+<div class="step"><span class="name">V</span><span class="eq">=</span>L_side³<span class="eq">=</span><span class="subst">(50 mm)³</span><span class="eq">=</span><span class="result">125000 mm³</span></div>
+<div class="step"><span class="name">A_surf</span><span class="eq">=</span>6·L_side²<span class="eq">=</span><span class="subst">6·(50 mm)²</span><span class="eq">=</span><span class="result">15000 mm²</span></div>
+<div class="step"><span class="name">m_part</span><span class="eq">=</span>rho_steel·V<span class="eq">=</span><span class="subst">7850 m⁻³·kg·(125000 mm³)</span><span class="eq">=</span><span class="result">0.9813 kg</span></div>
+<div class="step"><span class="name">c_steel</span><span class="eq">=</span>480 J/(kg·K)</div>
+<div class="step"><span class="name">h_air</span><span class="eq">=</span>25 W/(m²·K)</div>
+<div class="step"><span class="name">k_steel</span><span class="eq">=</span>45 W/(m·K)</div>
+<p class="prose">The lumped assumption holds when conduction inside the part is fast compared with convection off its surface — the Biot number, on the characteristic length that is volume over area. Below about a tenth, the inside and the surface differ by less than the other approximations here.</p>
+<div class="step"><span class="name">L_char</span><span class="eq">=</span>V/A_surf<span class="eq">=</span><span class="subst">125000 mm³/(15000 mm²)</span><span class="eq">=</span><span class="result">8.333 mm</span></div>
+<div class="step"><span class="name">Bi</span><span class="eq">=</span>h_air·L_char/k_steel<span class="eq">=</span><span class="subst">25 kg·s⁻³·K⁻¹·(8.333 mm)/(45 m·kg·s⁻³·K⁻¹)</span><span class="eq">=</span><span class="result">0.00463</span></div>
+<div class="step check pass"><span class="name">check</span>Bi ≤ 0.1<span class="eq">=</span><span class="subst">0.00463 ≤ 0.1</span><span class="verdict">pass</span></div>
+<h2 class="prose">The equation</h2>
+<p class="prose">The time constant is the heat the part stores divided by the rate it loses it at one kelvin of excess.</p>
+<div class="step"><span class="name">tau</span><span class="eq">=</span>m_part·c_steel/(h_air·A_surf)<span class="eq">=</span><span class="subst">0.9813 kg·(480 m²·s⁻²·K⁻¹)/(25 kg·s⁻³·K⁻¹·(15000 mm²))</span><span class="eq">=</span><span class="result">1256 s</span></div>
+<div class="step"><span class="name">T_room</span><span class="eq">=</span>300 K</div>
+<div class="step"><span class="name">T_start</span><span class="eq">=</span>500 K</div>
+<p class="prose">Absolute temperatures throughout. An offset scale has no place in this arithmetic — the equation subtracts one temperature from another and scales the difference, and `°C` is refused for it — so the worksheet works in kelvin and converts at the end if a reader wants degrees.</p>
+<div class="step note">fn cooling defined</div>
+<h2 class="prose">Integrating it</h2>
+<p class="prose">`rk4` names its method and takes its step count, because both change the answer. Fifty steps over five time constants is a step of a tenth of a time constant, which for a smooth exponential is far finer than it needs to be.</p>
+<div class="step"><span class="name">t_end</span><span class="eq">=</span>5·tau<span class="eq">=</span><span class="subst">5·(1256 s)</span><span class="eq">=</span><span class="result">6280 s</span></div>
+<div class="step"><span class="name">steps</span><span class="eq">=</span>50</div>
+<div class="step"><span class="name">history</span><span class="eq">=</span>rk4(cooling, T_start, 0 s, t_end, steps)<span class="eq">=</span><span class="subst">rk4(cooling, 500 K, 0 s, 6280 s, 50)</span><span class="eq">=</span><span class="result">[51x2 table]</span></div>
+<h2 class="prose">Against the answer that is already known</h2>
+<div class="step note">fn exact defined</div>
+<div class="step"><span class="name">T_final_rk4</span><span class="eq">=</span>history[steps + 1, 2]<span class="eq">=</span><span class="subst">([51x2 table])[50 + 1, 2]</span><span class="eq">=</span><span class="result">301.3 K</span></div>
+<div class="step"><span class="name">T_final_exact</span><span class="eq">=</span>exact(t_end/s)<span class="eq">=</span><span class="subst">exact(6280 s/s)</span><span class="eq">=</span><span class="result">301.3 K</span></div>
+<div class="step"><span class="name">error_K</span><span class="eq">=</span>abs(T_final_rk4 - T_final_exact)<span class="eq">=</span><span class="subst">abs(301.3 K - 301.3 K)</span><span class="eq">=</span><span class="result">6.104e-6 K</span></div>
+<div class="step check pass"><span class="name">check</span>error_K ≤ 0.001 K<span class="eq">=</span><span class="subst">6.104e-6 K ≤ 0.001 K</span><span class="verdict">pass</span></div>
+<p class="prose">Five hundred kelvin falling to three hundred and one, and the two methods agree to a thousandth of a kelvin. That is the fourth-order method earning its name: halving the step divides the error by sixteen.</p>
+<h2 class="prose">The step count is part of the answer</h2>
+<p class="prose">The same integration over five steps rather than fifty — a step of a whole time constant, which is the sort of thing that looks reasonable and is not.</p>
+<div class="step"><span class="name">coarse</span><span class="eq">=</span>rk4(cooling, T_start, 0 s, t_end, 5)<span class="eq">=</span><span class="subst">rk4(cooling, 500 K, 0 s, 6280 s, 5)</span><span class="eq">=</span><span class="result">[[0 s, 500 K], [1256 s, 375 K], [2512 s, 328.1 K], [3768 s, 310.5 K], [5024 s, 304 K], [6280 s, 301.5 K]]</span></div>
+<div class="step"><span class="name">T_final_coarse</span><span class="eq">=</span>coarse[6, 2]<span class="eq">=</span><span class="subst">([[0 s, 500 K], [1256 s, 375 K], [2512 s, 328.1 K], [3768 s, 310.5 K], [5024 s, 304 K], [6280 s, 301.5 K]])[6, 2]</span><span class="eq">=</span><span class="result">301.5 K</span></div>
+<div class="step"><span class="name">error_coarse</span><span class="eq">=</span>abs(T_final_coarse - T_final_exact)<span class="eq">=</span><span class="subst">abs(301.5 K - 301.3 K)</span><span class="eq">=</span><span class="result">0.1356 K</span></div>
+<p class="prose">Still close, because an exponential decay is the easiest case there is. A worksheet integrating something stiffer would find the same step size wrong by a great deal more, and nothing here would say so — which is why the step count is written where a reader can see it rather than chosen by the engine.</p>
+<h2 class="prose">The curve</h2>
+<div class="step note">axis y limits</div>
+<div class="step">plot(history)</div>
+<figure class="plot"><svg viewBox="0 0 640 380" role="img" aria-label="plot of measured points: history">
+<line class="plot-grid" x1="74.00" y1="14.00" x2="74.00" y2="338.00"/>
+<text class="plot-label plot-start" x="74.00" y="356.00">0</text>
+<line class="plot-grid" x1="211.00" y1="14.00" x2="211.00" y2="338.00"/>
+<text class="plot-label plot-x" x="211.00" y="356.00">2000</text>
+<line class="plot-grid" x1="348.00" y1="14.00" x2="348.00" y2="338.00"/>
+<text class="plot-label plot-x" x="348.00" y="356.00">4000</text>
+<line class="plot-grid" x1="485.00" y1="14.00" x2="485.00" y2="338.00"/>
+<text class="plot-label plot-x" x="485.00" y="356.00">6000</text>
+<line class="plot-grid" x1="622.00" y1="14.00" x2="622.00" y2="338.00"/>
+<text class="plot-label plot-end" x="622.00" y="356.00">8000</text>
+<line class="plot-grid" x1="74.00" y1="323.91" x2="622.00" y2="323.91"/>
+<text class="plot-label plot-y" x="66.00" y="327.91">300</text>
+<line class="plot-grid" x1="74.00" y1="253.48" x2="622.00" y2="253.48"/>
+<text class="plot-label plot-y" x="66.00" y="257.48">350</text>
+<line class="plot-grid" x1="74.00" y1="183.04" x2="622.00" y2="183.04"/>
+<text class="plot-label plot-y" x="66.00" y="187.04">400</text>
+<line class="plot-grid" x1="74.00" y1="112.61" x2="622.00" y2="112.61"/>
+<text class="plot-label plot-y" x="66.00" y="116.61">450</text>
+<line class="plot-grid" x1="74.00" y1="42.17" x2="622.00" y2="42.17"/>
+<text class="plot-label plot-y" x="66.00" y="46.17">500</text>
+<line class="plot-axis" x1="74.00" y1="338.00" x2="622.00" y2="338.00"/>
+<line class="plot-axis" x1="74.00" y1="14.00" x2="74.00" y2="338.00"/>
+<text class="plot-unit plot-end" x="622.00" y="374.00">s</text>
+<text class="plot-unit plot-y-title" x="74.00" y="10.00">K</text>
+<polyline class="plot-curve plot-curve-1" points="74.00,42.17 82.60,68.98 91.21,93.24 99.81,115.20 108.41,135.06 117.02,153.03 125.62,169.29 134.23,184.01 142.83,197.32 151.43,209.37 160.04,220.27 168.64,230.13 177.24,239.05 185.85,247.13 194.45,254.44 203.05,261.05 211.66,267.03 220.26,272.44 228.86,277.34 237.47,281.77 246.07,285.78 254.68,289.41 263.28,292.70 271.88,295.67 280.49,298.35 289.09,300.79 297.69,302.99 306.30,304.98 314.90,306.78 323.50,308.41 332.11,309.89 340.71,311.22 349.32,312.43 357.92,313.52 366.52,314.51 375.13,315.41 383.73,316.21 392.33,316.95 400.94,317.61 409.54,318.21 418.14,318.75 426.75,319.24 435.35,319.69 443.95,320.09 452.56,320.45 461.16,320.78 469.77,321.08 478.37,321.35 486.97,321.59 495.58,321.82 504.18,322.01"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="74.00" cy="42.17" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="82.60" cy="68.98" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="91.21" cy="93.24" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="99.81" cy="115.20" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="108.41" cy="135.06" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="117.02" cy="153.03" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="125.62" cy="169.29" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="134.23" cy="184.01" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="142.83" cy="197.32" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="151.43" cy="209.37" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="160.04" cy="220.27" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="168.64" cy="230.13" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="177.24" cy="239.05" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="185.85" cy="247.13" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="194.45" cy="254.44" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="203.05" cy="261.05" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="211.66" cy="267.03" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="220.26" cy="272.44" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="228.86" cy="277.34" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="237.47" cy="281.77" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="246.07" cy="285.78" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="254.68" cy="289.41" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="263.28" cy="292.70" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="271.88" cy="295.67" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="280.49" cy="298.35" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="289.09" cy="300.79" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="297.69" cy="302.99" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="306.30" cy="304.98" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="314.90" cy="306.78" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="323.50" cy="308.41" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="332.11" cy="309.89" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="340.71" cy="311.22" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="349.32" cy="312.43" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="357.92" cy="313.52" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="366.52" cy="314.51" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="375.13" cy="315.41" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="383.73" cy="316.21" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="392.33" cy="316.95" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="400.94" cy="317.61" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="409.54" cy="318.21" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="418.14" cy="318.75" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="426.75" cy="319.24" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="435.35" cy="319.69" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="443.95" cy="320.09" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="452.56" cy="320.45" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="461.16" cy="320.78" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="469.77" cy="321.08" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="478.37" cy="321.35" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="486.97" cy="321.59" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="495.58" cy="321.82" r="2.6"/>
+<circle class="plot-curve plot-curve-1 plot-mark" cx="504.18" cy="322.01" r="2.6"/>
+</svg></figure>
+
+=== values ===
+E_steel = 200000000000.0 m^-1·kg·s^-2
+G_steel = 77000000000.0 m^-1·kg·s^-2
+nu_steel = 0.3 dimensionless
+rho_steel = 7850.0 m^-3·kg
+alpha_steel = 1.2e-5 K^-1
+Fy_A36 = 248211262.55406097 m^-1·kg·s^-2
+Fy_A992 = 344737864.658418 m^-1·kg·s^-2
+Fy_S235 = 235000000.0 m^-1·kg·s^-2
+Fy_S355 = 355000000.0 m^-1·kg·s^-2
+c_light = 299792458.0 m·s^-1
+h_planck = 6.62607015e-34 m^2·kg·s^-1
+k_boltzmann = 1.380649e-23 m^2·kg·s^-2·K^-1
+e_charge = 1.602176634e-19 s·A
+N_avogadro = 6.02214076e23 mol^-1
+R_gas = 8.31446261815324 m^2·kg·s^-2·K^-1·mol^-1
+g_earth = 9.80665 m·s^-2
+sigma_stefan = 5.670374419e-8 kg·s^-3·K^-4
+L_side = 0.05 m
+V = 0.00012500000000000003 m^3
+A_surf = 0.015000000000000003 m^2
+m_part = 0.9812500000000003 kg
+c_steel = 480.0 m^2·s^-2·K^-1
+h_air = 25.0 kg·s^-3·K^-1
+k_steel = 45.0 m·kg·s^-3·K^-1
+L_char = 0.008333333333333333 m
+Bi = 0.00462962962962963 dimensionless
+tau = 1256.0000000000002 s
+T_room = 300.0 K
+T_start = 500.0 K
+t_end = 6280.000000000001 s
+steps = 50.0 dimensionless
+history = [[0.0 s, 500.0 K], [125.60000000000002 s, 480.9675 K], [251.20000000000005 s, 463.74618028124996 K], [376.80000000000007 s, 448.1636844002355 K], [502.4000000000001 s, 434.06405778349813 K], [628.0000000000001 s, 421.306186884676 K], [753.6000000000001 s, 409.762386875263 K], [879.2000000000002 s, 399.3171237342458 K], [1004.8000000000002 s, 389.8658579468856 K], [1130.4 s, 381.3139982400151 K], [1256.0000000000002 s, 373.5759548824997 K], [1381.6000000000004 s, 366.5742830759938 K], [1507.2000000000003 s, 360.2389078627745 K], [1632.8000000000002 s, 354.5064227932832 K], [1758.4000000000003 s, 349.31945533421737 K], [1884.0000000000005 s, 344.6260926659749 K], [2009.6000000000004 s, 340.37936212264907 K], [2135.2000000000003 s, 336.5367610746525 K], [2260.8 s, 333.0598315488859 K], [2386.4000000000005 s, 329.913775329115 K], [2512.0000000000005 s, 327.0671056843581 K], [2637.6000000000004 s, 324.4913322396704 K], [2763.2000000000007 s, 322.16067583541275 K], [2888.8000000000006 s, 320.05181052122526 K], [3014.4000000000005 s, 318.1436301024992 K], [3140.0000000000005 s, 316.4170369028701 K], [3265.6000000000004 s, 314.85475062860075 K], [3391.2000000000007 s, 313.44113542190655 K], [3516.8000000000006 s, 312.1620433723194 K], [3642.4000000000005 s, 311.00467291990105 K], [3768.000000000001 s, 309.957440733161 K], [3893.600000000001 s, 309.00986577939153 K], [4019.2000000000007 s, 308.15246442716017 K], [4144.800000000001 s, 307.37665553111054 K], [4270.400000000001 s, 306.6746745491312 K], [4396.000000000001 s, 306.03949583234953 K], [4521.6 s, 305.4647623102036 K], [4647.200000000001 s, 304.94472186685886 K], [4772.800000000001 s, 304.4741697722039 K], [4898.400000000001 s, 304.0483965912565 K], [5024.000000000001 s, 303.66314105064106 K], [5149.600000000001 s, 303.3145473904094 K], [5275.200000000001 s, 302.9991267743696 K], [5400.800000000001 s, 302.7137223727036 K], [5526.4000000000015 s, 302.4554777674112 K], [5652.000000000001 s, 302.2218083643699 K], [5777.600000000001 s, 302.01037552589554 K], [5903.200000000001 s, 301.8190631649125 K], [6028.800000000001 s, 301.6459565664815 K], [6154.4000000000015 s, 301.4893232247237 K], [6280.000000000001 s, 301.34759550335093 K]]
+T_final_rk4 = 301.34759550335093 K
+T_final_exact = 301.3475893998171 K
+error_K = 6.103533849000087e-6 K
+coarse = [[0.0 s, 500.0 K], [1256.0000000000002 s, 375.0 K], [2512.0000000000005 s, 328.125 K], [3768.000000000001 s, 310.546875 K], [5024.000000000001 s, 303.955078125 K], [6280.000000000001 s, 301.483154296875 K]]
+T_final_coarse = 301.483154296875 K
+error_coarse = 0.1355648970579182 K
+? = plot 0.0..6280.000000000001 (measured) s over K {history: [(0.0, 500.0), (125.60000000000002, 480.9675), (251.20000000000005, 463.74618028124996), (376.80000000000007, 448.1636844002355), (502.4000000000001, 434.06405778349813), (628.0000000000001, 421.306186884676), (753.6000000000001, 409.762386875263), (879.2000000000002, 399.3171237342458), (1004.8000000000002, 389.8658579468856), (1130.4, 381.3139982400151), (1256.0000000000002, 373.5759548824997), (1381.6000000000004, 366.5742830759938), (1507.2000000000003, 360.2389078627745), (1632.8000000000002, 354.5064227932832), (1758.4000000000003, 349.31945533421737), (1884.0000000000005, 344.6260926659749), (2009.6000000000004, 340.37936212264907), (2135.2000000000003, 336.5367610746525), (2260.8, 333.0598315488859), (2386.4000000000005, 329.913775329115), (2512.0000000000005, 327.0671056843581), (2637.6000000000004, 324.4913322396704), (2763.2000000000007, 322.16067583541275), (2888.8000000000006, 320.05181052122526), (3014.4000000000005, 318.1436301024992), (3140.0000000000005, 316.4170369028701), (3265.6000000000004, 314.85475062860075), (3391.2000000000007, 313.44113542190655), (3516.8000000000006, 312.1620433723194), (3642.4000000000005, 311.00467291990105), (3768.000000000001, 309.957440733161), (3893.600000000001, 309.00986577939153), (4019.2000000000007, 308.15246442716017), (4144.800000000001, 307.37665553111054), (4270.400000000001, 306.6746745491312), (4396.000000000001, 306.03949583234953), (4521.6, 305.4647623102036), (4647.200000000001, 304.94472186685886), (4772.800000000001, 304.4741697722039), (4898.400000000001, 304.0483965912565), (5024.000000000001, 303.66314105064106), (5149.600000000001, 303.3145473904094), (5275.200000000001, 302.9991267743696), (5400.800000000001, 302.7137223727036), (5526.4000000000015, 302.4554777674112), (5652.000000000001, 302.2218083643699), (5777.600000000001, 302.01037552589554), (5903.200000000001, 301.8190631649125), (6028.800000000001, 301.6459565664815), (6154.4000000000015, 301.4893232247237), (6280.000000000001, 301.34759550335093)]}
+
+=== diagnostics ===
+none

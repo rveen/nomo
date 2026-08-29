@@ -147,7 +147,7 @@ pub const BUILTINS: &[&str] = &[
     "product",
     "range",
     "reverse",
-    "root",
+    "rk4",
     "roots",
     "round",
     "row",
@@ -628,6 +628,7 @@ impl Env {
     /// and it keeps `Expr::Call`'s callee a name, which the whole evaluator
     /// assumes.
     const HIGHER_ORDER: &'static [&'static str] = &[
+        "rk4",
         "map",
         "iterate",
         "root",
@@ -845,6 +846,86 @@ impl Env {
         };
 
         match (name, args) {
+            // `rk4(f, y0, a, b, steps)` — a first-order initial value problem,
+            // integrated by classical Runge–Kutta at a fixed step.
+            //
+            // The method is in the name, and deliberately: the answer to an
+            // initial value problem depends on how it was integrated and how
+            // finely, so a worksheet that says `rk4` with a step count has said
+            // what it did. An `odesolve` that chose a method and an error
+            // tolerance for the reader would be answering a different question
+            // each time the tolerance was met differently — which is the same
+            // reason `integral` counts panels rather than testing an error.
+            //
+            // The result is a table of `(x, y)` rows, which is a shape the
+            // language already has somewhere to put: `plot` draws one and
+            // `linterp` reads a value out of one.
+            ("rk4", [y0, from, to, count]) => {
+                let y0 = scalar_arg(y0)?;
+                let from = scalar_arg(from)?;
+                let to = scalar_arg(to)?;
+                if from.dim != to.dim {
+                    return Err(EvalError::Unit(UnitError::DimensionMismatch {
+                        lhs: from.dim,
+                        rhs: to.dim,
+                    }));
+                }
+                if from.is_point() || to.is_point() || y0.is_point() {
+                    return Err(EvalError::Singular(
+                        "`rk4` cannot integrate over an offset temperature scale; use an absolute scale such as K",
+                    ));
+                }
+                let steps = whole_count("rk4", count)?;
+                if steps == 0 {
+                    return Err(EvalError::Singular("`rk4` needs at least one step"));
+                }
+
+                let h = Quantity::new((to.value - from.value) / steps as f64, from.dim);
+                let half = Quantity::new(h.value / 2.0, h.dim);
+                let sixth = Quantity::new(h.value / 6.0, h.dim);
+
+                let mut data = Vec::with_capacity((steps + 1) * 2);
+                let mut y = y0;
+                data.push(from);
+                data.push(y);
+
+                let slope = |x: Quantity, y: Quantity| -> Result<Quantity, EvalError> {
+                    match call_all(&[Value::Scalar(x), Value::Scalar(y)])? {
+                        Value::Scalar(q) => Ok(q),
+                        other => Err(EvalError::ShapeMismatch {
+                            op: "rk4",
+                            lhs: other.shape_name(),
+                            rhs: String::from("a scalar"),
+                        }),
+                    }
+                };
+
+                for i in 0..steps {
+                    // `from + i*h`, never accumulated: the last node has to land
+                    // on the end of the interval rather than near it, which is
+                    // the rule `range`, `integral` and `plot` all follow.
+                    let x = Quantity::new(from.value + (i as f64) * h.value, from.dim);
+                    let x_mid = Quantity::new(x.value + half.value, x.dim);
+                    let x_end = Quantity::new(from.value + ((i + 1) as f64) * h.value, from.dim);
+
+                    // Written out in one fixed order rather than folded, because
+                    // reduction order is part of the language: the same
+                    // worksheet has to give the same last bits everywhere.
+                    let k1 = slope(x, y)?;
+                    let k2 = slope(x_mid, y.add(&half.mul(&k1)?)?)?;
+                    let k3 = slope(x_mid, y.add(&half.mul(&k2)?)?)?;
+                    let k4 = slope(x_end, y.add(&h.mul(&k3)?)?)?;
+
+                    let two = Quantity::scalar(2.0);
+                    let sum = k1.add(&two.mul(&k2)?)?.add(&two.mul(&k3)?)?.add(&k4)?;
+                    y = y.add(&sixth.mul(&sum)?)?;
+                    data.push(x_end);
+                    data.push(y);
+                }
+
+                Ok(Value::Matrix(MatrixValue::new(steps + 1, 2, data)))
+            }
+
             ("map", [Value::Vector(v)]) => {
                 let mut out = Vec::with_capacity(v.elements.len());
                 for e in &v.elements {
@@ -1901,6 +1982,11 @@ impl Env {
                     "root, roots, integral and plot with three arguments are handled before \
                      evaluation"
                 )
+            }
+
+            "rk4" => {
+                arity(5)?;
+                unreachable!("rk4 with five arguments is handled before evaluation")
             }
             "length" => {
                 arity(1)?;

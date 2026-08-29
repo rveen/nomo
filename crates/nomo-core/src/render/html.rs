@@ -97,6 +97,7 @@ figure.plot svg { width: 100%; max-width: 42rem; height: auto; display: block; }
 .plot-end { text-anchor: end; }
 .plot-y { text-anchor: end; }
 .plot-y-title { text-anchor: start; }
+.plot-axis-label { text-anchor: middle; opacity: 0.8; }
 .plot-legend { text-anchor: start; opacity: 0.75; }
 figure img { max-width: 100%; height: auto; display: block; }
 figcaption { font-size: 0.8rem; opacity: 0.55; margin-top: 0.3rem; }
@@ -264,6 +265,18 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                 body.push_str(&format!(
                     "<div class=\"step note\">axis {which} {}</div>\n",
                     escape(described)
+                ));
+            }
+
+            // The names themselves appear in the plot's legend; the line that
+            // gave them says only that it did, the way `axis` does.
+            OutcomeKind::Label(names) => {
+                let quoted: Vec<String> = names.iter().map(|n| format!("\"{n}\"")).collect();
+                body.push_str(&format!(
+                    "<div class=\"step note\">label {}</div>\n",
+                    // The quotes go through `escape` with the names, so this
+                    // line reads the same as the `axis` one above it.
+                    escape(&quoted.join(", "))
                 ));
             }
 

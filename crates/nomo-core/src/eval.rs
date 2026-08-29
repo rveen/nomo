@@ -718,7 +718,7 @@ impl Env {
             funcs: self.funcs.clone(),
             units: self.units.clone(),
             depth: self.depth + 1,
-            axes: self.axes,
+            axes: self.axes.clone(),
             budget: Rc::clone(&self.budget),
             nesting: Rc::clone(&self.nesting),
         };
@@ -744,6 +744,21 @@ impl Env {
     /// of a table and takes no names at all — the two kinds of plot are told
     /// apart by whether a span was written, and never by looking at what a name
     /// happens to hold.
+    /// Give a plot's curves the names the worksheet chose for them.
+    ///
+    /// Positional: the first name goes to the first curve. A curve past the
+    /// last name keeps the name it was drawn from, which is the function's or
+    /// the table's; a name past the last curve goes unused, because `label` is
+    /// a setting for the plots below it and a later plot may draw fewer.
+    fn name_curves(&self, plot: &mut crate::plot::PlotValue) {
+        let Some(names) = &self.axes.curve_names else {
+            return;
+        };
+        for (series, name) in plot.series.iter_mut().zip(names) {
+            series.name = name.clone();
+        }
+    }
+
     fn named_arity(name: &str, argc: usize) -> usize {
         match name {
             // A plot of one or two arguments has no span in it, so it is a plot
@@ -1533,6 +1548,8 @@ impl Env {
                     y_log: self.axes.y_log,
                     x_limits: self.axes.x_limits,
                     y_limits: self.axes.y_limits,
+                    x_label: self.axes.x_label.clone(),
+                    y_label: self.axes.y_label.clone(),
                 };
                 let mut dims: Option<(crate::dim::Dimension, crate::dim::Dimension)> = None;
                 for (i, table) in tables.iter().enumerate() {
@@ -1600,6 +1617,7 @@ impl Env {
                     drawn.from = lo;
                     drawn.to = hi;
                 }
+                self.name_curves(&mut drawn);
                 Ok(Value::Plot(Box::new(drawn)))
             }
 
@@ -1646,6 +1664,8 @@ impl Env {
                     y_log: self.axes.y_log,
                     x_limits: self.axes.x_limits,
                     y_limits: self.axes.y_limits,
+                    x_label: self.axes.x_label.clone(),
+                    y_label: self.axes.y_label.clone(),
                 };
                 // A logarithmic axis has no place for zero and no place at all
                 // for a negative number, and a span that crosses either would
@@ -1697,6 +1717,7 @@ impl Env {
                     });
                 }
                 sampled.y_dim = y_dim.unwrap_or(from.dim);
+                self.name_curves(&mut sampled);
                 Ok(Value::Plot(Box::new(sampled)))
             }
 
@@ -2975,6 +2996,40 @@ impl Env {
                 diagnostics: vec![],
             },
 
+            // Names for the curves of the plots below, in order.
+            //
+            // A setting that persists, like `axis` and `digits`, rather than
+            // the one-shot this first looked like it wanted to be. The reason
+            // is the incremental evaluator: an edit above a plot recomputes
+            // that plot alone, and all it has then is what the evaluator is
+            // holding — so a name consumed once would vanish on the next
+            // keystroke and the chart would silently lose its legend.
+            Stmt::Label { names, span } => {
+                let mut diagnostics = Vec::new();
+                let mut labels = Vec::with_capacity(names.len());
+                for expr in names {
+                    let trace = self.eval(expr);
+                    diagnostics.extend(diagnose(&trace));
+                    match &trace.value {
+                        Ok(Value::Text(t)) => labels.push(t.clone()),
+                        Ok(_) => {
+                            diagnostics.push(Diagnostic::error(
+                                eval_codes::EVAL_ERROR,
+                                *span,
+                                "a curve's name is a string, as in `label \"Gain\"`",
+                            ));
+                        }
+                        Err(_) => {}
+                    }
+                }
+                self.axes.curve_names = (!labels.is_empty()).then(|| labels.clone());
+                Outcome {
+                    span: *span,
+                    kind: OutcomeKind::Label(labels),
+                    diagnostics,
+                }
+            }
+
             // How the plots below are drawn — and, for `axis x log`, how they
             // are sampled. `mut self` is why this sits with the statements
             // rather than the expressions: it changes what comes after it.
@@ -2985,13 +3040,40 @@ impl Env {
             } => {
                 let mut diagnostics = Vec::new();
                 let described = match setting {
+                    crate::ast::AxisSetting::Label(expr) => {
+                        let trace = self.eval(expr);
+                        diagnostics.extend(diagnose(&trace));
+                        match &trace.value {
+                            Ok(Value::Text(t)) => {
+                                if *vertical {
+                                    self.axes.y_label = Some(t.clone());
+                                } else {
+                                    self.axes.x_label = Some(t.clone());
+                                }
+                            }
+                            Ok(_) => diagnostics.push(Diagnostic::error(
+                                eval_codes::EVAL_ERROR,
+                                *span,
+                                "an axis label is a string, as in `axis x \"Frequency\"`",
+                            )),
+                            Err(_) => {}
+                        }
+                        // What it says, not that it said something: `axis x
+                        // label` in a printout tells a reader nothing.
+                        match &trace.value {
+                            Ok(Value::Text(t)) => format!("\"{t}\""),
+                            _ => String::from("label"),
+                        }
+                    }
                     crate::ast::AxisSetting::Auto => {
                         if *vertical {
                             self.axes.y_log = false;
                             self.axes.y_limits = None;
+                            self.axes.y_label = None;
                         } else {
                             self.axes.x_log = false;
                             self.axes.x_limits = None;
+                            self.axes.x_label = None;
                         }
                         String::from("auto")
                     }
@@ -3222,6 +3304,8 @@ pub enum OutcomeKind {
         vertical: bool,
         described: String,
     },
+    /// `label "Gain", …` — the names the plots below will draw with.
+    Label(Vec<String>),
     /// `check …` — the condition, and whether it held.
     ///
     /// `passed` is `None` when the condition could not be evaluated at all, or

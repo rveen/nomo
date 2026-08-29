@@ -208,6 +208,7 @@ fn set_span(stmt: &mut Stmt, span: Span) {
         | Stmt::Use { span: s, .. }
         | Stmt::Digits { span: s, .. }
         | Stmt::Axis { span: s, .. }
+        | Stmt::Label { span: s, .. }
         | Stmt::FnDef { span: s, .. }
         | Stmt::Error { span: s } => *s = span,
     }
@@ -229,6 +230,11 @@ fn set_span(stmt: &mut Stmt, span: Span) {
         }
         Stmt::Query { expr, .. } | Stmt::Check { expr, .. } => set_expr_span(expr, span),
         Stmt::Use { name, .. } => name.span = span,
+        Stmt::Label { names, .. } => {
+            for n in names {
+                set_expr_span(n, span);
+            }
+        }
         Stmt::Axis { setting, .. } => {
             if let crate::ast::AxisSetting::Limits(lo, hi) = setting {
                 set_expr_span(lo, span);
@@ -527,9 +533,9 @@ impl Sheet {
     /// than a better diff.
     pub fn update(&mut self, source: &str) -> Recalculation {
         let doc = Document::parse(source);
-        let structural = doc.ast.stmts.len() != self.doc.ast.stmts.len();
+        let mut structural = doc.ast.stmts.len() != self.doc.ast.stmts.len();
 
-        let changed: Vec<usize> = if structural {
+        let mut changed: Vec<usize> = if structural {
             (0..doc.ast.stmts.len()).collect()
         } else {
             doc.ast
@@ -542,6 +548,19 @@ impl Sheet {
                 .collect()
         };
 
+        // A display setting binds nothing, so the graph has no edge from an
+        // `axis` or `label` line to the plots it governs and cannot say which
+        // of them a change reached. Recomputing everything is the only honest
+        // answer: otherwise renaming an axis leaves the old word on the chart
+        // until something unrelated happens to redraw it.
+        if changed
+            .iter()
+            .any(|&i| is_setting(&doc.ast.stmts, i) || is_setting(&self.doc.ast.stmts, i))
+        {
+            structural = true;
+            changed = (0..doc.ast.stmts.len()).collect();
+        }
+
         self.doc = doc;
         self.graph = DepGraph::build(&self.doc.ast);
         self.resources = Resources::scan(&self.doc.ast);
@@ -552,6 +571,14 @@ impl Sheet {
                 diagnostics: vec![],
             });
 
+        // A pass over the whole worksheet starts from nothing, the way opening
+        // it does. Carrying the old environment into it would let a definition
+        // outlive the line that made it: delete `x = 5` and `y = x` went on
+        // computing, because the name was still in the table — and a deleted
+        // `axis x log` went on drawing a logarithmic chart.
+        if structural {
+            self.env = Env::new();
+        }
         let dirty: BTreeSet<usize> = changed.iter().copied().collect();
         let evaluated = self.graph.affected(&dirty);
         self.evaluate(&evaluated);
@@ -563,6 +590,14 @@ impl Sheet {
             structural,
         }
     }
+}
+
+/// Whether the statement at `i` is one of the display settings.
+///
+/// These are the statements the dependency graph cannot see: they bind no name,
+/// so nothing depends on them, and what they reach is every plot below them.
+fn is_setting(stmts: &[Stmt], i: usize) -> bool {
+    matches!(stmts.get(i), Some(Stmt::Axis { .. } | Stmt::Label { .. }))
 }
 
 /// Whether two statements at the same position are the same statement.
@@ -1034,6 +1069,42 @@ mod tests {
         let r = sheet.update("a = 1\nb = a*2\nc = b+1");
         assert!(r.structural);
         assert_eq!(r.evaluated.len(), 3);
+    }
+
+    #[test]
+    fn a_deleted_line_stops_applying() {
+        // A full pass used to keep the environment the last one left behind, so
+        // a definition outlived the line that made it. Deleting `x = 5` left
+        // `y = x` computing happily from a name that was no longer written
+        // anywhere — the worst kind of wrong answer, because it is the one a
+        // reader cannot see the cause of.
+        let mut sheet = Sheet::new("x = 5\ny = x\n");
+        sheet.update("y = x\n");
+        assert!(
+            sheet
+                .diagnostics()
+                .iter()
+                .any(|d| d.message.contains("`x` is not defined")),
+            "{:?}",
+            sheet.diagnostics()
+        );
+
+        // And the same for a setting: a deleted `axis x log` went on drawing a
+        // logarithmic chart, which here shows up as a span it refuses.
+        let mut sheet = Sheet::new("fn g(t) = t\naxis x log\nplot(g, 10, 1000)\n");
+        sheet.update("fn g(t) = t\nplot(g, 0 - 1, 1)\n");
+        assert!(sheet.diagnostics().is_empty(), "{:?}", sheet.diagnostics());
+    }
+
+    #[test]
+    fn changing_a_setting_redraws_the_plots_below_it() {
+        // Nothing depends on an `axis` or `label` line — they bind no name — so
+        // the graph cannot reach the plots they govern. Editing one in place is
+        // therefore a full pass, or the chart would keep the old word on it.
+        let mut sheet = Sheet::new("fn g(t) = t\naxis x \"Time\"\nplot(g, 1, 10)\n");
+        let r = sheet.update("fn g(t) = t\naxis x \"Distance\"\nplot(g, 1, 10)\n");
+        assert!(r.structural);
+        assert!(r.evaluated.contains(&2), "the plot was not redrawn: {r:?}");
     }
 
     #[test]

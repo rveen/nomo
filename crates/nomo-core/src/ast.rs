@@ -232,6 +232,8 @@ pub enum AxisSetting {
     Limits(Expr, Expr),
     /// `auto` — back to the extent the data or the span implies, and linear.
     Auto,
+    /// `axis x "Frequency"` — what this axis measures.
+    Label(Expr),
 }
 
 /// A top-level worksheet statement.
@@ -286,6 +288,14 @@ pub enum Stmt {
         setting: AxisSetting,
         span: Span,
     },
+    /// `label "Gain", "Phase"` — names for the curves of the plots below.
+    ///
+    /// Persistent, like `axis` and `digits`, and for a reason that is about
+    /// the evaluator rather than about taste: an edit above a plot recomputes
+    /// that plot on its own, so a name consumed once would be gone by the next
+    /// keystroke. Names are applied in order and a plot with fewer curves uses
+    /// fewer of them.
+    Label { names: Vec<Expr>, span: Span },
     /// `fn area(d) = pi*d^2/4`
     FnDef {
         name: Name,
@@ -309,6 +319,7 @@ impl Stmt {
             | Stmt::Use { span, .. }
             | Stmt::Digits { span, .. }
             | Stmt::Axis { span, .. }
+            | Stmt::Label { span, .. }
             | Stmt::FnDef { span, .. }
             | Stmt::Error { span } => *span,
         }

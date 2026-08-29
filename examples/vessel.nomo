@@ -90,6 +90,12 @@ check sigma_vm <= sigma_allow
 fn thin(t) = p*r_i/(t*mm)/MPa
 fn thick(t) = p*((r_i + t*mm)^2 + r_i^2)/((r_i + t*mm)^2 - r_i^2)/MPa
 
+' The legend would otherwise name the curves after the functions that drew
+' them, which here are `thin` and `thick`. `label` says what they are.
+
+axis x "Wall thickness"
+axis y "Hoop stress"
+label "Thin-wall", "Thick-wall (Lamé)"
 plot(thin, thick, 5, 120)
 
 ' ## What this leaves out

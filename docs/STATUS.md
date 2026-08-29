@@ -35,6 +35,7 @@ function of `x`, in that order.
 | — Eigenvalues | **done** | `eigenvalues(m)` and `eigenvectors(m)` for a symmetric matrix, by cyclic Jacobi at a fixed twelve sweeps. Exactly symmetric or refused, with the remedy named — a nearly-symmetric matrix is the heuristic zero-test §8.40 refuses. `examples/shaft.nomo` now computes its principal stresses and checks them against the Tresca stress it already had, which is an independent check of the solver inside a real calculation |
 | — Initial value problems | **first phase done** | `rk4(f, y0, a, b, steps)` integrates `y' = f(x, y)` at a fixed step and answers with a table `plot` can draw and `linterp` can read. The method is named and the step count stated because both change the answer. First-order and scalar only. `examples/transient.nomo` checks it against a case whose answer is known: 6 µK at fifty steps, 0.14 K at five |
 | — Axes | **done** | `axis x log`, `axis y 0, 100`, `linear`, `auto`. A logarithmic horizontal axis changes the *sampling* too — a decade sweep spaced linearly puts four of 257 samples in its first decade — which is why it lives on the plot value rather than in the renderer. SMath has axis limits and no log scale at all, read from `PlotRegion.dll`, so the limits follow a precedent and the scale is ours. `examples/bode.nomo` |
+| — Labelled axes and named curves | **done** | `axis x "Frequency"` says what an axis measures and `label "Gain", "Phase"` names the curves; the unit stays at the end of the axis, because `Frequency` and `Hz` are different questions. The most-wanted plot feature by corpus ranking — 88 `description` calls, all of them `XLabel` or a trace name (§8.44) — and now §8.46. It also turned up two leaks older than itself: a full pass kept the old environment, so a deleted definition and a deleted `axis x log` both went on applying |
 | — Display precision | **done** | `digits n` sets significant figures from a line downwards — presentation only, so the full-precision values the cross-target comparison uses are untouched. All six how-tos wanted it, and so does the corpus: 1279 SMath regions carry an explicit precision that Nomo could not express |
 | — Packs | **done** | `use steel` brings in a curated set of definitions, compiled into the engine rather than read from disk or fetched — a browser opens a file, not a directory, and a fetch would put the network inside a determinism claim. Two packs so far, `constants` and `steel`; `nomo packs` lists them. `examples/packs.nomo` |
 | — Tables | **first phase done** | `linterp(xs, ys, x)` reads a value out of a table, with units, refusing to extrapolate. Settled by disassembling SMath's own implementation (§8.42), which extrapolates, sorts and drops units — all three decided the other way here, on purpose. `cinterp`, `ainterp` and the lookup family are not built, and §8.42 says why. `examples/tables.nomo` |
@@ -48,7 +49,7 @@ function of `x`, in that order.
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Prose as Markdown | **block level done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline formatting is not built and `_` emphasis never will be. Design note §8.41, `examples/prose.nomo` |
 
-645 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+650 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -83,7 +84,7 @@ does not survive it, and then:
 
 ```bash
 cd /files/work/nomo
-cargo test --workspace                                  # 581 tests
+cargo test --workspace                                  # 650 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ./scripts/check-no-host-math.sh                         # determinism guard

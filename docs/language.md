@@ -35,7 +35,8 @@ V -> dm^3
 | Check | `check sigma <= sigma_allow` | State a limit and report a verdict on it. |
 | Pack | `use steel` | Bring in a curated set of definitions. |
 | Digits | `digits 4` | Significant figures for results, from that line down. |
-| Axis | `axis x log`, `axis y 0, 100` | How the plots below are drawn. |
+| Axis | `axis x log`, `axis y 0, 100`, `axis x "Frequency"` | How the plots below are drawn. |
+| Label | `label "Gain", "Phase"` | What to call the curves of the plots below. |
 
 Only a bare name may appear on the left of `=`. `x + 1 = 2` is an error, not an
 equation to solve.
@@ -230,22 +231,37 @@ the same one twice is a warning — harmless, and almost certainly a mistake.
 
 ```nomo
 axis x log
+axis x "Frequency"                 ' what the axis measures
+axis y "Gain"
 plot(gain_dB, 10, 100000)          ' a Bode plot
 
 axis y linear
 axis y -90, 0                      ' the window a phase response lives in
+axis y "Phase"
 plot(phase, 10, 100000)
 ```
 
 `axis x` and `axis y` say how the plots *below* them are drawn, the way `digits`
-says how the results below it are shown. Four settings:
+says how the results below it are shown. Five settings:
 
 | | |
 |---|---|
 | `axis x log` | a logarithmic axis, labelled in decades |
 | `axis x linear` | back to a linear one |
 | `axis y 0, 100` | a window: what is drawn, in the axis's own units |
-| `axis y auto` | back to the extent the span or the data implies |
+| `axis x "Frequency"` | what the axis measures, drawn beside the numbers |
+| `axis y auto` | back to the extent the span or the data implies, and unlabelled |
+
+A label is a string, or a name holding one. It is what the axis *measures*; the
+unit it is measured in is drawn at the end of the axis either way, because
+`Frequency` and `Hz` are different questions and a reader asks them at different
+moments. `auto` clears the label along with the rest, since it means back to
+what the data implies.
+
+What follows the axis name is read by the comma and nothing else: two
+expressions separated by one are a window, and a single expression is a label.
+That is what lets a label be a name — `axis y what`, where `what` holds a
+string — rather than only a literal.
 
 **A logarithmic *horizontal* axis changes the sampling as well as the drawing.**
 This is the one place a display directive reaches the numbers, and it is
@@ -264,6 +280,23 @@ refused outright; a window that starts at or below zero is refused as long as
 that axis is logarithmic, in whichever order the two lines were written. On a
 fitted logarithmic axis, values at or below zero are drawn as the gap they are —
 the same answer a non-finite sample gets.
+
+### Naming the curves
+
+```nomo
+label "Gain", "Phase"
+plot(open_loop, closed_loop, 10, 100000)
+```
+
+A plot's legend names each curve after the function that drew it, which is the
+right answer until the functions are called `h1` and `h2`. `label` says what to
+call them instead: the first name goes to the first curve, the second to the
+second, and a curve past the last name keeps the name it was drawn from.
+
+Like `axis`, it is a setting for the plots *below* it rather than for the next
+one only. That is not a preference: an edit above a plot recomputes that plot on
+its own, and a name used up by the first drawing would be gone by the next
+keystroke.
 
 ## Checks — a worksheet that states whether it holds
 
@@ -872,7 +905,8 @@ fixed sampling always costs: a feature narrower than the sample spacing can fall
 between two samples and not be drawn. The way to see a narrow peak is to plot a
 narrower span, which is what a person does with a chart anyway.
 
-Both axes are labelled from the dimensions, so nothing is written twice. The
+Both axes carry their unit, taken from the dimensions so that nothing is written
+twice; `axis x "Frequency"` adds what the axis measures beside it. The
 span's two ends must share a dimension, and so must everything the function
 returns — one vertical axis means one dimension, and a function that changes
 dimension across the span is an error rather than a chart with two meanings on
@@ -892,7 +926,8 @@ plot(light, nominal, heavy, 30 kHz, 200 kHz)
 They are sampled over the same span at the same points, so the curves are
 comparable, and the one-dimension rule applies across them as well as along each
 — a gain beside a length is refused rather than drawn. A legend under the
-drawing names them in the order they were written. A family of curves is written
+drawing names them in the order they were written, after the functions that drew
+them or after whatever a `label` line said instead. A family of curves is written
 by naming its members because the language has no lambdas; that also puts the
 load a design is nominal at on the page under its own name.
 
@@ -1245,5 +1280,5 @@ Recorded so the omissions are deliberate rather than forgotten.
 
 ## Reserved
 
-`unit`, `fn`, `global`, `check`, `use`, `digits`, `axis`, `if`, `then`, `else`,
-`and`, `or` and `not` are keywords and cannot be used as names.
+`unit`, `fn`, `global`, `check`, `use`, `digits`, `axis`, `label`, `if`, `then`,
+`else`, `and`, `or` and `not` are keywords and cannot be used as names.

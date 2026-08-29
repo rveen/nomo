@@ -73,6 +73,11 @@ pub fn render(sheet: &Sheet, opts: &RenderOptions) -> String {
                 out.push_str(&format!("axis {which} {described}\n"));
             }
 
+            OutcomeKind::Label(names) => {
+                let quoted: Vec<String> = names.iter().map(|n| format!("\"{n}\"")).collect();
+                out.push_str(&format!("label {}\n", quoted.join(", ")));
+            }
+
             OutcomeKind::Digits(figures) => {
                 r.set_significant_figures(*figures);
                 out.push_str(&format!("digits {figures}\n"));

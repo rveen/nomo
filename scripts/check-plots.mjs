@@ -90,6 +90,19 @@ const check = (condition, description) => {
   if (!condition) failures.push(description);
 };
 
+// Two curves with names of their own and both axes named. What the browser has
+// to settle is the centring: `plot-axis-label` carries no anchor of its own in
+// the markup, so a stylesheet that misses the rule draws the label starting at
+// the middle of the axis and running off the right edge.
+const LABELLED = [
+  "fn up(x) = x",
+  "fn down(x) = 0 - x",
+  'axis x "Position"',
+  'axis y "Deflection"',
+  'label "Rising", "Falling"',
+  "plot(up, down, 0 - 1, 1)",
+].join("\n");
+
 /// A decade sweep, which only a logarithmic axis draws readably.
 const LOG = [
   "fn g(f) = 1/sqrt(1 + (f/1000)^2)",
@@ -296,6 +309,53 @@ try {
       `a logarithmic axis should be labelled in decades; ${decade} is missing from ${JSON.stringify(labels.slice(0, 10))}`,
     );
   }
+
+  // Named axes and named curves, which is the whole of what a reader needs to
+  // take a chart out of the worksheet and put it in front of someone else.
+  await render(LABELLED, 2, 2);
+  const named = JSON.parse(
+    await browser.evaluate(`
+      (() => {
+        const svg = document.querySelector("#output figure.plot svg");
+        const labels = [...svg.querySelectorAll(".plot-axis-label")];
+        return JSON.stringify({
+          texts: labels.map((t) => t.textContent),
+          anchors: labels.map((t) => getComputedStyle(t).textAnchor),
+          rotated: labels.map((t) => t.getAttribute("transform") ?? ""),
+          widths: labels.map((t) => Math.round(t.getBoundingClientRect().width)),
+          right: Math.round(svg.getBoundingClientRect().right),
+          edges: labels.map((t) => Math.round(t.getBoundingClientRect().right)),
+          legend: [...svg.querySelectorAll(".plot-legend")].map((t) => t.textContent),
+          box: svg.getAttribute("viewBox"),
+        });
+      })()
+    `),
+  );
+  check(
+    named.texts.join(", ") === "Position, Deflection",
+    `the axis labels are ${JSON.stringify(named.texts)}, not the two that were written`,
+  );
+  check(
+    named.anchors.every((a) => a === "middle"),
+    `an axis label is not centred (${named.anchors.join(", ")}); uncentred, it` +
+      " starts at the middle of the axis and runs off the edge",
+  );
+  check(
+    named.rotated.some((t) => t.startsWith("rotate(-90")),
+    "the vertical axis label is not rotated, so it is written across the numbers",
+  );
+  check(
+    named.edges.every((edge, i) => edge <= named.right || named.widths[i] === 0),
+    `an axis label runs past the right edge of the drawing (${named.edges.join(", ")} vs ${named.right})`,
+  );
+  check(
+    named.legend.join(", ") === "Rising, Falling",
+    `the legend says ${JSON.stringify(named.legend)}, not the names the worksheet gave`,
+  );
+  check(
+    named.box === "0 0 640 422",
+    `a labelled plot's frame did not grow for the label row (${named.box})`,
+  );
 
 } catch (error) {
   failures.push(`could not drive the browser: ${error.message}`);

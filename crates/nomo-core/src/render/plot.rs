@@ -45,6 +45,11 @@ const RIGHT: f64 = 18.0;
 const TOP: f64 = 14.0;
 const BOTTOM: f64 = 42.0;
 
+/// The room one line of axis-label text needs: an 11px face plus air above and
+/// below it. Added to a margin only when the worksheet gave that axis a label,
+/// so a plot without one is drawn exactly as it was before labels existed.
+const LABEL_ROW: f64 = 20.0;
+
 /// The bottom strip that holds the legend, drawn only when there is more than
 /// one curve. Below the drawing rather than inside it: a legend floated in a
 /// corner sits on top of whichever curve happens to go there, and a plot's
@@ -322,9 +327,26 @@ pub fn svg(plot: &PlotValue, units: &UnitTable, numbers: &NumberFormat) -> Strin
         (None, false) => Axis::fit(y_lo, y_hi),
     };
 
-    let plot_w = WIDTH - LEFT - RIGHT;
+    // A label takes a row of its own rather than a share of the drawing: the
+    // left margin widens for a rotated one and the frame grows downwards for
+    // the horizontal one, so the picture keeps its size and a plot that names
+    // no axis is drawn exactly as it was before it could.
+    let left = LEFT
+        + if plot.y_label.is_some() {
+            LABEL_ROW
+        } else {
+            0.0
+        };
+    let frame = HEIGHT
+        + if plot.x_label.is_some() {
+            LABEL_ROW
+        } else {
+            0.0
+        };
+
+    let plot_w = WIDTH - left - RIGHT;
     let plot_h = HEIGHT - TOP - BOTTOM;
-    let sx = |v: f64| LEFT + x_axis.fraction(v) * plot_w;
+    let sx = |v: f64| left + x_axis.fraction(v) * plot_w;
     // Screen y runs downwards and an ordinate runs upwards.
     let sy = |v: f64| TOP + (1.0 - y_axis.fraction(v)) * plot_h;
 
@@ -332,7 +354,7 @@ pub fn svg(plot: &PlotValue, units: &UnitTable, numbers: &NumberFormat) -> Strin
     // so a single-curve plot is drawn exactly as it was before there could be
     // more than one.
     let legend = plot.series.len() > 1;
-    let height = HEIGHT + if legend { LEGEND } else { 0.0 };
+    let height = frame + if legend { LEGEND } else { 0.0 };
 
     let mut out = format!(
         "<figure class=\"plot\"><svg viewBox=\"0 0 {WIDTH:.0} {height:.0}\" \
@@ -354,7 +376,7 @@ pub fn svg(plot: &PlotValue, units: &UnitTable, numbers: &NumberFormat) -> Strin
         // a span whose end lands on a tick still shows the number it ends at.
         out.push_str(&format!(
             "<text class=\"plot-label {}\" x=\"{x}\" y=\"{}\">{}</text>\n",
-            anchor_near_edge(place, LEFT, LEFT + plot_w),
+            anchor_near_edge(place, left, left + plot_w),
             coord(TOP + plot_h + 18.0),
             escape(&number::format(at, numbers))
         ));
@@ -363,12 +385,12 @@ pub fn svg(plot: &PlotValue, units: &UnitTable, numbers: &NumberFormat) -> Strin
         let y = coord(sy(at));
         out.push_str(&format!(
             "<line class=\"plot-grid\" x1=\"{}\" y1=\"{y}\" x2=\"{}\" y2=\"{y}\"/>\n",
-            coord(LEFT),
-            coord(LEFT + plot_w)
+            coord(left),
+            coord(left + plot_w)
         ));
         out.push_str(&format!(
             "<text class=\"plot-label plot-y\" x=\"{}\" y=\"{}\">{}</text>\n",
-            coord(LEFT - 8.0),
+            coord(left - 8.0),
             coord(sy(at) + 4.0),
             escape(&number::format(at, numbers))
         ));
@@ -377,16 +399,16 @@ pub fn svg(plot: &PlotValue, units: &UnitTable, numbers: &NumberFormat) -> Strin
     // The axes themselves, drawn over the grid.
     out.push_str(&format!(
         "<line class=\"plot-axis\" x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\"/>\n",
-        coord(LEFT),
+        coord(left),
         coord(TOP + plot_h),
-        coord(LEFT + plot_w),
+        coord(left + plot_w),
         coord(TOP + plot_h)
     ));
     out.push_str(&format!(
         "<line class=\"plot-axis\" x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\"/>\n",
-        coord(LEFT),
+        coord(left),
         coord(TOP),
-        coord(LEFT),
+        coord(left),
         coord(TOP + plot_h)
     ));
 
@@ -394,7 +416,7 @@ pub fn svg(plot: &PlotValue, units: &UnitTable, numbers: &NumberFormat) -> Strin
     if let Some(symbol) = unit_symbol(&plot.x_dim, units) {
         out.push_str(&format!(
             "<text class=\"plot-unit plot-end\" x=\"{}\" y=\"{}\">{}</text>\n",
-            coord(LEFT + plot_w),
+            coord(left + plot_w),
             coord(HEIGHT - 6.0),
             escape(&symbol)
         ));
@@ -402,9 +424,32 @@ pub fn svg(plot: &PlotValue, units: &UnitTable, numbers: &NumberFormat) -> Strin
     if let Some(symbol) = unit_symbol(&plot.y_dim, units) {
         out.push_str(&format!(
             "<text class=\"plot-unit plot-y-title\" x=\"{}\" y=\"{}\">{}</text>\n",
-            coord(LEFT),
+            coord(left),
             coord(TOP - 4.0),
             escape(&symbol)
+        ));
+    }
+
+    // What the axis measures, under the numbers that say how much of it. The
+    // unit stays where it was, at the end of the axis: `Frequency` and `Hz` are
+    // different questions and a reader asks them at different moments.
+    if let Some(label) = &plot.x_label {
+        out.push_str(&format!(
+            "<text class=\"plot-label plot-axis-label\" x=\"{}\" y=\"{}\">{}</text>\n",
+            coord(left + plot_w / 2.0),
+            coord(HEIGHT + 12.0),
+            escape(label)
+        ));
+    }
+    // Rotated, because a vertical axis label written horizontally would need a
+    // margin as wide as the words are long.
+    if let Some(label) = &plot.y_label {
+        let x = coord(18.0);
+        let y = coord(TOP + plot_h / 2.0);
+        out.push_str(&format!(
+            "<text class=\"plot-label plot-axis-label\" x=\"{x}\" y=\"{y}\" \
+             transform=\"rotate(-90 {x} {y})\">{}</text>\n",
+            escape(label)
         ));
     }
 
@@ -452,7 +497,7 @@ pub fn svg(plot: &PlotValue, units: &UnitTable, numbers: &NumberFormat) -> Strin
     }
 
     if legend {
-        out.push_str(&legend_strip(plot));
+        out.push_str(&legend_strip(plot, left, frame));
     }
 
     out.push_str("</svg></figure>\n");
@@ -472,15 +517,15 @@ fn curve_class(index: usize) -> String {
 /// would run past the right edge is left to run — truncating a curve's name
 /// would make the legend lie about what is drawn, which is worse than a wide
 /// picture.
-fn legend_strip(plot: &PlotValue) -> String {
+fn legend_strip(plot: &PlotValue, left: f64, frame: f64) -> String {
     // A little over half the font size: an 11px sans face averages near this
     // across the letters and digits a function name is made of.
     const ADVANCE: f64 = 6.4;
     const GAP: f64 = 18.0;
 
     let mut out = String::new();
-    let mut x = LEFT;
-    let baseline = HEIGHT + LEGEND / 2.0 + 4.0;
+    let mut x = left;
+    let baseline = frame + LEGEND / 2.0 + 4.0;
     for (index, series) in plot.series.iter().enumerate() {
         let sample_y = coord(baseline - 4.0);
         out.push_str(&format!(
@@ -503,10 +548,19 @@ fn legend_strip(plot: &PlotValue) -> String {
 /// What a screen reader is told the picture is.
 fn aria_label(plot: &PlotValue) -> String {
     let names: Vec<&str> = plot.series.iter().map(|s| s.name.as_str()).collect();
-    match plot.extent {
+    let mut said = match plot.extent {
         Extent::Chosen => format!("plot of {}", names.join(", ")),
         Extent::Measured => format!("plot of measured points: {}", names.join(", ")),
+    };
+    // The axes, for a reader who is being told about the picture rather than
+    // shown it — which is exactly the reader who cannot see the label.
+    match (&plot.y_label, &plot.x_label) {
+        (Some(y), Some(x)) => said.push_str(&format!(", {y} against {x}")),
+        (Some(y), None) => said.push_str(&format!(", {y} vertically")),
+        (None, Some(x)) => said.push_str(&format!(", against {x}")),
+        (None, None) => {}
     }
+    said
 }
 
 fn unit_symbol(dim: &crate::dim::Dimension, units: &UnitTable) -> Option<String> {
@@ -601,5 +655,53 @@ mod tests {
     fn negative_zero_is_written_as_zero() {
         assert_eq!(coord(-0.0), "0.00");
         assert_eq!(coord(-0.001), "0.00");
+    }
+
+    /// A straight line, with whatever labels the caller wants on it.
+    fn drawn(x_label: Option<&str>, y_label: Option<&str>) -> String {
+        let plot = PlotValue {
+            from: 0.0,
+            to: 1.0,
+            extent: Extent::Chosen,
+            x_dim: crate::dim::Dimension::DIMENSIONLESS,
+            y_dim: crate::dim::Dimension::DIMENSIONLESS,
+            series: vec![crate::plot::Series {
+                name: String::from("g"),
+                points: (0..2).map(|i| (i as f64, i as f64)).collect(),
+            }],
+            x_log: false,
+            y_log: false,
+            x_limits: None,
+            y_limits: None,
+            x_label: x_label.map(String::from),
+            y_label: y_label.map(String::from),
+        };
+        svg(&plot, &UnitTable::new(), &NumberFormat::default())
+    }
+
+    #[test]
+    fn an_axis_label_takes_a_row_of_its_own() {
+        // A plot that names no axis is drawn exactly as it was before it could,
+        // which is what keeps every existing snapshot honest.
+        let plain = drawn(None, None);
+        assert!(plain.contains("viewBox=\"0 0 640 380\""), "{plain}");
+        assert!(!plain.contains("plot-axis-label"));
+
+        // A horizontal label grows the frame downwards rather than eating the
+        // drawing; a vertical one widens the left margin and is rotated into
+        // it, so neither one is written over the numbers.
+        let both = drawn(Some("Frequency"), Some("Gain"));
+        assert!(both.contains("viewBox=\"0 0 640 400\""), "{both}");
+        assert!(both.contains(">Frequency</text>"), "{both}");
+        assert!(both.contains("transform=\"rotate(-90 "), "{both}");
+        // The vertical label is clear of the tick numbers, which are anchored
+        // at the widened margin.
+        assert!(both.contains("x=\"94.00\""), "{both}");
+
+        // And a screen reader is told what the picture measures.
+        assert!(
+            both.contains("aria-label=\"plot of g, Gain against Frequency\""),
+            "{both}"
+        );
     }
 }

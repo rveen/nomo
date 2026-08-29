@@ -123,6 +123,14 @@ pub struct PlotValue {
     /// would make zooming a chart silently change the curve.
     pub x_limits: Option<(f64, f64)>,
     pub y_limits: Option<(f64, f64)>,
+    /// What each axis measures, when the worksheet says.
+    ///
+    /// The unit is drawn either way — a chart without one is not a chart — and
+    /// this is the quantity beside it: `Frequency` over `Hz`. Most-wanted plot
+    /// feature in the SMath corpora, which ask for it 88 times through
+    /// `XYPlot'Labels'XLabel`.
+    pub x_label: Option<String>,
+    pub y_label: Option<String>,
 }
 
 /// How the axes of the next plot are drawn.
@@ -130,12 +138,20 @@ pub struct PlotValue {
 /// Carried by the evaluator and copied into each plot as it is built, so that a
 /// worksheet's `axis` lines apply to the plots below them the way `digits`
 /// applies to the results below it.
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Axes {
     pub x_log: bool,
     pub y_log: bool,
     pub x_limits: Option<(f64, f64)>,
     pub y_limits: Option<(f64, f64)>,
+    pub x_label: Option<String>,
+    pub y_label: Option<String>,
+    /// Names for the curves of the plots below, from a `label` line.
+    ///
+    /// Positional, and persistent like the rest of this: the first name goes to
+    /// the first curve, a curve past the last name keeps the name it was drawn
+    /// from, and a name past the last curve goes unused.
+    pub curve_names: Option<Vec<String>>,
 }
 
 impl PlotValue {
@@ -230,6 +246,8 @@ mod tests {
             y_log: false,
             x_limits: None,
             y_limits: None,
+            x_label: None,
+            y_label: None,
             series: vec![Series {
                 name: "f".into(),
                 points: ordinates

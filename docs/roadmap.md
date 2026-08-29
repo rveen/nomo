@@ -460,6 +460,12 @@ label or a curve name. What those worksheets want is a *plot feature this
 language lacks*, and by corpus ranking it is the most-wanted one. That is a
 language step, and it should not be smuggled in under an importer heading.
 
+**That language step is now taken** — `axis x "Frequency"` and
+`label "Gain", "Phase"`, design note §8.46. The import is still refused: a
+configuration block sits either side of the plot it configures, its trace names
+are indexed and need not be dense, and it names its plot by a region name the
+emitter does not track. Three measurements, and then the translation.
+
 **`cases` waits on `ltle`.** Its conditions are that family, whose boundary
 convention is unverified — a piecewise function whose boundaries might be the
 wrong way round is exactly what this project refuses to guess.

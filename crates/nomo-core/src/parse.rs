@@ -227,6 +227,7 @@ impl<'s> Parser<'s> {
             TokenKind::KwUse => self.parse_use(),
             TokenKind::KwDigits => self.parse_digits(),
             TokenKind::KwAxis => self.parse_axis(),
+            TokenKind::KwLabel => self.parse_label(),
             _ => self.parse_assign_or_query(),
         }
     }
@@ -295,7 +296,20 @@ impl<'s> Parser<'s> {
         Some(Stmt::UnitDecl { name, value, span })
     }
 
-    /// `axis x log`, `axis y linear`, `axis y auto`, `axis y 0 kN, 100 kN`.
+    /// `label "Gain", "Phase"` — names for the curves of the plot below.
+    fn parse_label(&mut self) -> Option<Stmt> {
+        let start = self.bump().span;
+        let mut names = vec![self.parse_expr(0)];
+        while self.eat(&TokenKind::Comma).is_some() {
+            names.push(self.parse_expr(0));
+        }
+        let span = start.to(names.last().map_or(start, Expr::span));
+        self.finish_line();
+        Some(Stmt::Label { names, span })
+    }
+
+    /// `axis x log`, `axis y linear`, `axis y auto`, `axis y 0 kN, 100 kN`, and
+    /// `axis x "Frequency"`.
     ///
     /// After the axis name, the three words `log`, `linear` and `auto` are the
     /// settings and anything else begins a pair of limits. That is a small
@@ -340,14 +354,17 @@ impl<'s> Parser<'s> {
                 AxisSetting::Auto
             }
             _ => {
-                let lo = self.parse_expr(0);
-                if !self.expect(&TokenKind::Comma, "`,`", "the lower limit") {
-                    return Some(Stmt::Error {
-                        span: start.to(lo.span()),
-                    });
+                // One expression is a label — what the axis measures — and two
+                // separated by a comma are its limits. Deciding on the comma
+                // rather than on the *kind* of the expression keeps the rule
+                // syntactic: a label may be a name holding a string, which is
+                // how the SMath worksheets that ask for this write it.
+                let first = self.parse_expr(0);
+                if self.eat(&TokenKind::Comma).is_some() {
+                    AxisSetting::Limits(first, self.parse_expr(0))
+                } else {
+                    AxisSetting::Label(first)
                 }
-                let hi = self.parse_expr(0);
-                AxisSetting::Limits(lo, hi)
             }
         };
         let span = start.to(self.tokens[self.pos.saturating_sub(1)].span);

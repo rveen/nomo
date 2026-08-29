@@ -2972,7 +2972,7 @@ does not have* rather than a construct the importer is failing to translate.
 Nomo names a curve after the function that drew it and labels an axis with its
 unit. Ranked by the corpus, that is the most-wanted plot feature there is; it is
 a language step, not an importer one, and it is written down here rather than
-attempted under the heading of an import.
+attempted under the heading of an import. **It has since been taken — §8.46.**
 
 **`cases` is entangled with `ltle`.** Nine calls, and their conditions are the
 `ltle`/`ltlt`/`lele` family whose boundary convention is still unverified
@@ -3029,6 +3029,70 @@ repository, and the marker stays until one of them arrives. `cases` waits with
 it — nine calls whose conditions are this family, and a piecewise function whose
 boundaries might be the wrong way round is the quietly-wrong answer this project
 exists to avoid.
+
+### 8.46 Labelled axes and named curves (2026-08-29)
+
+§8.44 measured what the `description` calls in the corpora actually ask for and
+stopped there deliberately: *"a labelled axis and a named curve, which is a plot
+feature this language does not have… a language step, not an importer one"*.
+This is that step.
+
+`axis x "Frequency"` says what an axis measures; `label "Gain", "Phase"` says
+what to call the curves. Both are settings for the plots below them, the way
+`axis x log` and `digits` already were.
+
+**The unit stays where it was.** A chart already carries the unit at the end of
+each axis, taken from the dimension so that nothing is written twice. The label
+is the *quantity* beside it — `Frequency` over `Hz` — because those are two
+different questions and a reader asks them at different moments. Merging them
+into one string would also mean the label had to be rewritten whenever the
+worksheet changed units, which is exactly the coupling dimensional analysis
+exists to remove.
+
+**A label takes a row of its own rather than a share of the drawing.** The left
+margin widens for the rotated vertical label and the frame grows downwards for
+the horizontal one, so a plot that names no axis is drawn exactly as it was
+before it could — which is what kept all but two golden snapshots byte-identical
+through this change.
+
+**The comma decides.** After `axis y`, two expressions separated by a comma are
+limits and a single expression is a label. Deciding on the punctuation rather
+than on the *kind* of the expression keeps the rule syntactic, which is what
+lets a label be a name holding a string rather than only a literal — the form
+the SMath worksheets that ask for this actually use.
+
+**`label` is persistent, and that was forced by the evaluator rather than
+chosen.** It was written first as a one-shot — a plot's curves are its own, and
+carrying names forward attaches them to whatever comes next — and that is wrong
+here for a reason worth recording: the document layer recomputes *one statement
+and its dependents* after an edit, so a plot redrawn on its own sees only what
+the evaluator is still holding. A name consumed by the first drawing would have
+vanished on the next keystroke, and the legend would have quietly reverted to
+`thin` and `thick` while the worksheet still said otherwise. Persistent settings
+survive that; one-shot state does not. Anything that configures a *later*
+statement in this language has to be persistent for the same reason.
+
+**Two leaks the feature uncovered, both older than it.** `Sheet::update` never
+reset the environment, not even when it re-evaluated every statement:
+
+* a deleted definition went on applying — remove `x = 5` and `y = x` still
+  computed 5, from a name written nowhere in the document;
+* a deleted `axis x log` went on drawing a logarithmic chart.
+
+A full pass now starts from nothing, the way opening the file does. And because
+a setting binds no name, the dependency graph has no edge from an `axis` or
+`label` line to the plots it governs — so *changing* one is now a full pass too,
+or renaming an axis would leave the old word on the chart until something
+unrelated happened to redraw it. Both are gated by tests in `doc.rs`.
+
+**What this does not do.** The importer still refuses `XYPlot'Labels'XLabel` and
+`Traces#n'Name` with the marker §8.44 gave them. The language can express them
+now, which removes the reason they were refused, but the translation has
+questions of its own that the corpus has to answer first: a configuration block
+is a separate region that may sit either side of the plot it configures, trace
+names are indexed and need not be dense, and the block names its plot by a
+region name that the emitter does not otherwise track. That is an importer step,
+with its own measurements, not a tack-on to this one.
 
 ### 8.8 Strategy: corpus-driven
 

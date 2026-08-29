@@ -107,6 +107,7 @@ pub fn classify(sheet: &Sheet) -> Vec<ClassifiedToken> {
             | TokenKind::KwUse
             | TokenKind::KwDigits
             | TokenKind::KwAxis
+            | TokenKind::KwLabel
             | TokenKind::KwIf
             | TokenKind::KwThen
             | TokenKind::KwElse
@@ -196,6 +197,11 @@ fn collect_names(stmt: &Stmt, callees: &mut Vec<Span>, bound: &mut Vec<String>) 
             walk(body, callees);
         }
         Stmt::Query { expr, .. } | Stmt::Check { expr, .. } => walk(expr, callees),
+        Stmt::Label { names, .. } => {
+            for n in names {
+                walk(n, callees);
+            }
+        }
         Stmt::Axis { setting, .. } => {
             if let crate::ast::AxisSetting::Limits(lo, hi) = setting {
                 walk(lo, callees);
@@ -429,8 +435,8 @@ pub fn vocabulary_json() -> String {
 
 /// The reserved words, which `docs/language.md` lists and the lexer enforces.
 const KEYWORDS: &[&str] = &[
-    "unit", "fn", "global", "check", "use", "digits", "axis", "if", "then", "else", "and", "or",
-    "not",
+    "unit", "fn", "global", "check", "use", "digits", "axis", "label", "if", "then", "else", "and",
+    "or", "not",
 ];
 
 /// Everything the editor needs after an edit, as JSON.

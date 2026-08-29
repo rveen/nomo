@@ -1570,6 +1570,68 @@ fn an_impossible_axis_is_refused_rather_than_redrawn() {
     assert!(!errors("axis z log").is_empty());
 }
 
+#[test]
+fn an_axis_can_say_what_it_measures() {
+    let f = "fn g(x) = x\n";
+    let p = last_plot(&format!(
+        "{f}axis x \"Frequency\"\naxis y \"Gain\"\nplot(g, 1, 10)"
+    ));
+    assert_eq!(p.x_label.as_deref(), Some("Frequency"));
+    assert_eq!(p.y_label.as_deref(), Some("Gain"));
+
+    // The comma is what tells a label from a pair of limits, so a label that
+    // happens to be a name holding a string still reads as one.
+    let p = last_plot(&format!(
+        "{f}what = \"Frequency\"\naxis x what\nplot(g, 1, 10)"
+    ));
+    assert_eq!(p.x_label.as_deref(), Some("Frequency"));
+
+    // `auto` means back to what the data implies, which includes the words.
+    let p = last_plot(&format!(
+        "{f}axis x \"Frequency\"\naxis x auto\nplot(g, 1, 10)"
+    ));
+    assert_eq!(p.x_label, None);
+
+    // A number is not a label. Refused rather than drawn as one, and the
+    // message says the shape it wanted.
+    assert!(errors("axis x 5")[0].contains("a string"));
+}
+
+#[test]
+fn label_names_the_curves_in_order() {
+    let f = "fn g(x) = x\nfn h(x) = 2*x\nfn k(x) = 3*x\n";
+    let named = |source: &str| -> Vec<String> {
+        last_plot(source)
+            .series
+            .iter()
+            .map(|s| s.name.clone())
+            .collect()
+    };
+    // Without a `label` line a curve is named after what drew it.
+    assert_eq!(named(&format!("{f}plot(g, h, 1, 10)")), ["g", "h"]);
+    assert_eq!(
+        named(&format!("{f}label \"Gain\", \"Phase\"\nplot(g, h, 1, 10)")),
+        ["Gain", "Phase"]
+    );
+    // Positional, and short of curves rather than wrong about them: a curve
+    // past the last name keeps the name it was drawn from.
+    assert_eq!(
+        named(&format!("{f}label \"Gain\"\nplot(g, h, k, 1, 10)")),
+        ["Gain", "h", "k"]
+    );
+    // And a setting, like `axis` and `digits`: it applies to the plots below.
+    // Which is not a preference — the incremental evaluator recomputes one
+    // plot on its own after an edit above it, and a one-shot name would be
+    // gone by then.
+    assert_eq!(
+        named(&format!(
+            "{f}label \"Gain\", \"Phase\"\nplot(g, 1, 10)\nplot(g, h, 1, 10)"
+        )),
+        ["Gain", "Phase"]
+    );
+    assert!(errors("label 5")[0].contains("a string"));
+}
+
 // ---- interpolation ------------------------------------------------------
 
 #[test]

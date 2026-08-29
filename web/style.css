@@ -237,6 +237,7 @@ footer p { margin: 0; }
 #output .plot-start   { text-anchor: start; }
 #output .plot-end     { text-anchor: end; }
 #output .plot-y-title { text-anchor: start; }
+#output .plot-axis-label { text-anchor: middle; opacity: 0.8; }
 #output .plot-legend   { text-anchor: start; opacity: 0.75; }
 
 /* ---- print ------------------------------------------------------------ */

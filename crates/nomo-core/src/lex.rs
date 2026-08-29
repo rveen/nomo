@@ -37,6 +37,8 @@ pub enum TokenKind {
     KwDigits,
     /// `axis` — how the plots below are drawn.
     KwAxis,
+    /// `label` — names for the curves of the plot below.
+    KwLabel,
     /// `if`, `then`, `else` — a conditional expression.
     KwIf,
     KwThen,
@@ -281,6 +283,7 @@ pub fn lex(source: &str) -> Lexed {
                 "use" => TokenKind::KwUse,
                 "digits" => TokenKind::KwDigits,
                 "axis" => TokenKind::KwAxis,
+                "label" => TokenKind::KwLabel,
                 "if" => TokenKind::KwIf,
                 "then" => TokenKind::KwThen,
                 "else" => TokenKind::KwElse,

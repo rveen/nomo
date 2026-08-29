@@ -1047,6 +1047,79 @@ f(2)
     );
 }
 
+// ---- checks -------------------------------------------------------------
+
+/// The verdicts a worksheet reached.
+fn checks(src: &str) -> nomo_core::doc::Checks {
+    nomo_core::Sheet::new(src).checks()
+}
+
+#[test]
+fn a_check_reports_a_verdict() {
+    let c = checks("sigma = 142 MPa\nlimit = 160 MPa\ncheck sigma <= limit\n");
+    assert_eq!((c.total, c.passed, c.failed), (1, 1, 0));
+
+    let c = checks("d = 12 mm\ncheck d >= 16 mm\n");
+    assert_eq!((c.total, c.passed, c.failed), (1, 0, 1));
+}
+
+#[test]
+fn a_failed_check_is_not_an_error() {
+    // The distinction the whole statement exists for. The arithmetic is right
+    // and the design does not hold; a worksheet that reported that as an error
+    // would put "this part is overstressed" in the same bucket as "this name is
+    // not defined", and nothing downstream could tell them apart.
+    let sheet = nomo_core::Sheet::new("d = 12 mm\ncheck d >= 16 mm\n");
+    assert!(!sheet.has_errors(), "a failed check must not be an error");
+    assert!(
+        sheet.diagnostics().is_empty(),
+        "a failed check must not produce a diagnostic: {:?}",
+        sheet.diagnostics()
+    );
+    assert_eq!(sheet.checks().failed, 1);
+}
+
+#[test]
+fn a_check_needs_a_condition() {
+    // Anything that is not 1 or 0 is refused rather than read as true. A check
+    // that passes because `5 m` is "truthy" hides exactly the mistake it exists
+    // to catch, so this is strict on purpose.
+    for src in [
+        "sigma = 142 MPa\ncheck sigma\n",
+        "check \"a string\"\n",
+        "check 0.5\n",
+        "check [1, 1]\n",
+    ] {
+        let e = errors(src);
+        assert!(
+            e.iter().any(|m| m.contains("needs a condition")),
+            "{src:?} should be refused, got {e:?}"
+        );
+        assert_eq!(checks(src).undecided, 1, "{src:?}");
+    }
+
+    // And a condition that cannot be evaluated is undecided rather than failed:
+    // there is a difference between a design that does not hold and one nobody
+    // could work out.
+    let c = checks("check 1 m <= 1 s\n");
+    assert_eq!((c.failed, c.undecided), (0, 1));
+}
+
+#[test]
+fn a_check_takes_part_in_the_dependency_graph() {
+    // A check reads names, so editing what it reads has to re-evaluate it.
+    // Without this it would keep reporting a verdict on the previous numbers.
+    let mut sheet = nomo_core::Sheet::new("d = 12 mm\ncheck d >= 16 mm\n");
+    assert_eq!(sheet.checks().failed, 1);
+    let r = sheet.update("d = 20 mm\ncheck d >= 16 mm\n");
+    assert!(
+        r.evaluated.contains(&1),
+        "the check should have been re-evaluated, got {:?}",
+        r.evaluated
+    );
+    assert_eq!(sheet.checks().passed, 1);
+}
+
 #[test]
 fn brackets_and_calls_multiply_and_are_bounded_together() {
     // Both ceilings were respected here and the stack ran out anyway: 120

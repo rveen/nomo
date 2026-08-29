@@ -289,7 +289,10 @@ fn binding_of(stmt: &Stmt) -> Binding {
             Binding::Positional(name.text.clone())
         }
         Stmt::GlobalDef { name, .. } => Binding::Global(name.text.clone()),
-        Stmt::Comment { .. } | Stmt::Query { .. } | Stmt::Error { .. } => Binding::None,
+        // A check binds nothing: it is read by a reader, not by a statement.
+        Stmt::Comment { .. } | Stmt::Query { .. } | Stmt::Check { .. } | Stmt::Error { .. } => {
+            Binding::None
+        }
     }
 }
 
@@ -300,7 +303,7 @@ fn uses_of(stmt: &Stmt) -> BTreeSet<String> {
         Stmt::Assign { value, .. }
         | Stmt::GlobalDef { value, .. }
         | Stmt::UnitDecl { value, .. } => collect_names(value, &mut out),
-        Stmt::Query { expr, .. } => collect_names(expr, &mut out),
+        Stmt::Query { expr, .. } | Stmt::Check { expr, .. } => collect_names(expr, &mut out),
         Stmt::FnDef { params, body, .. } => {
             collect_names(body, &mut out);
             // Parameters are bound by the definition, not read from the sheet.

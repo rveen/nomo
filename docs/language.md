@@ -32,6 +32,7 @@ V -> dm^3
 | Unit declaration | `unit kip = 1000 lbf` | Introduce a named unit. |
 | Global definition | `global g = 9.81 m/s^2` | Bind a name visible *everywhere*, including above this line. |
 | Function definition | `fn area(d) = pi*d^2/4` | Define a function. |
+| Check | `check sigma <= sigma_allow` | State a limit and report a verdict on it. |
 
 Only a bare name may appear on the left of `=`. `x + 1 = 2` is an error, not an
 equation to solve.
@@ -188,6 +189,48 @@ column says which way the worksheet went.
 Note that both arms are still *dependencies*. Which one runs depends on values,
 and the dependency graph is built before any value exists, so editing an input
 used only by the untaken arm still recalculates the line.
+
+## Checks — a worksheet that states whether it holds
+
+```nomo
+sigma = M/S
+sigma_allow = 0.6*Fy
+
+check sigma <= sigma_allow          ' pass
+check delta <= L/360                ' FAIL
+```
+
+A worksheet is not finished when it has computed a number; it is finished when
+it says whether the number is acceptable, and against what. `check` states a
+condition and reports a verdict on it — in the result column where a value would
+otherwise stand, because for a check the verdict *is* the result. The 1 or 0 the
+comparison produced says nothing a reader wants.
+
+A check **binds nothing and nothing reads it**. It takes one expression and no
+name: `check x = 1` is an error rather than a binding whose name is spelled after
+a keyword.
+
+**A failed check is not an error.** The arithmetic is right and the design is
+not, and those are different facts about a document. So a failed check produces
+no diagnostic, does not stop anything downstream, and does not make the
+worksheet invalid. What it does is count, and `nomo check` reports the count and
+exits **2** — where 1 means the worksheet does not evaluate at all. A script can
+therefore tell "this sheet is broken" from "this part is overstressed", which is
+the whole reason the statement exists.
+
+The condition must be a **dimensionless 1 or 0** — which is exactly what
+comparisons, `and`, `or` and `not` produce. Anything else is refused rather than
+read as true: a length, a string, a vector, `0.5`. A check that passed because
+`5 m` is "truthy" would hide the mistake it exists to catch.
+
+A condition that cannot be evaluated — `check 1 m <= 1 s` — is **not decided**
+rather than failed, and carries a diagnostic. There is a difference between a
+design that does not hold and one nobody could work out.
+
+`check` is a keyword, so it is no longer available as a name. That cost was
+measured before it was spent: across the 114 SMath worksheets the importer
+reads, `check` is used as a variable name exactly **zero** times. One worksheet
+in this repository used it and was renamed.
 
 ## Two ambiguity rules
 
@@ -963,5 +1006,5 @@ Recorded so the omissions are deliberate rather than forgotten.
 
 ## Reserved
 
-`unit`, `fn`, `global`, `if`, `then`, `else`, `and`, `or` and `not` are keywords
-and cannot be used as names.
+`unit`, `fn`, `global`, `check`, `if`, `then`, `else`, `and`, `or` and `not` are
+keywords and cannot be used as names.

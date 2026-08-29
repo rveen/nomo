@@ -1,0 +1,55 @@
+' nomo 1
+
+' # Verdicts — a design that states whether it holds
+'
+' A worksheet is not finished when it has computed a number. It is finished when
+' it says whether the number is acceptable, and against what. That last step is
+' usually the point of the document: a section is adequate, a bolt is not, a
+' temperature rise is within what the datasheet allows.
+'
+' `check` states a condition and reports a verdict on it. It binds nothing and
+' nothing reads it — it exists to be read by a person, and counted by whatever
+' runs the worksheet.
+
+' ## A bracket in bending
+
+unit kip = 1000 lbf
+
+M = 4.2 kip*in
+S = 0.42 in^3
+Fy = 36 ksi
+
+' The allowable stress, and the stress that is actually there.
+sigma_allow = 0.6*Fy
+sigma = M/S
+
+sigma -> ksi
+sigma_allow -> ksi
+
+check sigma <= sigma_allow
+
+' ## Deflection, against a span/360 limit
+
+L = 48 in
+delta = 0.09 in
+delta_allow = L/360
+
+delta_allow -> in
+
+check delta <= delta_allow
+
+' ## A check may be any condition, not only a comparison
+
+' Both of these have to hold, and one statement says so.
+t = 0.25 in
+t_min = 0.1875 in
+check t >= t_min and delta <= delta_allow
+
+' ## A verdict that does not hold
+
+' Nothing here is wrong: the arithmetic is right and the design is not. The
+' worksheet still evaluates, `nomo check` still reports it as a worksheet that
+' works, and the exit code says a check failed rather than that the sheet did.
+d_bolt = 0.375 in
+d_required = 0.5 in
+check d_bolt >= d_required

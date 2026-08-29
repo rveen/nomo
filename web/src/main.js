@@ -144,10 +144,24 @@ function analyse() {
 
   const errors = result.diagnostics.filter((d) => d.severity === "error").length;
   const warnings = result.diagnostics.length - errors;
+  const checks = result.checks ?? { total: 0, failed: 0 };
   if (errors > 0) {
     status(`${errors} error${errors === 1 ? "" : "s"}`, "bad");
+  } else if (checks.failed > 0) {
+    // Amber rather than red, and said before anything else that is not an
+    // error: the worksheet is correct and the design does not hold, which is a
+    // result the engineer has to see rather than a fault to fix.
+    status(
+      `${checks.failed} of ${checks.total} check${checks.total === 1 ? "" : "s"} failed`,
+      "warn",
+    );
   } else if (warnings > 0) {
     status(`${warnings} warning${warnings === 1 ? "" : "s"}`, "warn");
+  } else if (checks.total > 0) {
+    status(
+      `ok — ${checks.total} check${checks.total === 1 ? "" : "s"} passed`,
+      "good",
+    );
   } else {
     // `recalculated` is how many statements the dependency graph actually
     // re-evaluated. Surfaced because it is the visible proof that editing one

@@ -53,6 +53,24 @@ check(
 result = session.update("r = 6 cm\nh = 12 cm\nV = pi*r^2*h\n");
 check(result.hasErrors === false, "the session should recover");
 
+// Verdicts travel beside the diagnostics rather than among them: the editor's
+// status line has to say "1 of 2 checks failed" without treating it as an
+// error, because the worksheet is right and the design is not.
+result = session.update("d = 12 mm\ncheck d >= 16 mm\ncheck d >= 10 mm\n");
+check(result.checks !== undefined, "the payload should carry the verdicts");
+check(
+  result.checks?.total === 2 && result.checks?.failed === 1,
+  `two checks, one failed, got ${JSON.stringify(result.checks)}`,
+);
+check(
+  result.hasErrors === false,
+  "a failed check must not make the worksheet an error",
+);
+check(
+  result.html.includes('class="step check fail"'),
+  "the failed check should be marked in the rendered output",
+);
+
 // Offsets are UTF-16, because the only consumer counts in UTF-16. A worksheet
 // full of `π` and `°` is the normal case for this language, not an edge one.
 result = session.update("' π°—\nr = 5 cm\n");

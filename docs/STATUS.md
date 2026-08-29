@@ -25,6 +25,7 @@ function of `x`, in that order.
 | 8 Browser editor | **done** | CodeMirror 6, engine-driven highlighting, live recalc, print |
 | 9 Local persistence, offline | **done** | Open/save with a cross-browser fallback, draft in IndexedDB, service worker |
 | — SMath importer | **seven phases in** | `nomo-smath`: reads **both** corpora — 54 wiki worksheets (0.82–0.98) and 60 mechanics worksheets (1.3–1.5) — emits `.nomo`, and checks itself against 1179 stored answers. Agreement: 304/337 wiki, 283/283 mechanics. Design note §8.13–§8.39 |
+| — Checks | **done** | `check sigma <= sigma_allow` states a limit and reports a verdict. A failed check is not an error — the arithmetic is right and the design is not — so it carries no diagnostic and gets its own exit code: `nomo check` answers 0, 1 for a worksheet that does not evaluate, 2 for one whose check failed. `examples/checks.nomo` |
 | — Conditions | **done** | Comparisons, `and`/`or`/`not`, and a lazy `if … then … else` expression |
 | — Repetition | **done** | `range`, `map`, `iterate` — loops without mutation, so the DAG is untouched |
 | — Plots | **third phase done** | `plot(f, a, b)`, sampled at a fixed count and drawn as engine-generated SVG; `plot(f, g, …, a, b)` for several curves, with a legend; `plot(m)` for a table of measured points, which needs no span. The importer draws both kinds now: a table, and a function of `x` over the span its viewport implies (design note §8.21) — including one a definition named rather than wrote out, which is how SMath says "this curve" (§8.22) |
@@ -34,7 +35,7 @@ function of `x`, in that order.
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Prose as Markdown | **block level done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline formatting is not built and `_` emphasis never will be. Design note §8.41, `examples/prose.nomo` |
 
-581 tests and 18 golden snapshots. `git log` is one commit per phase, and each
+602 tests and 19 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here

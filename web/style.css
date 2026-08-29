@@ -167,6 +167,15 @@ footer p { margin: 0; }
 #output .subst  { opacity: 0.7; }
 #output .result { font-weight: 600; }
 #output .error  { color: var(--error); font-weight: 600; }
+/* A verdict, in the results pane. The word carries it as well as the colour:
+   the same markup prints, and a printed worksheet is often monochrome. */
+#output .verdict { font-weight: 700; margin-left: 0.6rem; }
+#output .check .name { margin-right: 0.5rem; }
+#output .check.pass .verdict { color: #1a7f37; }
+#output .check.fail .verdict { color: var(--error); }
+#output .check.undecided .verdict { color: #8a6d00; }
+#output .check.pass { border-left-color: #1a7f37; }
+#output .check.fail { border-left-color: var(--error); background: #fff4f4; }
 #output .note   { opacity: 0.6; font-style: italic; }
 /* A figure carries the browser's default 40px side margin, which would inset
    every image relative to the mathematics it belongs to. The standalone render

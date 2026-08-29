@@ -29,6 +29,8 @@ pub enum TokenKind {
     KwFn,
     /// `global`
     KwGlobal,
+    /// `check` — a statement that states a limit and reports a verdict.
+    KwCheck,
     /// `if`, `then`, `else` — a conditional expression.
     KwIf,
     KwThen,
@@ -269,6 +271,7 @@ pub fn lex(source: &str) -> Lexed {
                 "unit" => TokenKind::KwUnit,
                 "fn" => TokenKind::KwFn,
                 "global" => TokenKind::KwGlobal,
+                "check" => TokenKind::KwCheck,
                 "if" => TokenKind::KwIf,
                 "then" => TokenKind::KwThen,
                 "else" => TokenKind::KwElse,

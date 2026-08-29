@@ -244,6 +244,15 @@ pub enum Stmt {
     Query { expr: Expr, span: Span },
     /// `unit kip = 1000 lbf`
     UnitDecl { name: Name, value: Expr, span: Span },
+    /// `check sigma <= sigma_allow`. A condition, and a verdict on it.
+    ///
+    /// It binds nothing and nothing reads it, which is what separates it from
+    /// every other statement here: it exists to be *reported*. A worksheet whose
+    /// check fails is not a worksheet that is wrong — the arithmetic is fine and
+    /// the design is not — so a failed check produces no diagnostic and does not
+    /// make `has_errors` true. What it produces is a verdict, counted and
+    /// answered for in the exit code.
+    Check { expr: Expr, span: Span },
     /// `fn area(d) = pi*d^2/4`
     FnDef {
         name: Name,
@@ -263,6 +272,7 @@ impl Stmt {
             | Stmt::GlobalDef { span, .. }
             | Stmt::Query { span, .. }
             | Stmt::UnitDecl { span, .. }
+            | Stmt::Check { span, .. }
             | Stmt::FnDef { span, .. }
             | Stmt::Error { span } => *span,
         }

@@ -54,30 +54,94 @@ fn usage() {
          nomo test   [--write]        check every example against its snapshot\n    \
          nomo bench                   time the engine on worksheets of fixed shape\n\n\
          `test` runs from the repository root; --examples and --golden override\n\
-         the directories it uses.\n"
+         the directories it uses.\n\n\
+         EXIT: 0 all well; 1 the worksheet does not evaluate; 2 it evaluates and\n\
+         a `check` statement failed — the arithmetic is right and the design is\n\
+         not, which is a different thing and gets a different code.\n"
     );
 }
 
-fn run_over(paths: &[String], f: fn(&str, &str) -> bool) -> ExitCode {
+/// How a worksheet came out, worst first when several are given.
+///
+/// Three outcomes rather than two, because a failed check is not a broken
+/// worksheet. `check sigma <= sigma_allow` failing means the arithmetic is
+/// right and the design does not hold; reporting that as an error would put it
+/// in the same bucket as an undefined name, and a script could not tell the
+/// difference between "this sheet is wrong" and "this part is overstressed".
+/// Ordering matters: a worksheet that does not evaluate outranks one whose
+/// checks failed, because it has not established anything to fail.
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+enum Verdict {
+    Ok,
+    ChecksFailed,
+    Errors,
+}
+
+impl Verdict {
+    fn of(sheet: &nomo_core::Sheet) -> Verdict {
+        if sheet.has_errors() {
+            Verdict::Errors
+        } else if sheet.checks().failed > 0 {
+            Verdict::ChecksFailed
+        } else {
+            Verdict::Ok
+        }
+    }
+
+    fn exit(self) -> ExitCode {
+        match self {
+            Verdict::Ok => ExitCode::SUCCESS,
+            // 1 is "this worksheet does not evaluate"; 2 is "it evaluates and
+            // says no". CI can act on the second without treating it as a bug.
+            Verdict::Errors => ExitCode::from(1),
+            Verdict::ChecksFailed => ExitCode::from(2),
+        }
+    }
+}
+
+/// Report how many verdicts a worksheet reached, when it states any.
+fn report_checks(path: &str, sheet: &nomo_core::Sheet) {
+    let c = sheet.checks();
+    if c.total == 0 {
+        return;
+    }
+    let mut line = format!("{path}: {} check{}", c.total, plural(c.total));
+    if c.failed > 0 {
+        line.push_str(&format!(", {} FAILED", c.failed));
+    }
+    if c.undecided > 0 {
+        line.push_str(&format!(", {} not decided", c.undecided));
+    }
+    if c.failed == 0 && c.undecided == 0 {
+        line.push_str(", all passed");
+    }
+    println!("{line}");
+}
+
+fn plural(n: usize) -> &'static str {
+    if n == 1 {
+        ""
+    } else {
+        "s"
+    }
+}
+
+fn run_over(paths: &[String], f: fn(&str, &str) -> Verdict) -> ExitCode {
     if paths.is_empty() {
         eprintln!("nomo: expected at least one file");
         return ExitCode::FAILURE;
     }
-    let mut ok = true;
+    let mut worst = Verdict::Ok;
     for path in paths {
         match std::fs::read_to_string(path) {
-            Ok(source) => ok &= f(path, &source),
+            Ok(source) => worst = worst.max(f(path, &source)),
             Err(e) => {
                 eprintln!("nomo: cannot read {path}: {e}");
-                ok = false;
+                worst = Verdict::Errors;
             }
         }
     }
-    if ok {
-        ExitCode::SUCCESS
-    } else {
-        ExitCode::FAILURE
-    }
+    worst.exit()
 }
 
 /// Evaluate a worksheet and report everything wrong with it.
@@ -90,26 +154,27 @@ fn run_over(paths: &[String], f: fn(&str, &str) -> bool) -> ExitCode {
 ///
 /// The `ok` line waits on errors rather than on silence, so a worksheet that
 /// only draws warnings still says it passed, above them.
-fn check_one(path: &str, source: &str) -> bool {
+fn check_one(path: &str, source: &str) -> Verdict {
     let sheet = nomo_core::Sheet::new(source);
     report(path, source, sheet.diagnostics());
     if !sheet.has_errors() {
         println!("{path}: ok ({} statements)", sheet.ast().stmts.len());
     }
-    !sheet.has_errors()
+    report_checks(path, &sheet);
+    Verdict::of(&sheet)
 }
 
 /// Render a worksheet: the substituted form and results.
-fn render_text(path: &str, source: &str) -> bool {
+fn render_text(path: &str, source: &str) -> Verdict {
     let sheet = nomo_core::Sheet::new(source);
     let opts = nomo_core::RenderOptions::default();
     print!("{}", nomo_core::render::text::render(&sheet, &opts));
     report(path, source, sheet.diagnostics());
-    !sheet.has_errors()
+    Verdict::of(&sheet)
 }
 
 /// Render a worksheet to a standalone HTML file beside the source.
-fn render_html(path: &str, source: &str) -> bool {
+fn render_html(path: &str, source: &str) -> Verdict {
     let sheet = nomo_core::Sheet::new(source);
     let opts = nomo_core::RenderOptions::default();
     let title = std::path::Path::new(path)
@@ -122,11 +187,11 @@ fn render_html(path: &str, source: &str) -> bool {
         Ok(()) => println!("{}", out.display()),
         Err(e) => {
             eprintln!("nomo: cannot write {}: {e}", out.display());
-            return false;
+            return Verdict::Errors;
         }
     }
     report(path, source, sheet.diagnostics());
-    !sheet.has_errors()
+    Verdict::of(&sheet)
 }
 
 fn report(path: &str, source: &str, diagnostics: &[nomo_core::Diagnostic]) {
@@ -140,11 +205,15 @@ fn report(path: &str, source: &str, diagnostics: &[nomo_core::Diagnostic]) {
     }
 }
 
-fn dump_ast(path: &str, source: &str) -> bool {
+fn dump_ast(path: &str, source: &str) -> Verdict {
     let parsed = nomo_core::parse(source);
     println!("{path}:\n{:#?}", parsed.ast);
     report(path, source, &parsed.diagnostics);
-    !parsed.has_errors()
+    if parsed.has_errors() {
+        Verdict::Errors
+    } else {
+        Verdict::Ok
+    }
 }
 
 #[cfg(test)]
@@ -161,17 +230,36 @@ mod tests {
             "a = b + 1\nb = a + 1\n",
         ] {
             assert!(
-                !check_one("t.nomo", wrong),
+                check_one("t.nomo", wrong) == Verdict::Errors,
                 "check passed a worksheet that does not evaluate: {wrong:?}"
             );
         }
-        assert!(check_one("t.nomo", "r = 5 cm\nV = pi*r^2\n"));
+        assert!(check_one("t.nomo", "r = 5 cm\nV = pi*r^2\n") == Verdict::Ok);
+    }
+
+    #[test]
+    fn a_failed_check_is_its_own_verdict() {
+        // Three outcomes, three exit codes. A script that runs a worksheet has
+        // to be able to tell "this sheet is broken" from "this design does not
+        // hold", and the exit code is the only thing it reads.
+        let ok = "sigma = 10 ksi\ncheck sigma <= 20 ksi\n";
+        let failing = "sigma = 30 ksi\ncheck sigma <= 20 ksi\n";
+        let broken = "sigma = nosuchname\ncheck 1 <= 2\n";
+
+        assert!(check_one("t.nomo", ok) == Verdict::Ok);
+        assert!(check_one("t.nomo", failing) == Verdict::ChecksFailed);
+        assert!(check_one("t.nomo", broken) == Verdict::Errors);
+
+        // A worksheet that does not evaluate outranks one whose checks failed:
+        // it has not established anything to fail.
+        assert!(Verdict::Errors > Verdict::ChecksFailed);
+        assert!(Verdict::ChecksFailed > Verdict::Ok);
     }
 
     #[test]
     fn a_warning_is_not_a_failure() {
         // `min` is a unit and a conventional variable name; shadowing it warns
         // and the worksheet is still fine.
-        assert!(check_one("t.nomo", "min = 5\nmin\n"));
+        assert!(check_one("t.nomo", "min = 5\nmin\n") == Verdict::Ok);
     }
 }

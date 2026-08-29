@@ -2260,6 +2260,45 @@ impl Env {
                 }
             }
 
+            Stmt::Check { expr, span } => {
+                let trace = self.eval(expr);
+                let mut diagnostics = diagnose(&trace);
+                // A condition, and nothing else. Comparisons and the logical
+                // connectives answer exactly 1 or 0, so this is not a tolerance
+                // question. Anything else — a length, a vector, a string, 0.5 —
+                // is refused rather than read as true: a check that passes
+                // because `5 m` is "truthy" is worse than no check at all, and
+                // the mistake it hides is the one a check exists to catch.
+                //
+                // Exact comparison, and deliberately so: a comparison answers
+                // the bits 1.0 or 0.0, nothing near them. A tolerance here
+                // would be a tolerance on *whether a condition holds*, which is
+                // the one place this engine must not have one.
+                #[allow(clippy::float_cmp)]
+                let passed = match trace.value.as_ref() {
+                    Ok(Value::Scalar(q))
+                        if q.is_dimensionless() && (q.value == 0.0 || q.value == 1.0) =>
+                    {
+                        Some(q.value == 1.0)
+                    }
+                    Ok(_) => {
+                        diagnostics.push(Diagnostic::error(
+                            eval_codes::EVAL_ERROR,
+                            *span,
+                            "a check needs a condition, such as `check sigma <= sigma_allow`",
+                        ));
+                        None
+                    }
+                    // The failure is already reported by `diagnose`.
+                    Err(_) => None,
+                };
+                Outcome {
+                    span: *span,
+                    kind: OutcomeKind::Check { trace, passed },
+                    diagnostics,
+                }
+            }
+
             Stmt::UnitDecl { name, value, span } => {
                 let trace = self.eval(value);
                 let mut diagnostics = diagnose(&trace);
@@ -2346,6 +2385,18 @@ pub enum OutcomeKind {
         trace: Trace,
     },
     Query(Trace),
+    /// `check …` — the condition, and whether it held.
+    ///
+    /// `passed` is `None` when the condition could not be evaluated at all, or
+    /// was not a condition: a check that cannot be decided is neither a pass nor
+    /// a failure, and reporting it as either would be the quietly-wrong answer
+    /// this engine refuses everywhere else. That case carries a diagnostic; a
+    /// plain `Some(false)` does not, because a design that does not meet its
+    /// limit is not a worksheet that is wrong.
+    Check {
+        trace: Trace,
+        passed: Option<bool>,
+    },
     UnitDecl {
         name: String,
         trace: Trace,

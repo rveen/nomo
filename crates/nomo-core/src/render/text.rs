@@ -63,6 +63,23 @@ pub fn render(sheet: &Sheet, opts: &RenderOptions) -> String {
                 out.push('\n');
             }
 
+            OutcomeKind::Check { trace, passed } => {
+                // The verdict stands where a result would, because for a check
+                // it *is* the result: the 1 or 0 the comparison produced says
+                // nothing a reader wants, and "pass" says the whole of it.
+                let mut line = format!("check {}", r.symbolic(trace));
+                if r.substitution_is_informative(trace) {
+                    line.push_str(&format!(" = {}", r.substituted(trace)));
+                }
+                line.push_str(match passed {
+                    Some(true) => " — pass",
+                    Some(false) => " — FAIL",
+                    None => " — [not decided]",
+                });
+                out.push_str(&line);
+                out.push('\n');
+            }
+
             OutcomeKind::UnitDecl { name, trace } => {
                 // The defining expression, not its base-SI magnitude: `1000
                 // lbf/ft` says what the unit is, `14593.9 kg·s⁻²` does not.

@@ -1,0 +1,96 @@
+# nomo snapshot v1
+# worksheet: checks
+
+=== text ===
+# Verdicts — a design that states whether it holds
+
+A worksheet is not finished when it has computed a number. It is finished when
+it says whether the number is acceptable, and against what. That last step is
+usually the point of the document: a section is adequate, a bolt is not, a
+temperature rise is within what the datasheet allows.
+
+`check` states a condition and reports a verdict on it. It binds nothing and
+nothing reads it — it exists to be read by a person, and counted by whatever
+runs the worksheet.
+## A bracket in bending
+unit kip = 1000 lbf
+M = 4.2 kip·in
+S = 0.42 in³
+Fy = 36 ksi
+The allowable stress, and the stress that is actually there.
+sigma_allow = 0.6·Fy = 0.6·(36 ksi) = 148927000 Pa
+sigma = M/S = 474.536 J/(6.88257e-6 m³) = 68947600 Pa
+sigma = 10 ksi
+sigma_allow = 21.6 ksi
+check sigma ≤ sigma_allow = 68947600 Pa ≤ 148927000 Pa — pass
+## Deflection, against a span/360 limit
+L = 48 in
+delta = 0.09 in
+delta_allow = L/360 = 48 in/360 = 0.00338667 m
+delta_allow = 0.133333 in
+check delta ≤ delta_allow = 0.09 in ≤ 0.00338667 m — pass
+## A check may be any condition, not only a comparison
+Both of these have to hold, and one statement says so.
+t = 0.25 in
+t_min = 0.1875 in
+check t ≥ t_min and delta ≤ delta_allow = 0.25 in ≥ 0.1875 in and 0.09 in ≤ 0.00338667 m — pass
+## A verdict that does not hold
+Nothing here is wrong: the arithmetic is right and the design is not. The
+worksheet still evaluates, `nomo check` still reports it as a worksheet that
+works, and the exit code says a check failed rather than that the sheet did.
+d_bolt = 0.375 in
+d_required = 0.5 in
+check d_bolt ≥ d_required = 0.375 in ≥ 0.5 in — FAIL
+
+=== html ===
+<h1 class="prose">Verdicts — a design that states whether it holds</h1>
+<p class="prose">A worksheet is not finished when it has computed a number. It is finished when it says whether the number is acceptable, and against what. That last step is usually the point of the document: a section is adequate, a bolt is not, a temperature rise is within what the datasheet allows.</p>
+<p class="prose">`check` states a condition and reports a verdict on it. It binds nothing and nothing reads it — it exists to be read by a person, and counted by whatever runs the worksheet.</p>
+<h2 class="prose">A bracket in bending</h2>
+<div class="step note">unit kip = 1000 lbf</div>
+<div class="step"><span class="name">M</span><span class="eq">=</span>4.2 kip·in</div>
+<div class="step"><span class="name">S</span><span class="eq">=</span>0.42 in³</div>
+<div class="step"><span class="name">Fy</span><span class="eq">=</span>36 ksi</div>
+<p class="prose">The allowable stress, and the stress that is actually there.</p>
+<div class="step"><span class="name">sigma_allow</span><span class="eq">=</span>0.6·Fy<span class="eq">=</span><span class="subst">0.6·(36 ksi)</span><span class="eq">=</span><span class="result">148927000 Pa</span></div>
+<div class="step"><span class="name">sigma</span><span class="eq">=</span>M/S<span class="eq">=</span><span class="subst">474.536 J/(6.88257e-6 m³)</span><span class="eq">=</span><span class="result">68947600 Pa</span></div>
+<div class="step">sigma<span class="eq">=</span><span class="result">10 ksi</span></div>
+<div class="step">sigma_allow<span class="eq">=</span><span class="result">21.6 ksi</span></div>
+<div class="step check pass"><span class="name">check</span>sigma ≤ sigma_allow<span class="eq">=</span><span class="subst">68947600 Pa ≤ 148927000 Pa</span><span class="verdict">pass</span></div>
+<h2 class="prose">Deflection, against a span/360 limit</h2>
+<div class="step"><span class="name">L</span><span class="eq">=</span>48 in</div>
+<div class="step"><span class="name">delta</span><span class="eq">=</span>0.09 in</div>
+<div class="step"><span class="name">delta_allow</span><span class="eq">=</span>L/360<span class="eq">=</span><span class="subst">48 in/360</span><span class="eq">=</span><span class="result">0.00338667 m</span></div>
+<div class="step">delta_allow<span class="eq">=</span><span class="result">0.133333 in</span></div>
+<div class="step check pass"><span class="name">check</span>delta ≤ delta_allow<span class="eq">=</span><span class="subst">0.09 in ≤ 0.00338667 m</span><span class="verdict">pass</span></div>
+<h2 class="prose">A check may be any condition, not only a comparison</h2>
+<p class="prose">Both of these have to hold, and one statement says so.</p>
+<div class="step"><span class="name">t</span><span class="eq">=</span>0.25 in</div>
+<div class="step"><span class="name">t_min</span><span class="eq">=</span>0.1875 in</div>
+<div class="step check pass"><span class="name">check</span>t ≥ t_min and delta ≤ delta_allow<span class="eq">=</span><span class="subst">0.25 in ≥ 0.1875 in and 0.09 in ≤ 0.00338667 m</span><span class="verdict">pass</span></div>
+<h2 class="prose">A verdict that does not hold</h2>
+<p class="prose">Nothing here is wrong: the arithmetic is right and the design is not. The worksheet still evaluates, `nomo check` still reports it as a worksheet that works, and the exit code says a check failed rather than that the sheet did.</p>
+<div class="step"><span class="name">d_bolt</span><span class="eq">=</span>0.375 in</div>
+<div class="step"><span class="name">d_required</span><span class="eq">=</span>0.5 in</div>
+<div class="step check fail"><span class="name">check</span>d_bolt ≥ d_required<span class="eq">=</span><span class="subst">0.375 in ≥ 0.5 in</span><span class="verdict">FAIL</span></div>
+
+=== values ===
+kip = 4448.2216152605 m·kg·s^-2
+M = 474.53628191599006 m^2·kg·s^-2
+S = 6.882566879999999e-6 m^3
+Fy = 248211262.55406097 m^-1·kg·s^-2
+sigma_allow = 148926757.53243658 m^-1·kg·s^-2
+sigma = 68947572.93168361 m^-1·kg·s^-2
+? = 68947572.93168361 m^-1·kg·s^-2
+? = 148926757.53243658 m^-1·kg·s^-2
+L = 1.2191999999999998 m
+delta = 0.002286 m
+delta_allow = 0.0033866666666666663 m
+? = 0.0033866666666666663 m
+t = 0.00635 m
+t_min = 0.004762499999999999 m
+d_bolt = 0.009524999999999999 m
+d_required = 0.0127 m
+
+=== diagnostics ===
+none

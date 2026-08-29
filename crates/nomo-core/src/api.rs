@@ -102,6 +102,7 @@ pub fn classify(sheet: &Sheet) -> Vec<ClassifiedToken> {
             TokenKind::KwUnit
             | TokenKind::KwFn
             | TokenKind::KwGlobal
+            | TokenKind::KwCheck
             | TokenKind::KwIf
             | TokenKind::KwThen
             | TokenKind::KwElse
@@ -190,7 +191,7 @@ fn collect_names(stmt: &Stmt, callees: &mut Vec<Span>, bound: &mut Vec<String>) 
             }
             walk(body, callees);
         }
-        Stmt::Query { expr, .. } => walk(expr, callees),
+        Stmt::Query { expr, .. } | Stmt::Check { expr, .. } => walk(expr, callees),
         Stmt::Comment { .. } | Stmt::Error { .. } => {}
     }
 }
@@ -343,6 +344,16 @@ pub fn analysis_json(sheet: &Sheet) -> String {
 
     out.push_str("],\"hasErrors\":");
     out.push_str(if sheet.has_errors() { "true" } else { "false" });
+
+    // The verdicts, so the editor's status line can say them without reading
+    // the rendered HTML back. A failed check is not an error and must not be
+    // counted as one — the worksheet is right and the design is not — so it
+    // travels in its own field.
+    let checks = sheet.checks();
+    out.push_str(&format!(
+        ",\"checks\":{{\"total\":{},\"passed\":{},\"failed\":{},\"undecided\":{}}}",
+        checks.total, checks.passed, checks.failed, checks.undecided
+    ));
     out.push('}');
     out
 }

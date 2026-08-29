@@ -10,7 +10,7 @@ testing a tolerance — so both give the same bits on every machine.
 A root, by bisection. It needs a bracket and says so if it does not have one.
 fn f defined
 r = root(f, 1, 2) = 1.41421
-check = sqrt(2) = 1.41421
+exact = sqrt(2) = 1.41421
 Dimensions travel through: a root of a length equation is a length.
 fn overhang defined
 a = root(overhang, 0 m, 10 m) = 3 m
@@ -69,7 +69,7 @@ direction = s/mag = [3000000 Pa, 4000000 Pa]/(5 MPa) = [0.6, 0.8]
 <p class="prose">A root, by bisection. It needs a bracket and says so if it does not have one.</p>
 <div class="step note">fn f defined</div>
 <div class="step"><span class="name">r</span><span class="eq">=</span>root(f, 1, 2)<span class="eq">=</span><span class="result">1.41421</span></div>
-<div class="step"><span class="name">check</span><span class="eq">=</span>sqrt(2)<span class="eq">=</span><span class="result">1.41421</span></div>
+<div class="step"><span class="name">exact</span><span class="eq">=</span>sqrt(2)<span class="eq">=</span><span class="result">1.41421</span></div>
 <p class="prose">Dimensions travel through: a root of a length equation is a length.</p>
 <div class="step note">fn overhang defined</div>
 <div class="step"><span class="name">a</span><span class="eq">=</span>root(overhang, 0 m, 10 m)<span class="eq">=</span><span class="result">3 m</span></div>
@@ -113,7 +113,7 @@ direction = s/mag = [3000000 Pa, 4000000 Pa]/(5 MPa) = [0.6, 0.8]
 
 === values ===
 r = 1.414213562373095 dimensionless
-check = 1.4142135623730951 dimensionless
+exact = 1.4142135623730951 dimensionless
 a = 3.0 m
 q_0 = 2000.0 kg·s^-2
 span = 2.0 m

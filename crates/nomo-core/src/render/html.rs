@@ -52,6 +52,17 @@ ul.prose li, ol.prose li { margin: 0.2rem 0; }
 .result { font-weight: 600; }
 .error { color: #b00020; font-weight: 600; }
 .note { opacity: 0.6; font-style: italic; }
+/* A verdict. Colour says it at a glance and the word says it on a monochrome
+   printout, which is how an engineering worksheet is usually read once it has
+   been signed. */
+.verdict { font-weight: 700; margin-left: 0.6rem; }
+/* The keyword stands where a name does, and there is no `=` after it to space
+   the condition away from it. */
+.check .name { margin-right: 0.5rem; }
+.check.pass .verdict { color: #1a7f37; }
+.check.fail .verdict { color: #b00020; }
+.check.undecided .verdict { color: #8a6d00; }
+.check.fail { background: #fff4f4; }
 /* A figure is evidence in an engineering worksheet, so it is sized to be read
    rather than to fit a column: the size its reference asks for, never wider
    than the page, and never split across a page break when printed. With the
@@ -255,6 +266,26 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                     }
                 }
                 line.push_str("</div>\n");
+                body.push_str(&line);
+            }
+
+            OutcomeKind::Check { trace, passed } => {
+                let (word, class) = match passed {
+                    Some(true) => ("pass", "pass"),
+                    Some(false) => ("FAIL", "fail"),
+                    None => ("not decided", "undecided"),
+                };
+                let mut line = format!(
+                    "<div class=\"step check {class}\"><span class=\"name\">check</span>{}",
+                    escape(&r.symbolic(trace))
+                );
+                if r.substitution_is_informative(trace) {
+                    line.push_str(&format!(
+                        "{eq}<span class=\"subst\">{}</span>",
+                        escape(&r.substituted(trace))
+                    ));
+                }
+                line.push_str(&format!("<span class=\"verdict\">{word}</span></div>\n"));
                 body.push_str(&line);
             }
 

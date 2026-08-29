@@ -7,7 +7,7 @@
 ' A root, by bisection. It needs a bracket and says so if it does not have one.
 fn f(x) = x^2 - 2
 r = root(f, 1, 2)
-check = sqrt(2)
+exact = sqrt(2)
 
 ' Dimensions travel through: a root of a length equation is a length.
 fn overhang(x) = x - 3 m

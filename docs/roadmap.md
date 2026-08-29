@@ -113,7 +113,7 @@ suspected.
 
 ## Phase 2 — the three things a design sheet needs
 
-### 6. `check` statements — a worksheet that states a verdict
+### 6. `check` statements — a worksheet that states a verdict — **done**
 
 ```nomo
 check sigma <= sigma_allow
@@ -135,8 +135,14 @@ nothing in the language expresses it today.
 - `analysis_json` grows `checks: {total, failed}`, so the editor's status bar can
   say it without parsing HTML.
 
-*Gate:* `cargo test`, golden suite, `scripts/build-web.sh`,
-`scripts/compare-targets.sh`.
+Built as specified. Two things came out of building it. The condition rule is
+strict — a dimensionless 1 or 0, which is what comparisons produce — because
+anything looser means a check can pass on `5 m` being "truthy" and hide the
+mistake it exists to catch; a condition that *cannot* be evaluated is reported
+as undecided rather than failed, since a design that does not hold and one
+nobody could work out are different. And the keyword's cost was measured before
+it was spent: `check` is used as a name in **zero** of the 114 SMath worksheets
+the importer reads, and in exactly one worksheet here, which was renamed.
 
 ### 7. `linterp`, and table lookup — settled from SMath, not guessed
 

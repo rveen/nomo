@@ -141,6 +141,15 @@ fn migrate_step(text: &str, from_version: u32) -> String {
     text.to_string()
 }
 
+/// The verdicts a worksheet reached. See [`Sheet::checks`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Checks {
+    pub total: usize,
+    pub passed: usize,
+    pub failed: usize,
+    pub undecided: usize,
+}
+
 /// What one call to [`Sheet::update`] did.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Recalculation {
@@ -237,6 +246,26 @@ impl Sheet {
 
     pub fn diagnostics(&self) -> &[Diagnostic] {
         &self.diagnostics
+    }
+
+    /// How many checks this worksheet states, and how many of them failed.
+    ///
+    /// A check that could not be decided counts in neither: it carries a
+    /// diagnostic instead, so it is already reported as what it is — a
+    /// worksheet that is wrong rather than a design that is.
+    pub fn checks(&self) -> Checks {
+        let mut checks = Checks::default();
+        for outcome in &self.outcomes {
+            if let OutcomeKind::Check { passed, .. } = &outcome.kind {
+                checks.total += 1;
+                match passed {
+                    Some(true) => checks.passed += 1,
+                    Some(false) => checks.failed += 1,
+                    None => checks.undecided += 1,
+                }
+            }
+        }
+        checks
     }
 
     pub fn has_errors(&self) -> bool {

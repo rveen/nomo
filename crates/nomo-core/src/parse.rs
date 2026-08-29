@@ -223,6 +223,7 @@ impl<'s> Parser<'s> {
             TokenKind::KwUnit => self.parse_unit_decl(),
             TokenKind::KwFn => self.parse_fn_def(),
             TokenKind::KwGlobal => self.parse_global_def(),
+            TokenKind::KwCheck => self.parse_check(),
             _ => self.parse_assign_or_query(),
         }
     }
@@ -289,6 +290,19 @@ impl<'s> Parser<'s> {
         let span = kw.span.to(value.span());
         self.finish_line();
         Some(Stmt::UnitDecl { name, value, span })
+    }
+
+    /// `check sigma <= sigma_allow`.
+    ///
+    /// One expression and nothing else — no name, no `=`. A check states a
+    /// condition; it does not bind one, and `check x = 1` would read as a
+    /// binding whose name happens to be spelled after a keyword.
+    fn parse_check(&mut self) -> Option<Stmt> {
+        let start = self.bump().span;
+        let expr = self.parse_expr(0);
+        let span = start.to(expr.span());
+        self.finish_line();
+        Some(Stmt::Check { expr, span })
     }
 
     fn parse_global_def(&mut self) -> Option<Stmt> {
@@ -1213,6 +1227,39 @@ mod tests {
             .find(|d| d.code == crate::diag::codes::UNEXPECTED_CHAR)
             .expect("expected an unexpected-character diagnostic");
         assert_eq!(d.span.text(src), "@");
+    }
+
+    #[test]
+    fn a_check_is_a_statement_of_one_expression() {
+        let p = parse("check sigma <= sigma_allow\n");
+        assert!(p.diagnostics.is_empty(), "{:?}", p.diagnostics);
+        let Some(Stmt::Check { expr, .. }) = p.ast.stmts.first() else {
+            panic!("expected a check, got {:?}", p.ast.stmts);
+        };
+        assert_eq!(sexpr(expr), "(≤ sigma sigma_allow)");
+    }
+
+    #[test]
+    fn a_check_does_not_bind() {
+        // `check x = 1` would read as a binding whose name is spelled after a
+        // keyword. The `=` is trailing input, and saying so is better than
+        // inventing a meaning for it.
+        let p = parse("check x = 1\n");
+        assert!(
+            p.diagnostics
+                .iter()
+                .any(|d| d.code == codes::TRAILING_INPUT),
+            "{:?}",
+            p.diagnostics
+        );
+    }
+
+    #[test]
+    fn check_is_a_keyword_and_not_a_name() {
+        // The cost of the keyword, stated so it is a decision rather than a
+        // surprise: a worksheet that used `check` as a variable no longer parses.
+        let p = parse("check = 3\n");
+        assert!(!p.diagnostics.is_empty(), "`check` must not bind as a name");
     }
 
     #[test]

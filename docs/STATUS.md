@@ -1,6 +1,6 @@
 # Status
 
-Snapshot for picking the work back up. Last updated at the **v0.3.0** release.
+Snapshot for picking the work back up. Last updated at the **v0.4.0** release.
 The nine numbered phases were complete before any of the language work below;
 the most recent commits are the importer's seventh phase, figure sizing,
 complex numbers, plots, several curves on one plot, a plot of a table of
@@ -10,7 +10,8 @@ the v0.2.0 release, the v0.2.1 release, Greek letters in the typeset columns
 (§8.47), the math font the output is set in (§8.48), the text face around it
 (§8.49), the space a unit stands off its number by (§8.50), the substituted
 column becoming mathematics (§8.51), the conditional drawn as cases with the
-gallery turned on (§8.52), and the v0.3.0 release.
+gallery turned on (§8.52), the v0.3.0 release, inline prose (§8.53), and the
+v0.4.0 release.
 
 **A four-step plan for typographic quality is under way (2026-09-04).** It was
 costed against the alternative of shipping MathJax, which was measured and
@@ -78,7 +79,7 @@ installed on this machine. CI's `arm64` job covers it.
 | 9 Local persistence, offline | **done** | Open/save with a cross-browser fallback, draft in IndexedDB, service worker |
 | — SMath importer | **seven phases in** | `nomo-smath`: reads **both** corpora — 54 wiki worksheets (0.82–0.98) and 60 mechanics worksheets (1.3–1.5) — emits `.nomo`, and checks itself against 1179 stored answers. Agreement: 312/344 wiki, 283/283 mechanics. Design note §8.13–§8.39 |
 | — A second batch of builtins | **done** | `mod` `hypot` `nthroot` `log(x, b)` `cot` `sec` `csc` `asinh` `acosh` `atanh` `product` `mean` `median` `sort` `reverse` `trace` `submatrix`. Conventions read from SMath where it has one — `mod`'s sign, `submatrix`'s inclusive one-based bounds. `stdev` and `rank` are deliberately absent; `docs/language.md` says why. Took the wiki corpus from 304/337 to **312/344** |
-| — Releasing | **run four times** | A tag builds a binary per architecture with no cross-compilation, each published only after passing the golden suite on the machine that built it; the wasm module goes out with its hash after agreeing with native byte for byte; the editor and gallery deploy to Pages from `main`. `v0.1.0` proved the shell on real runners and found the tag-versus-branch fault in the `pages` job; `v0.2.0` is the first tag cut with that split already in place, and `v0.2.1` is a patch carrying the math-font fix; `v0.3.0` is the first tag whose `pages` job publishes a *typeset* gallery, and the first whose build fetches something from the network — the fonts, hash-verified |
+| — Releasing | **run five times** | A tag builds a binary per architecture with no cross-compilation, each published only after passing the golden suite on the machine that built it; the wasm module goes out with its hash after agreeing with native byte for byte; the editor and gallery deploy to Pages from `main`. `v0.1.0` proved the shell on real runners and found the tag-versus-branch fault in the `pages` job; `v0.2.0` is the first tag cut with that split already in place, and `v0.2.1` is a patch carrying the math-font fix; `v0.3.0` is the first tag whose `pages` job publishes a *typeset* gallery, and the first whose build fetches something from the network — the fonts, hash-verified; `v0.4.0` carries inline prose |
 | — The gallery, and migration shown | **done** | `build-gallery.sh` renders every example into a browsable set of pages, typeset since §8.52 and sharing one math font file, and `docs/smath.md` finally *shows* an import: an SMath worksheet written here — ours to publish, unlike the corpora — beside what Nomo makes of it and what it computes. That fixture is also the only importer test that runs without the corpora |
 | — How-to worksheets | **six of six** | `bolt`, `shaft`, `column`, `bearing`, `spring`, `vessel` — a bolted joint, a shaft in combined bending and torsion, a column across the buckling transition, bearing life, a compression spring against six constraints, and a pressure vessel worked thin-wall and thick-wall side by side. The first worksheets written *for* the language rather than to exercise it; their acceptance is an engineer agreeing with the method rather than a green gate. Each says what it leaves out |
 | — The editor assists | **done** | Completion offering a name with what it holds and a unit with its dimension, hover saying what a name is, F12 to its definition, and a Typeset toggle that puts §18's MathML where a reader actually looks. All from the engine's own symbol table — no second parser in the front end. **Multiple open documents is the one piece not built**; the boundary already supports it and the reason is below |
@@ -118,7 +119,7 @@ self-contained file. **Second phase:** a name that spells a Greek letter is set 
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Prose as Markdown | **done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline is `` ` `` and `**`, and nothing else: `_` would eat identifiers and a single `*` is the multiplication operator — 61 corpus prose lines pair one and every pair encloses arithmetic. Design note §8.41 and §8.53, `examples/prose.nomo` |
 
-680 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+681 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -155,7 +156,7 @@ does not survive it, and then:
 
 ```bash
 cd /files/work/nomo
-cargo test --workspace                                  # 680 tests
+cargo test --workspace                                  # 681 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ./scripts/check-no-host-math.sh                         # determinism guard
@@ -281,8 +282,8 @@ the release notes — was extracted from the YAML and run against stand-in
 artifacts, and does what it says. The runner behaviour, the Pages deployment and
 the `gh release create` call cannot be exercised from a development machine;
 `v0.1.0` exercised them for the first time, `v0.2.0` is the second, `v0.2.1` the
-third and `v0.3.0` the fourth, and the only way to check any of them is to read
-the run.
+third, `v0.3.0` the fourth and `v0.4.0` the fifth, and the only way to check any
+of them is to read the run.
 
 **What the second tag settled.** `v0.2.0` carries labelled axes and named
 curves, the two evaluator leaks that work uncovered, and the `pages` fix — so it

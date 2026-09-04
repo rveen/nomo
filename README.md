@@ -63,7 +63,7 @@ determinism claim is then checkable by whoever downloads it rather than only by
 whoever built it.
 
 ```bash
-tar -xzf nomo-v0.3.0-linux-x86_64.tar.gz
+tar -xzf nomo-v0.4.0-linux-x86_64.tar.gz
 ./nomo version
 ./nomo check my-worksheet.nomo
 ```

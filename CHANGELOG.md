@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 — the two markers the corpora allow
+
+One feature: inline formatting in a worksheet's prose. It is here because
+turning the gallery on in 0.3.0 put `**preload**` on a published page as literal
+asterisks — §8.41 had built the block level and deferred the inline half, naming
+what it should be if it ever arrived.
 
 ### Added
 

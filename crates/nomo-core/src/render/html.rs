@@ -13,7 +13,7 @@
 //! signed and filed, and retrofitting print styles is much harder than keeping
 //! them.
 
-use super::{escape, plot, RenderOptions, Renderer};
+use super::{base64, escape, plot, MathFont, RenderOptions, Renderer};
 use crate::doc::Sheet;
 use crate::eval::OutcomeKind;
 use crate::prose::{self, Block};
@@ -50,12 +50,18 @@ ul.prose li, ol.prose li { margin: 0.2rem 0; }
    bar thickness, the axis height, the script shifts and the stretchy brackets
    are all read from it, and a font without one leaves the browser guessing from
    ordinary text metrics. A worked line otherwise inherits the monospace above,
-   which is the worst case for a fraction. These are named, never fetched — the
-   artifact stays a single self-contained file — and `math` is the CSS generic
-   that lets each platform offer whatever math font it has. */
+   which is the worst case for a fraction.
+
+   The first entry is the font this project ships, and it resolves only when the
+   document was rendered with `--font-url` or `--embed-font`; `nomo html` on its
+   own writes no `@font-face`, so the name falls through and the document stays
+   the single self-contained file that fetches nothing. The rest are names,
+   never fetched, with `math` last as the CSS generic that lets each platform
+   offer whatever it has — and they remain the fallback for a character the
+   shipped subset does not carry. */
 math {
-  font-family: "Latin Modern Math", "STIX Two Math", "TeX Gyre Pagella Math",
-               "Cambria Math", math;
+  font-family: "STIX Two Math Subset", "Latin Modern Math", "STIX Two Math",
+               "TeX Gyre Pagella Math", "Cambria Math", math;
 }
 .name { font-weight: 600; }
 /* A typeset name is deliberately not bold. The name column is bold so that a
@@ -142,15 +148,73 @@ pub fn render(sheet: &Sheet, opts: &RenderOptions, title: &str) -> String {
         Some(own) => (own, String::new()),
         None => (title.to_string(), format!("<h1>{}</h1>\n", escape(title))),
     };
+    let (notice, face) = font_face(&opts.font);
     format!(
         "<!doctype html>\n<html lang=\"en\">\n<head>\n\
          <meta charset=\"utf-8\">\n\
          <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\
-         <title>{}</title>\n<style>{STYLE}</style>\n</head>\n<body>\n\
+         <title>{}</title>\n{notice}<style>{face}{STYLE}</style>\n</head>\n<body>\n\
          {heading}{}</body>\n</html>\n",
         escape(&title),
         body
     )
+}
+
+/// The `@font-face` the document's mathematics is laid out with, if any.
+///
+/// Returns the licence notice that goes in the head and the rule that goes at
+/// the top of the stylesheet. The rule comes *before* [`STYLE`] so that the
+/// `math` selector there — which lists this family first — has something to
+/// resolve it to.
+///
+/// [`MathFont::Named`] returns nothing, which is the whole of the default
+/// behaviour: the stack in [`STYLE`] names fonts and the document fetches
+/// nothing, so it stays the single self-contained file it has always been.
+fn font_face(font: &MathFont) -> (String, String) {
+    // `font-display: swap` because the stack below this rule is a real math font
+    // on many machines: a reader should see the formula immediately in whatever
+    // they have and get the shipped face when it arrives, rather than looking at
+    // a blank line while a font downloads.
+    let rule = |src: String| {
+        format!(
+            "\n@font-face {{\n  font-family: \"{FONT_FAMILY}\";\n  src: {src};\n  font-display: swap;\n}}\n"
+        )
+    };
+    match font {
+        MathFont::Named => (String::new(), String::new()),
+        MathFont::Url(url) => (
+            String::new(),
+            rule(format!("url(\"{}\") format(\"woff2\")", escape(url))),
+        ),
+        MathFont::Embedded { woff2, notice } => (
+            // A document that carries a font redistributes it, and a licence
+            // that did not travel with the bytes would not have been honoured.
+            // An HTML comment rather than anything visible: this is a term of
+            // the font's licence, not part of the worksheet, and an engineer
+            // printing a calculation should not find four kilobytes of it
+            // appended.
+            format!("<!--\n{}\n-->\n", escape_comment(notice)),
+            rule(format!(
+                "url(\"data:font/woff2;base64,{}\") format(\"woff2\")",
+                base64::encode(woff2)
+            )),
+        ),
+    }
+}
+
+/// The CSS family name the shipped font is declared under.
+///
+/// Kept in step with `web/font.mjs`, which builds the file and names it the same
+/// way, and with the stack in [`STYLE`] that lists it first.
+const FONT_FAMILY: &str = "STIX Two Math Subset";
+
+/// Text made safe to sit inside an HTML comment.
+///
+/// A comment ends at the first `-->`, so a licence containing one would close
+/// the comment early and spill its remainder into the document as markup. No
+/// font licence does, but this is not the place to rely on that.
+fn escape_comment(text: &str) -> String {
+    text.replace("--", "- -")
 }
 
 /// The worksheet's own title: a level-1 heading opening its first run of prose.

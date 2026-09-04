@@ -33,8 +33,15 @@ fn main() -> ExitCode {
             // typeset is a fact about the rendering asked for, not about the
             // engineering in it.
             let mathml = rest.iter().any(|a| a == "--mathml");
-            let files: Vec<String> = rest.iter().filter(|a| *a != "--mathml").cloned().collect();
+            let (font, files) = match font_option(rest) {
+                Ok(pair) => pair,
+                Err(message) => {
+                    eprintln!("nomo: {message}");
+                    return ExitCode::FAILURE;
+                }
+            };
             MATHML.with(|m| m.set(mathml));
+            FONT.with(|f| *f.borrow_mut() = font);
             run_over(&files, render_html)
         }
         "test" => harness::run(rest),
@@ -64,6 +71,8 @@ fn usage() {
          nomo render <file.nomo>...   evaluate and print worked results\n    \
          nomo html   <file.nomo>...   write a standalone HTML file\n    \
          nomo html --mathml <file>    the same, with the mathematics typeset\n    \
+         nomo html --font-url <url>   ...laid out with a font served beside it\n    \
+         nomo html --embed-font <f>   ...with the font carried in the document\n    \
          nomo ast    <file.nomo>...   print the syntax tree\n    \
          nomo test   [--write]        check every example against its snapshot\n    \
          nomo bench                   time the engine on worksheets of fixed shape\n    \
@@ -232,6 +241,78 @@ thread_local! {
     /// threading an options struct through every command to carry one flag
     /// would be a worse trade than this is.
     static MATHML: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+
+    /// The font `html` was asked to lay the mathematics out with. Same reason.
+    static FONT: std::cell::RefCell<nomo_core::MathFont> =
+        const { std::cell::RefCell::new(nomo_core::MathFont::Named) };
+}
+
+/// Read `--font-url` and `--embed-font` out of the argument list.
+///
+/// Returns the font policy and the arguments with the flags removed. Two flags
+/// rather than one that guesses from its argument: referencing a font and
+/// carrying one are different decisions with different costs, and a flag whose
+/// meaning depends on whether a path happens to exist is a flag that does the
+/// wrong thing quietly.
+fn font_option(args: &[String]) -> Result<(nomo_core::MathFont, Vec<String>), String> {
+    let mut font = nomo_core::MathFont::Named;
+    let mut files = Vec::new();
+    let mut rest = args.iter();
+    while let Some(arg) = rest.next() {
+        match arg.as_str() {
+            "--mathml" => {}
+            "--font-url" => {
+                let url = rest
+                    .next()
+                    .ok_or("--font-url needs a URL, as in `--font-url fonts/math.woff2`")?;
+                font = nomo_core::MathFont::Url(url.clone());
+            }
+            "--embed-font" => {
+                let path = rest
+                    .next()
+                    .ok_or("--embed-font needs a path to a .woff2 file")?;
+                font = embed(std::path::Path::new(path))?;
+            }
+            other => files.push(other.to_string()),
+        }
+    }
+    Ok((font, files))
+}
+
+/// Read a font file, and the licence that has to travel with it.
+///
+/// A document that embeds a font redistributes it, and most font licences —
+/// the SIL Open Font License among them — require their terms to accompany the
+/// bytes. So a licence file sitting beside the font is embedded with it. This
+/// is not a guess about what the licence says: it is carrying whatever the font
+/// came with, which is what the obligation actually is.
+///
+/// A font with no licence beside it is still embedded, with a warning rather
+/// than a refusal. The file may be one the user has every right to embed, and
+/// this program is not in a position to know.
+fn embed(path: &std::path::Path) -> Result<nomo_core::MathFont, String> {
+    let woff2 = std::fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    let dir = path.parent().unwrap_or(std::path::Path::new("."));
+    let notice = [
+        "OFL.txt",
+        "LICENSE",
+        "LICENSE.txt",
+        "LICENCE",
+        "LICENCE.txt",
+    ]
+    .iter()
+    .find_map(|name| std::fs::read_to_string(dir.join(name)).ok());
+    let notice = match notice {
+        Some(text) => text,
+        None => {
+            eprintln!(
+                "nomo: warning: no licence file beside {}\n  A document that embeds a font redistributes it. If the font's licence\n  requires its terms to travel with it — the SIL Open Font License does —\n  put the licence file next to the font and render again.",
+                path.display()
+            );
+            String::new()
+        }
+    };
+    Ok(nomo_core::MathFont::Embedded { woff2, notice })
 }
 
 /// Render a worksheet to a standalone HTML file beside the source.
@@ -239,6 +320,7 @@ fn render_html(path: &str, source: &str) -> Verdict {
     let sheet = nomo_core::Sheet::new(source);
     let opts = nomo_core::RenderOptions {
         mathml: MATHML.with(std::cell::Cell::get),
+        font: FONT.with(|f| f.borrow().clone()),
         ..Default::default()
     };
     let title = std::path::Path::new(path)

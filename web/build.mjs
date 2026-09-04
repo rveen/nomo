@@ -11,6 +11,7 @@
 //   node build.mjs --serve   build, watch, and serve on :8000
 
 import * as esbuild from "esbuild";
+import { buildFont, FONT_FILE } from "./font.mjs";
 import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -49,6 +50,10 @@ try {
 await cp(join(here, "index.html"), join(dist, "index.html"));
 await cp(join(here, "style.css"), join(dist, "style.css"));
 
+// The math font, subset here rather than committed. `dist/` is emptied above,
+// so this has to run on every build rather than only when the file is missing.
+const fontBytes = await buildFont(dist);
+
 const options = {
   entryPoints: [join(here, "src/main.js")],
   bundle: true,
@@ -74,7 +79,17 @@ const options = {
  */
 async function shellVersion() {
   const hash = createHash("sha256");
-  for (const name of ["index.html", "style.css", "bundle.js", "nomo_wasm.wasm"]) {
+  for (const name of [
+    "index.html",
+    "style.css",
+    "bundle.js",
+    "nomo_wasm.wasm",
+    // The font is part of the shell the worker precaches, so a change to it has
+    // to change the cache name like anything else. Leaving it out would be the
+    // same fault the literal `"nomo-v1"` above was: new bytes on the server
+    // that a returning browser never asks for.
+    `fonts/${FONT_FILE}`,
+  ]) {
     hash.update(await readFile(join(dist, name)));
   }
   return hash.digest("hex").slice(0, 12);
@@ -102,7 +117,10 @@ if (!serve) {
   const { size } = await readFile(join(dist, "bundle.js")).then((b) => ({
     size: b.length,
   }));
-  console.log(`built dist/ — bundle ${(size / 1024).toFixed(0)} kB`);
+  console.log(
+    `built dist/ — bundle ${(size / 1024).toFixed(0)} kB, ` +
+      `math font ${(fontBytes / 1024).toFixed(0)} kB`,
+  );
   process.exit(0);
 }
 
@@ -124,6 +142,8 @@ const TYPES = {
   ".map": "application/json; charset=utf-8",
   // Serving this correctly is what lets `instantiateStreaming` work.
   ".wasm": "application/wasm",
+  ".woff2": "font/woff2",
+  ".txt": "text/plain; charset=utf-8",
 };
 
 createServer(async (request, response) => {

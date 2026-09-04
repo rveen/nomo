@@ -14,7 +14,8 @@
     "@codemirror/lint": "^6.9.0",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.39.1",
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "subset-font": "^2.7.0"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3"

@@ -13,6 +13,11 @@ node_modules/
 web/node_modules/
 web/dist/
 
+# The math font, fetched by scripts/fetch-font.sh and verified against the
+# hashes in scripts/fonts/. Third-party and not redistributed from here; what
+# `web/dist/` ships is a subset built from it. See THIRD-PARTY.md.
+web/vendor/
+
 # Third-party, and neither is redistributable from here. `corpora/` is fetched
 # on demand by scripts/fetch-corpora.sh and verified against the hashes in
 # scripts/corpora/; `reference/` is two codebases to learn from, over a gigabyte

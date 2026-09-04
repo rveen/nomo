@@ -13,6 +13,20 @@
 // than what it contains. Those are the two facts that distinguish typesetting
 // from a run of characters.
 //
+// It also checks the font, which is half of the layout. MathML Core reads the
+// fraction bar thickness, the axis height and the stretchy bracket recipes from
+// an OpenType MATH table, so a page that names fonts and finds none of them
+// installed gets a fraction laid out from ordinary text metrics. The document
+// is therefore rendered with `--embed-font`, and the page is asked whether that
+// font actually loaded — which also exercises the embed path end to end.
+//
+// And with a font guaranteed present, the italic can finally be checked. §8.47
+// leaves the italic and upright entirely to MathML Core: a one-character `<mi>`
+// is remapped into the Mathematical Alphanumeric Symbols block, a longer one is
+// not. That claim was measured by hand when it was written but not gated,
+// because the measurement depended on the machine having a math font. It does
+// not any more.
+//
 // Chrome only, because this machine has one browser. Firefox and Safari
 // implement MathML Core and are not checked here, which is a gap in the
 // evidence rather than a claim about them.
@@ -41,10 +55,46 @@ await writeFile(source, WORKSHEET);
 
 // Rendered by the shipped binary rather than by a library call, so that what is
 // checked is what `nomo html --mathml` actually writes.
-await run("cargo", ["run", "--quiet", "-p", "nomo-cli", "--", "html", "--mathml", source], {
-  cwd: repoRoot,
-});
-const page = await readFile(join(dir, "typeset.html"), "utf8");
+const font = join(repoRoot, "web/dist/fonts/stix-two-math-subset.woff2");
+try {
+  await readFile(font);
+} catch {
+  console.error(
+    "error: no math font at web/dist/fonts — see scripts/build-web.sh\n" +
+      "  ./scripts/fetch-font.sh && (cd web && node build.mjs)",
+  );
+  process.exit(1);
+}
+await run(
+  "cargo",
+  [
+    "run",
+    "--quiet",
+    "-p",
+    "nomo-cli",
+    "--",
+    "html",
+    "--mathml",
+    "--embed-font",
+    font,
+    source,
+  ],
+  { cwd: repoRoot },
+);
+const rendered = await readFile(join(dir, "typeset.html"), "utf8");
+
+// A probe appended to the real document, so it inherits the same stylesheet and
+// the same embedded font. The same letter twice: once as a bare `<mi>`, which
+// MathML Core remaps to U+1D449 MATHEMATICAL ITALIC CAPITAL V, and once marked
+// upright, which it leaves alone. If the remapping is not happening the two set
+// to exactly the same width, which is the failure this catches — and it is the
+// failure a page would have if the font that carries U+1D449 never loaded.
+const PROBE = `<div id="probe" style="font-size: 40px">
+<math display="inline"><mi id="italic">V</mi></math>
+<math display="inline"><mi id="upright" mathvariant="normal">V</mi></math>
+</div>
+`;
+const page = rendered.replace("</body>", `${PROBE}</body>`);
 
 const server = createServer((_, response) => {
   response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
@@ -62,6 +112,11 @@ let browser;
 try {
   browser = await launch();
   await browser.goto(url);
+
+  // Layout is measured after the fonts settle: `font-display: swap` means the
+  // first paint can be in a fallback face, and a width measured then is a width
+  // from the wrong font.
+  await browser.evaluate("document.fonts.ready.then(() => true)");
 
   const geometry = JSON.parse(
     await browser.evaluate(`
@@ -84,6 +139,14 @@ try {
           sqrtInner: sqrt ? box(sqrt.firstElementChild) : null,
           letter: box(letter),
           mathCount: document.querySelectorAll("math").length,
+          italic: box(document.getElementById("italic")),
+          upright: box(document.getElementById("upright")),
+          // Whether the embedded face is loaded, not merely named. A stack
+          // that resolves to nothing reports the same family string as one
+          // that resolves to the shipped font.
+          fontLoaded: [...document.fonts].some(
+            (f) => f.family === "STIX Two Math Subset" && f.status === "loaded",
+          ),
         });
       })()
     `),
@@ -117,6 +180,20 @@ try {
       `a radical should be wider than what it encloses: ${geometry.sqrt.width} vs ${geometry.sqrtInner.width}`,
     );
   }
+  check(
+    geometry.fontLoaded,
+    "the embedded math font did not load — a fraction is then laid out from " +
+      "ordinary text metrics, which is what shipping a font is meant to end",
+  );
+
+  if (geometry.italic && geometry.upright) {
+    check(
+      Math.abs(geometry.italic.width - geometry.upright.width) > 0.5,
+      `a one-character <mi> should be italicised and an upright one not, but ` +
+        `both set to ${geometry.italic.width} — MathML Core's math-auto is not ` +
+        "remapping, so every variable on the page is upright",
+    );
+  }
 } catch (error) {
   failures.push(`could not drive the browser: ${error.message}`);
 } finally {
@@ -130,4 +207,7 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log("ok: fractions stack and radicals enclose, in Chrome");
+console.log(
+  "ok: fractions stack, radicals enclose, the embedded font loads and " +
+    "variables are italic, in Chrome",
+);

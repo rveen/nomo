@@ -1,0 +1,10 @@
+# Every upstream font file, by SHA-256, relative to web/vendor/.
+#
+# This is why the font itself need not be committed: what scripts/fetch-font.sh
+# obtains is provably the file this repository was built against, and a font that
+# drifted upstream says so rather than quietly changing how a worksheet is set.
+#
+# Regenerate after a deliberate version change:
+#   (cd web/vendor && sha256sum STIXTwoMath-Regular.woff2 OFL.txt)
+094191335def3f0452c81ec0713cfc2f29bb6af8cecbf79b60881fbf2db97562  STIXTwoMath-Regular.woff2
+0c8825913b60d858aacdb33c4ca6660a7d64b0d6464702efbb19313f5765861a  OFL.txt

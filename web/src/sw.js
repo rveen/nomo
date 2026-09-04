@@ -28,6 +28,11 @@ const SHELL = [
   "./style.css",
   "./bundle.js",
   "./nomo_wasm.wasm",
+  // The math font. Precached rather than left to the runtime cache below,
+  // because it is only requested once typesetting is switched on — so a reader
+  // who goes offline and *then* turns it on would otherwise get a fraction laid
+  // out by a font with no MATH table, which is the case this font exists to end.
+  "./fonts/stix-two-math-subset.woff2",
 ];
 
 self.addEventListener("install", (event) => {

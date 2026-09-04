@@ -32,7 +32,27 @@
   read from one table. Constants are marked upright, which is how ISO 80000-2
   sets π, e and ∞ and what distinguishes them from a variable of the same name.
 
-Design note §8.47.
+### Added
+
+- **The math font is shipped rather than named.** Typeset output is laid out
+  from a font's OpenType MATH table, and until now both stylesheets named fonts
+  that have one and hoped the reader's machine did too. `web/dist/` now carries
+  a 162 kB subset of STIX Two Math, precached by the service worker so it works
+  offline, with the named stack kept behind it as the fallback. The font is
+  fetched and hash-verified by `./scripts/fetch-font.sh` and **not committed** —
+  the same rule as the corpora — and subset by `web/font.mjs` using the harfbuzz
+  subsetter, which is an npm package rather than a third toolchain.
+- **`nomo html --font-url <url>`** references a font served beside the document,
+  and **`nomo html --embed-font <file>`** carries one inside it. The default is
+  unchanged: no `@font-face`, nothing fetched, one self-contained file.
+  `--embed-font` also embeds the licence file sitting beside the font, because a
+  document that carries a font redistributes it.
+
+MathJax was measured and declined: 850 kB of script plus 1.8 MB of fonts fetched
+at run time, which ends `nomo html`'s self-containment and makes typesetting
+asynchronous where printing is synchronous — to buy cross-browser consistency
+that MathML Core already provides for the repertoire this renderer emits. Design
+note §8.47 and §8.48.
 
 ## 0.2.1 — a font that can set the mathematics
 

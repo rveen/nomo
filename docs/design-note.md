@@ -3173,6 +3173,115 @@ forms, or mapping Greek in the linear renderer too — and the second changes th
 default output of `nomo render` and every one of the 29 golden snapshots, so it
 is a decision on its own rather than a tail of this one.
 
+### 8.48 The math font is shipped, not hoped for (2026-09-04)
+
+v0.2.1 fixed typeset output asking a font with no MATH table to lay out a
+fraction, by *naming* fonts that have one: Latin Modern Math, STIX Two Math,
+TeX Gyre Pagella Math, Cambria Math. That is an improvement over inheriting the
+monospace stack and it is still a hope. A reader with none of them installed
+gets the fraction bar thickness, the axis height, the script shifts and the
+stretchy bracket recipes guessed from ordinary text metrics — and nothing looks
+broken enough to report. `web/dist/` now ships a font, and the named stack stays
+behind it as the fallback it always was.
+
+**MathJax was measured and declined.** `mml-chtml.js` is 850 kB (238 kB
+gzipped) and its default font set is 1.8 MB across 105 woff2 files fetched at
+run time, plus 620 kB of dynamic ranges. That ends `nomo html`'s
+self-containment — the alternative being roughly a megabyte inlined per
+worksheet — and it makes typesetting asynchronous where printing is
+synchronous, so a Ctrl-P before `MathJax.startup.promise` settles prints raw
+MathML. What it buys is cross-browser consistency, which MathML Core in all
+three engines already provides for the repertoire this renderer emits: no big
+operators, no limits, no automatic line breaking. Revisit if any of those three
+arrive — MathML Core has no line breaking and MathJax does. KaTeX was declined
+for a different reason: it consumes LaTeX, so it would need a second emitter
+beside `render/mathml.rs`.
+
+**Which font, and where it comes from.** STIX Two Math, from
+`stipub/stixfonts` at tag `v2.13b171` — the newest tag carrying built fonts;
+later tags are source-only, and the project publishes no release assets at all.
+So a raw blob at a tag, which is byte-stable in the way THIRD-PARTY.md already
+says GitHub's generated tarballs are not. Fetched and hash-verified by
+`scripts/fetch-font.sh` against `scripts/fonts/upstream.sha256`, never
+committed: the same rule as the corpora and the same reason.
+
+**A subset, and what the subset is allowed to drop.** 552 kB down to 162 kB.
+Nearly all of the difference is the Mathematical Alphanumeric Symbols block, and
+it cannot simply be dropped — MathML Core italicises a one-character `<mi>` by
+`text-transform: math-auto`, which *remaps* the character into that block rather
+than slanting it, so a subset without it loses every italic variable (§8.47).
+But `math-auto` produces only the **italic** alphabets, and `render/mathml.rs`
+emits no `mathvariant` other than `normal`. The bold, script, fraktur,
+double-struck, sans and monospace alphabets are unreachable by anything this
+renderer can write, and they are the saving. If the renderer ever emits another
+`mathvariant`, `web/font.mjs`'s range list is what has to grow with it.
+
+The stretchy pieces are deliberately *not* enumerated. A tall bracket and a
+radical that grows are reached through the MATH table's variant records rather
+than through a character code, and hb-subset follows that closure: 45 vertical
+variants survive a list that names none of them. The MATH constants come
+through unchanged — `AxisHeight` 258, `FractionRuleThickness` 68.
+
+**hb-subset rather than fontTools**, because `subset-font` is harfbuzz compiled
+to WebAssembly and therefore an npm dependency of a build that already has node
+and esbuild, rather than a third toolchain. Pinned in `package-lock.json` by
+integrity hash, so the same input and the same range list give the same bytes.
+
+**The name says what it is.** A subset is a Modified Version under the OFL. The
+licence's Reserved Font Name is "TM Math" rather than "STIX", so keeping the
+original name would have been permitted — but STIX Fonts is an IEEE trademark
+and this file is not what that name refers to. It ships as
+`stix-two-math-subset.woff2` under the CSS family `STIX Two Math Subset`, which
+has a useful side effect: a reader whose machine has the *full* STIX Two Math
+keeps it as the next entry in the stack, for any character the subset lacks.
+
+**The licence travels with the bytes**, because the OFL requires it.
+`scripts/fetch-font.sh` fetches `OFL.txt` alongside the font and the build
+copies it into `web/dist/fonts/`; `--embed-font` writes the same text into the
+document as an HTML comment. A comment rather than anything visible: it is a
+term of the font's licence, not part of the worksheet, and an engineer printing
+a calculation should not find four kilobytes of licence appended to it.
+
+**Three font policies, because they are three different trades.**
+`RenderOptions::font` is `Named` (the default — name a stack, fetch nothing, stay
+a self-contained file that renders offline), `Url` (reference a font served
+beside the document, for a set of pages that share one file), or `Embedded`
+(carry it, self-contained *and* certain, at 240 kB for a worksheet that was 17).
+Two CLI flags rather than one that inspects its argument: referencing a font and
+carrying one are different decisions, and a flag whose meaning depends on
+whether a path happens to exist is a flag that does the wrong thing quietly.
+
+The bytes arrive already read. `nomo-core` does no I/O and
+`check-no-host-math.sh` enforces it, so the caller reads the file and the
+renderer base64-encodes it. That encoder is twenty lines in
+`render/base64.rs` rather than a dependency, gated on RFC 4648 §10's vectors,
+which exist precisely because the padding is where an encoder written from the
+description goes wrong.
+
+**What is now gated that was not.** §8.47 measured Chrome's `math-auto` by hand
+and deliberately did not gate it, because the width it produces depended on the
+machine having a math font. It does not any more: `check-mathml.mjs` renders
+with `--embed-font`, waits for `document.fonts.ready`, and asks whether the same
+letter sets to different widths as a bare `<mi>` and an upright one. It also
+asks whether the embedded face actually *loaded* — a stack that resolves to
+nothing reports the same family string as one that resolves to the shipped font,
+so the layout check alone could never tell. Both were confirmed to fail against
+a page rendered without the flag. `check-assist.mjs` asks the same of the
+editor, which is a different path: the `@font-face` there is in `web/style.css`
+and the file is served from the origin.
+
+The service worker precaches the font rather than leaving it to the runtime
+cache, because it is only requested once typesetting is switched on — a reader
+who goes offline and *then* toggles it would otherwise get exactly the fallback
+this work exists to end. It is also in the digest that names the cache, for the
+same reason everything else in the shell is.
+
+**What this does not do.** The gallery still renders untypeset, so it does not
+yet use the font. Turning `--mathml` on for the published examples is a
+separate decision, and it is gated on the loose end §8.47 left: the constructs
+with no typeset form fall back to linear text that has no Greek table, so a
+gallery turned on today would show `λ` on one line and `lambda` on the next.
+
 ### 8.8 Strategy: corpus-driven
 
 Build the importer as a separate crate emitting the Nomo document format, then run it across every

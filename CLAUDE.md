@@ -30,7 +30,7 @@ ranking.
 | `crates/nomo-cli/` | `nomo render`, `html`, `check`, `test`. |
 | `crates/nomo-wasm/` | The C-ABI wrapper the browser build loads. |
 | `crates/nomo-smath/` | The SMath `.sm` importer: reader, expression reduction, emitter, coverage report, and the stored-answer oracle. |
-| `web/` | The browser editor (CodeMirror 6). |
+| `web/` | The browser editor (CodeMirror 6), and `font.mjs`, which subsets the math font `dist/` ships. |
 | `tests/golden/` | Byte-exact snapshots of every worksheet under `examples/`. |
 | `tests/corpus/` | Per-worksheet baselines for the SMath corpora — the importer's regression gate. |
 | `corpora/` | The SMath worksheets the importer is measured against. Third-party, no redistribution terms, **gitignored** — `./scripts/fetch-corpora.sh` obtains them and verifies them against the hashes in `scripts/corpora/`. See THIRD-PARTY.md. |
@@ -47,6 +47,7 @@ cargo run -p nomo-cli -- test           # golden-file suite; --write to accept
 ./scripts/compare-targets.sh             # native vs WebAssembly, byte-exact
 ./scripts/compare-arch.sh                # x86-64 vs aarch64 (needs qemu-user)
 ./scripts/fetch-corpora.sh               # obtain the SMath corpora; --verify to check only
+./scripts/fetch-font.sh                  # obtain the math font; --verify to check only
 ./scripts/check-corpus.sh                # SMath import regression gate; --write to accept
 ./scripts/build-web.sh                   # front end
 ```

@@ -7,7 +7,7 @@ complex numbers, plots, several curves on one plot, a plot of a table of
 measured points, the importer's side of it, a definition that is really a
 function of `x`, prose as Markdown (§8.41), the v0.1.0 release, labelled axes,
 the v0.2.0 release, the v0.2.1 release, and Greek letters in the typeset
-columns (§8.47).
+columns (§8.47), and the math font the output is set in (§8.48).
 
 **A four-step plan for typographic quality is under way (2026-09-04).** It was
 costed against the alternative of shipping MathJax, which was measured and
@@ -20,27 +20,34 @@ of those three arrive. The steps, in order:
 
 1. **Greek names and the italic/upright discipline** — **done**, §8.47. No
    dependency at all.
-2. **Self-host one math font.** STIX Two Math subset to **238 KB** as woff2,
-   fetched and hash-verified by `build-web.sh` the way `fetch-corpora.sh` does
-   it, listed in `NOTICE` under OFL 1.1, never committed. Measured on this
-   machine: the full face is 552 KB; the subset must keep U+1D400–1D7FF or
-   italic identifiers break, because MathML Core italicises by remapping into
-   the Math Alphanumerics block, and 48 KB is what dropping it would save. The
-   OpenType MATH table survives `fontTools.subset` — verified, `AxisHeight` 258
-   and 10 vertical glyph variants retained. The editor and the gallery share one
-   file; standalone `nomo html` keeps the named stack as its fallback with an
-   opt-in to embed.
+2. **Self-host one math font** — **done**, §8.48. STIX Two Math from
+   `stipub/stixfonts` at tag `v2.13b171`, fetched and hash-verified by
+   `scripts/fetch-font.sh`, subset from 552 KB to **162 KB** by `web/font.mjs`,
+   shipped as `stix-two-math-subset.woff2` with `OFL.txt` beside it. Came in
+   below the 238 KB estimate because `math-auto` produces only the *italic*
+   alphabets, so the bold, script, fraktur, double-struck, sans and monospace
+   ranges of U+1D400–1D7FF are unreachable and were dropped. hb-subset via the
+   `subset-font` npm package rather than fontTools, so the build gains no third
+   toolchain. `nomo html` gained `--font-url` and `--embed-font`.
 3. **A text face to match the mathematics** — STIX Two Text Regular, Italic and
-   SemiBold subset to **134 KB** together, measured the same way. Prose and
+   SemiBold subset to **134 KB** together, measured on this machine. Prose and
    mathematics from one design is most of what quality means on a page that gets
-   printed and signed.
+   printed and signed. The fetch, hash and subset machinery step 2 built is what
+   this reuses.
 4. **No MathJax.**
 
 **Where the last session stopped, and what it left.** Everything below is
 committed and pushed, and every gate named here is green. Three things are
 pending, in the order they are worth doing:
 
-1. **Steps 2 and 3 of the plan above.**
+1. **Step 3 of the plan above**, and the loose end step 1 left: the constructs
+   with no typeset form fall back to linear text that has no Greek table, so a
+   worksheet draws `λ` on the lines that typeset and `lambda` inside the
+   `<mtext>` of the lines that do not. Closing it means either giving those
+   constructs typeset forms, or mapping Greek in the linear renderer too — and
+   the second changes the default output of `nomo render` and all 29 golden
+   snapshots, so it is a decision on its own. **The gallery is not typeset until
+   this is settled**, which is why it does not yet use the shipped font.
 2. **The importer's plot configuration.** `XYPlot'Labels'XLabel` and
    `Traces#n'Name` are still refused, and the reason they were refused is gone:
    the language can say them now. Before translating, three things need
@@ -74,7 +81,12 @@ installed on this machine. CI's `arm64` job covers it.
 | — The gallery, and migration shown | **done** | `build-gallery.sh` renders every example into a browsable set of self-contained pages, and `docs/smath.md` finally *shows* an import: an SMath worksheet written here — ours to publish, unlike the corpora — beside what Nomo makes of it and what it computes. That fixture is also the only importer test that runs without the corpora |
 | — How-to worksheets | **six of six** | `bolt`, `shaft`, `column`, `bearing`, `spring`, `vessel` — a bolted joint, a shaft in combined bending and torsion, a column across the buckling transition, bearing life, a compression spring against six constraints, and a pressure vessel worked thin-wall and thick-wall side by side. The first worksheets written *for* the language rather than to exercise it; their acceptance is an engineer agreeing with the method rather than a green gate. Each says what it leaves out |
 | — The editor assists | **done** | Completion offering a name with what it holds and a unit with its dimension, hover saying what a name is, F12 to its definition, and a Typeset toggle that puts §18's MathML where a reader actually looks. All from the engine's own symbol table — no second parser in the front end. **Multiple open documents is the one piece not built**; the boundary already supports it and the reason is below |
-| — Typeset output | **first phase done** | `nomo html --mathml` renders the symbolic and substituted columns as MathML: division becomes a fraction, a power a superscript, `sqrt` a radical, and a bracket the fraction bar makes unnecessary is dropped. Off by default. `check-mathml.mjs` asks Chrome where the numerator ended up, because a browser without MathML draws it *beside* the denominator rather than failing. `math` names a math-font stack in both stylesheets instead of inheriting `.step`'s monospace: MathML layout reads the fraction bar, the axis and the script shifts from an OpenType MATH table, and the fonts are named, never fetched. **Second phase:** a name that spells a Greek letter is set as one — `sigma_allow` draws as σ_allow — which is also what gets the italic right, since MathML Core italicises a one-character `<mi>` and leaves a word upright, and that is ISO 80000-2's rule for a symbol and its descriptive subscript. The letter is Unicode's for that name rather than TeX's, so `phi` and a typed `φ` agree; a name maps only where the Greek glyph differs from the Latin one, which reproduces TeX's uppercase set and its omicron gap. Constants are upright and now come from the renderer's own table, so `pi` no longer typesets as the word `pi` beside a text column showing π. The name column is typeset with the rest of the line. Design note §8.47 |
+| — Typeset output | **first phase done** | `nomo html --mathml` renders the symbolic and substituted columns as MathML: division becomes a fraction, a power a superscript, `sqrt` a radical, and a bracket the fraction bar makes unnecessary is dropped. Off by default. `check-mathml.mjs` asks Chrome where the numerator ended up, because a browser without MathML draws it *beside* the denominator rather than failing. `math` names a math-font stack in both stylesheets instead of inheriting `.step`'s monospace: MathML layout reads the fraction bar, the axis and the script shifts from an OpenType MATH table, and the fonts are named, never fetched. **Third phase (§8.48):** the font is
+*shipped* rather than named — a 162 kB subset of STIX Two Math, fetched and
+hash-verified rather than committed, precached by the service worker, with the
+named stack behind it as the fallback. `nomo html` gained `--font-url` and
+`--embed-font`; the default still writes no `@font-face` and stays one
+self-contained file. **Second phase:** a name that spells a Greek letter is set as one — `sigma_allow` draws as σ_allow — which is also what gets the italic right, since MathML Core italicises a one-character `<mi>` and leaves a word upright, and that is ISO 80000-2's rule for a symbol and its descriptive subscript. The letter is Unicode's for that name rather than TeX's, so `phi` and a typed `φ` agree; a name maps only where the Greek glyph differs from the Latin one, which reproduces TeX's uppercase set and its omicron gap. Constants are upright and now come from the renderer's own table, so `pi` no longer typesets as the word `pi` beside a text column showing π. The name column is typeset with the rest of the line. Design note §8.47 |
 | — Complex vectors | **done** | A vector literal with a complex element is a complex vector: elementwise arithmetic, `sum`, `abs`/`arg`/`Re`/`Im`/`conj`, indexing. Everything else refuses by name — the alternative was an aggregate seeing an empty collection and answering, which is how `sort` gave back `[]`. A complex *matrix* is still not built. Nine exhaustive matches, exactly as §8.40 predicted for a second value tower |
 | — Eigenvalues | **done** | `eigenvalues(m)` and `eigenvectors(m)` for a symmetric matrix, by cyclic Jacobi at a fixed twelve sweeps. Exactly symmetric or refused, with the remedy named — a nearly-symmetric matrix is the heuristic zero-test §8.40 refuses. `examples/shaft.nomo` now computes its principal stresses and checks them against the Tresca stress it already had, which is an independent check of the solver inside a real calculation |
 | — Initial value problems | **first phase done** | `rk4(f, y0, a, b, steps)` integrates `y' = f(x, y)` at a fixed step and answers with a table `plot` can draw and `linterp` can read. The method is named and the step count stated because both change the answer. First-order and scalar only. `examples/transient.nomo` checks it against a case whose answer is known: 6 µK at fifty steps, 0.14 K at five |
@@ -93,7 +105,7 @@ installed on this machine. CI's `arm64` job covers it.
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Prose as Markdown | **block level done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline formatting is not built and `_` emphasis never will be. Design note §8.41, `examples/prose.nomo` |
 
-656 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+658 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -108,7 +120,9 @@ does not survive it, and then:
    they are the fastest way to learn what this repository considers true. The
    corpora are third-party and are not in git — run `./scripts/fetch-corpora.sh`
    once and the `check-corpus.sh` lines work from a clean checkout; set
-   `CORPUS_ROOT` if the worksheets are somewhere else. See THIRD-PARTY.md.
+   `CORPUS_ROOT` if the worksheets are somewhere else. The math font is the same
+   arrangement — `./scripts/fetch-font.sh`, which `build-web.sh` runs for you.
+   See THIRD-PARTY.md.
 2. **The next piece of work is named** under "What is worth doing next". The
    item that stood there longest — what span an SMath `<plot>` was drawn over —
    is answered: it was read out of `PlotRegion.dll` and checked against six
@@ -128,7 +142,7 @@ does not survive it, and then:
 
 ```bash
 cd /files/work/nomo
-cargo test --workspace                                  # 656 tests
+cargo test --workspace                                  # 658 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ./scripts/check-no-host-math.sh                         # determinism guard
@@ -151,6 +165,8 @@ cargo run --release -p nomo-cli -- bench               # timings; a report, exit
                                                         # check-recovery.mjs, which assert
                                                         # what only a browser can see
 
+./scripts/fetch-font.sh                                 # the math font, likewise; run by
+                                                        # build-web.sh
 ./scripts/fetch-corpora.sh                              # the corpora are third-party and
                                                         # are not committed; this brings
                                                         # them down and hash-verifies them.
@@ -268,7 +284,7 @@ The whole tag run took under two minutes: 26–50 s per binary and 29 s for the
 module, so the cost of releasing is not a reason to release less often.
 
 Before it was cut, every gate that can run on a development machine was run
-here: 656 tests, 29 snapshots, native and WebAssembly byte-identical, 114 corpus
+here: 658 tests, 29 snapshots, native and WebAssembly byte-identical, 114 corpus
 worksheets unmoved, nine browser checks. `compare-arch.sh` was not among them —
 `qemu-user` is not installed here — and CI's `arm64` job is what covers it.
 

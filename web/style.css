@@ -159,16 +159,35 @@ footer p { margin: 0; }
   white-space: nowrap;
 }
 
+/* The math font this application ships, rather than one it hopes to find.
+   MathML layout reads the fraction bar thickness, the axis height, the script
+   shifts and the stretchy bracket recipes from an OpenType MATH table, and
+   without one the browser guesses all of them from ordinary text metrics —
+   which is what a reader with no math font installed used to get.
+
+   A subset of STIX Two Math, built by `web/font.mjs` from a file
+   `scripts/fetch-font.sh` obtains and hash-verifies. It is not committed and
+   it is not fetched at run time from anyone else's server: it is served from
+   this origin, precached by the service worker, and works offline like the
+   rest of the application.
+
+   `swap` because the fallback stack below is a real math font on most
+   machines: a reader should see the formula immediately in whatever they have
+   and get the shipped face when it arrives, rather than looking at nothing. */
+@font-face {
+  font-family: "STIX Two Math Subset";
+  src: url("fonts/stix-two-math-subset.woff2") format("woff2");
+  font-display: swap;
+}
+
 /* A formula sits taller than a line of text, so the rows need room to breathe
-   when typesetting is on. The font is the other half of it: MathML layout reads
-   the fraction bar, the axis, the script shifts and the stretchy brackets from
-   an OpenType MATH table, and without one the browser guesses from ordinary
-   text metrics. Named, never fetched, with the `math` generic last so a
-   platform can offer its own. */
+   when typesetting is on. The stack keeps every name it had: the shipped subset
+   first, then whatever the platform offers for anything outside it — a name in
+   an alphabet the subset does not carry falls back rather than showing a box. */
 #output math {
   font-size: 1.05em;
-  font-family: "Latin Modern Math", "STIX Two Math", "TeX Gyre Pagella Math",
-               "Cambria Math", math;
+  font-family: "STIX Two Math Subset", "Latin Modern Math", "STIX Two Math",
+               "TeX Gyre Pagella Math", "Cambria Math", math;
 }
 
 #output .prose { margin: 1.1rem 0 0.4rem; color: #999; }

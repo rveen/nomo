@@ -1111,6 +1111,24 @@ names stay yours to use. The uppercase names that do map are `Gamma`, `Delta`,
 **Units are never read as Greek names.** `psi` is pounds per square inch, and it
 draws upright as `psi`.
 
+**The font is part of the layout, not a matter of taste.** MathML reads the
+fraction bar thickness, the axis height, the script shifts and the stretchy
+bracket recipes from a font's OpenType MATH table, and a font without one leaves
+the browser guessing them. The editor ships one and uses it. `nomo html` has
+three choices:
+
+| | What the document does | Self-contained |
+|---|---|---|
+| *(default)* | names fonts the reader's machine may have | yes |
+| `--font-url <url>` | references a font served beside it | no |
+| `--embed-font <file>` | carries the font inside it | yes |
+
+The default keeps `nomo html` what it has always been — one file that fetches
+nothing — but it cannot promise the reader has a math font. `--embed-font` is
+the one that can: it costs the font's size in every file, and it embeds the
+licence file sitting beside the font along with it, because a document that
+carries a font redistributes it.
+
 Italic and upright follow ISO 80000-2, and you get them by writing the name the
 way you would say it: a single-letter symbol is italic, and a word is upright.
 That is why `sigma_allow` comes out as an italic σ with an upright `allow` —

@@ -48,7 +48,7 @@ pub use graph::DepGraph;
 pub use plot::{PlotValue, Series};
 pub use prose::Block;
 pub use quantity::{Kind, Quantity};
-pub use render::{RenderOptions, Renderer};
+pub use render::{MathFont, RenderOptions, Renderer};
 pub use resource::{Image, Reference, Resources, Size};
 pub use span::Span;
 pub use trace::{Trace, TraceNode};

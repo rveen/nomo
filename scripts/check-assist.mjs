@@ -20,6 +20,8 @@ const TYPES = {
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".wasm": "application/wasm",
+  // The math font the typeset columns are laid out with.
+  ".woff2": "font/woff2",
 };
 
 try {
@@ -208,6 +210,24 @@ try {
     `the toggle should produce a real fraction, got ${JSON.stringify(stacked)}`,
   );
 
+  // The font this application ships, not one it hopes the machine has. The
+  // fraction above stacks either way — MathML Core lays it out from *some*
+  // font's metrics — so the layout check cannot tell whether the shipped face
+  // arrived, and on a developer's machine with STIX installed nothing would
+  // ever look wrong. This is the assertion that fails on a machine with no math
+  // font, which is the reader this font exists for.
+  await browser.evaluate("document.fonts.ready.then(() => true)");
+  check(
+    JSON.parse(
+      await browser.evaluate(`
+        JSON.stringify([...document.fonts].some(
+          (f) => f.family === "STIX Two Math Subset" && f.status === "loaded"))
+      `),
+    ),
+    "the shipped math font did not load in the editor — typeset output then " +
+      "falls back to whatever the machine happens to have, or to no MATH table",
+  );
+
   await browser.evaluate(`document.querySelector("#typeset").click()`);
   await waitFor(
     browser,
@@ -228,7 +248,10 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log("ok: completion offers, hover explains, and F12 finds the definition");
+console.log(
+  "ok: completion offers, hover explains, F12 finds the definition, and " +
+    "the typeset toggle loads the shipped math font",
+);
 
 /** Replace the whole document, the way a user would: select all, then type. */
 async function replaceDocument(browser, text) {

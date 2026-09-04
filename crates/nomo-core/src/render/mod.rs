@@ -22,6 +22,7 @@
 //! product. Rendering therefore tracks precedence and adds parentheses where the
 //! substituted text would otherwise regroup — `(5 cm)²`, never `5 cm²`.
 
+pub mod base64;
 pub mod html;
 pub mod mathml;
 pub mod number;
@@ -51,6 +52,43 @@ pub struct RenderOptions {
     /// Include the substituted-values column. Turning it off gives a terse
     /// `name = result` listing.
     pub show_substitution: bool,
+    /// Where the mathematics gets the font it is laid out with.
+    pub font: MathFont,
+}
+
+/// How a rendered document obtains the font its mathematics is set in.
+///
+/// MathML layout reads the fraction bar thickness, the axis height, the script
+/// shifts and the stretchy bracket recipes from a font's OpenType MATH table.
+/// Naming a stack and hoping is what this used to do, and it is still the
+/// default, because it is the only option that keeps the artifact a single file
+/// that fetches nothing.
+///
+/// The bytes arrive already read: this crate does no I/O, and
+/// `scripts/check-no-host-math.sh` enforces it. The caller reads the file.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum MathFont {
+    /// Name a stack of fonts the reader's machine may have, and fetch nothing.
+    ///
+    /// The document stays self-contained and renders offline, which is what
+    /// `nomo html` has always promised. What it cannot promise is that any of
+    /// the named fonts is installed.
+    #[default]
+    Named,
+    /// Reference a font served beside the document.
+    ///
+    /// For a set of pages that share one file — the gallery — rather than
+    /// carrying a copy each. The document is no longer self-contained, which is
+    /// why this is never the default.
+    Url(String),
+    /// Carry the font in the document as a `data:` URI.
+    ///
+    /// Self-contained *and* certain to render, at the cost of the font's size in
+    /// every file. `notice` is the licence text the font is offered under,
+    /// written into the document as a comment: a document that embeds a font
+    /// redistributes it, and most font licences — the SIL Open Font License
+    /// among them — require their terms to travel with the bytes.
+    Embedded { woff2: Vec<u8>, notice: String },
 }
 
 impl Default for RenderOptions {
@@ -59,6 +97,7 @@ impl Default for RenderOptions {
             numbers: NumberFormat::default(),
             mathml: false,
             show_substitution: true,
+            font: MathFont::Named,
         }
     }
 }

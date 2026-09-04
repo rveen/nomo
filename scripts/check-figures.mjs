@@ -31,6 +31,8 @@ const TYPES = {
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".wasm": "application/wasm",
+  // The math font the typeset columns are laid out with.
+  ".woff2": "font/woff2",
 };
 
 // A 2×1 PNG. Small enough to type into the editor the way a user would, which

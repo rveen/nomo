@@ -27,6 +27,12 @@ echo "==> engine"
 cargo build -p nomo-wasm --release --target wasm32-unknown-unknown
 node scripts/check-wasm.mjs
 
+echo "==> math font"
+# Fetched and hash-verified rather than committed, and subset by the front-end
+# build that follows. Typeset output needs a font with an OpenType MATH table;
+# naming one and hoping the reader has it is what this replaces.
+./scripts/fetch-font.sh
+
 echo "==> front end"
 if [ ! -d web/node_modules ]; then
     (cd web && npm install --no-audit --no-fund)

@@ -43,6 +43,44 @@ trustworthy. A `file://` mirror built from corpora already on disk is also how
 the fetch path is tested without asking anything of the upstream sites; the
 recipe is in `docs/STATUS.md`.
 
+## The math font
+
+Typeset output is laid out from a font's OpenType MATH table — the fraction bar
+thickness, the axis height, the script shifts, the stretchy bracket recipes.
+Naming fonts and hoping the reader's machine had one is what the stylesheets did
+until v0.3.0; `web/dist/` now ships a subset of **STIX Two Math**.
+
+```bash
+./scripts/fetch-font.sh          # download and verify
+./scripts/fetch-font.sh --verify # check what is already there
+```
+
+`web/vendor/` is gitignored. What *is* committed is the provenance — the URL
+each file comes from and its SHA-256, under `scripts/fonts/` — so the font a
+build is made from is provably the one this repository was built against.
+
+| File | Source | Terms |
+|---|---|---|
+| `STIXTwoMath-Regular.woff2` | <https://github.com/stipub/stixfonts> at tag `v2.13b171` | Copyright 2001-2021 The STIX Fonts Project Authors, with Reserved Font Name "TM Math". [SIL Open Font License 1.1](https://scripts.sil.org/OFL). STIX Fonts™ is a trademark of the IEEE. |
+
+A raw blob at a *tag* rather than a release asset: stipub/stixfonts publishes no
+release assets, and its built fonts live only in the git tree. `v2.13b171` is the
+newest tag carrying them; later tags are source-only.
+
+**What ships is a subset, and it is renamed.** `web/font.mjs` reduces the face
+from 552 kB to 162 kB with the harfbuzz subsetter, and the result ships as
+`stix-two-math-subset.woff2` under the CSS family `STIX Two Math Subset`. A
+subset is a Modified Version under the OFL. The licence's Reserved Font Name is
+"TM Math" rather than "STIX", so keeping the original name would have been
+permitted — but STIX Fonts is an IEEE trademark and the subset is not what that
+name refers to, so it says what it is instead. A reader whose machine has the
+full STIX Two Math keeps it as the next entry in the CSS stack, for any
+character the subset does not carry.
+
+**The licence travels with the font**, as the OFL requires: `OFL.txt` is fetched
+alongside it and copied into `web/dist/fonts/`, and `nomo html --embed-font`
+writes the same text into any document it embeds a font into.
+
 ## Two industrial worksheets, no longer here
 
 Development used two real engineering worksheets from an on-board-charger

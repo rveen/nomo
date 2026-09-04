@@ -579,6 +579,19 @@ impl<'a> Renderer<'a> {
 
     /// Format one quantity with a unit.
     pub fn quantity(&self, q: &Quantity, target: Option<&DisplayTarget>) -> String {
+        let (magnitude, symbol) = self.quantity_parts(q, target);
+        join(magnitude, &symbol)
+    }
+
+    /// The same, before the two halves are joined.
+    ///
+    /// The magnitude and the unit symbol as written, with the symbol empty for
+    /// a dimensionless quantity. [`quantity`](Self::quantity) is this plus
+    /// [`join`]; a caller that means to *set* the two separately — the MathML
+    /// renderer, which makes the number an `<mn>` and the unit an upright
+    /// `<mi>` — needs them apart, and needs the symbol before
+    /// [`superscript_exponents`] has turned `m^2` into text.
+    pub fn quantity_parts(&self, q: &Quantity, target: Option<&DisplayTarget>) -> (String, String) {
         if let Some(t) = target {
             let magnitude = match &t.unit {
                 // Only a named unit can carry an offset, so this is the only
@@ -590,17 +603,51 @@ impl<'a> Renderer<'a> {
                 || t.span.text(self.source).to_string(),
                 |u| u.symbol.clone(),
             );
-            return join(number::format(magnitude, &self.numbers), &symbol);
+            return (number::format(magnitude, &self.numbers), symbol);
         }
 
         if q.is_dimensionless() {
-            return number::format(q.value, &self.numbers);
+            return (number::format(q.value, &self.numbers), String::new());
         }
         // No unit was requested, so fall back to a coherent SI name if one
         // exists, and to raw base dimensions otherwise.
+        let magnitude = number::format(q.value, &self.numbers);
         match self.units.preferred_for(&q.dim) {
-            Some(u) => join(number::format(q.value, &self.numbers), &u.symbol),
-            None => join(number::format(q.value, &self.numbers), &q.dim.to_string()),
+            Some(u) => (magnitude, u.symbol.clone()),
+            None => (magnitude, q.dim.to_string()),
+        }
+    }
+
+    /// What a substituted name holds, as a magnitude and a unit symbol.
+    ///
+    /// `None` when the value is not a plain scalar. A vector, a matrix, a
+    /// string and a complex number are not "a number and a unit", and the
+    /// renderer that asks this keeps showing those as running text.
+    ///
+    /// The target branch mirrors [`Self::walk`]'s rather than
+    /// [`Self::quantity_parts`]'s, because they differ: a conversion that fails
+    /// here falls back to the factor, where a result column shows `NaN`. Two
+    /// columns of one line must not disagree about a value, so this follows the
+    /// one it belongs to.
+    pub fn substituted_parts(&self, trace: &Trace) -> Option<(String, String)> {
+        let TraceNode::Variable { unit, .. } = &trace.node else {
+            return None;
+        };
+        let value = trace.value.as_ref().ok()?;
+        let q = value.as_scalar()?;
+        match unit {
+            Some(t) => {
+                let symbol = t.unit.as_ref().map_or_else(
+                    || t.span.text(self.source).to_string(),
+                    |u| u.symbol.clone(),
+                );
+                let magnitude = match &t.unit {
+                    Some(u) => q.to_unit(u).unwrap_or(q.value / t.factor),
+                    None => q.value / t.factor,
+                };
+                Some((number::format(magnitude, &self.numbers), symbol))
+            }
+            None => Some(self.quantity_parts(&q, None)),
         }
     }
 
@@ -915,7 +962,7 @@ fn join(magnitude: String, symbol: &str) -> String {
 
 /// Rewrite `m^3` as `m³` inside a unit symbol, so units match the superscripts
 /// already used in expressions.
-fn superscript_exponents(symbol: &str) -> String {
+pub(crate) fn superscript_exponents(symbol: &str) -> String {
     const DIGITS: [char; 10] = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
     let mut out = String::with_capacity(symbol.len());
     let mut chars = symbol.chars().peekable();

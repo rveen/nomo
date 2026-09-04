@@ -7,7 +7,7 @@ complex numbers, plots, several curves on one plot, a plot of a table of
 measured points, the importer's side of it, a definition that is really a
 function of `x`, prose as Markdown (§8.41), the v0.1.0 release, labelled axes,
 the v0.2.0 release, the v0.2.1 release, and Greek letters in the typeset
-columns (§8.47), the math font the output is set in (§8.48), the text face around it (§8.49), and the space a unit stands off its number by (§8.50).
+columns (§8.47), the math font the output is set in (§8.48), the text face around it (§8.49), the space a unit stands off its number by (§8.50), and the substituted column becoming mathematics (§8.51).
 
 **A four-step plan for typographic quality is under way (2026-09-04).** It was
 costed against the alternative of shipping MathJax, which was measured and
@@ -43,18 +43,15 @@ of those three arrive. The steps, in order:
 committed and pushed, and every gate named here is green. Three things are
 pending, in the order they are worth doing:
 
-1. **One typographic defect left** of the two the shipped fonts made visible
-   (§8.49): a relation between substituted values sets as `160≥105.5`, because
-   the operands are `<mtext>` and the `<mo>` between them is not getting a
-   relation's spacing. The other — `50mm` — is fixed in §8.50. And the loose end
-   step 1 left: the constructs
-   with no typeset form fall back to linear text that has no Greek table, so a
-   worksheet draws `λ` on the lines that typeset and `lambda` inside the
-   `<mtext>` of the lines that do not. Closing it means either giving those
-   constructs typeset forms, or mapping Greek in the linear renderer too — and
-   the second changes the default output of `nomo render` and all 29 golden
-   snapshots, so it is a decision on its own. **The gallery is not typeset until
-   this is settled**, which is why it does not yet use the shipped font.
+1. **A typeset form for the conditional**, which is the last thing standing
+   between the gallery and being typeset. §8.51 measured what actually falls
+   back: of 342 whole-expression fallbacks across `examples/`, 135 were
+   conversions (fixed), 191 are substituted values that are `<mtext>` by design,
+   and **16 are conditionals**. A case brace is the standard notation for one.
+   Mapping Greek in the linear renderer was considered and **rejected** — the
+   gap is 16 lines, and a displayed name must round-trip, which `λ` does not
+   (§8.51). **The gallery is not typeset until this is done**, which is why it
+   does not yet use the shipped font.
 2. **The importer's plot configuration.** `XYPlot'Labels'XLabel` and
    `Traces#n'Name` are still refused, and the reason they were refused is gone:
    the language can say them now. Before translating, three things need
@@ -88,7 +85,13 @@ installed on this machine. CI's `arm64` job covers it.
 | — The gallery, and migration shown | **done** | `build-gallery.sh` renders every example into a browsable set of self-contained pages, and `docs/smath.md` finally *shows* an import: an SMath worksheet written here — ours to publish, unlike the corpora — beside what Nomo makes of it and what it computes. That fixture is also the only importer test that runs without the corpora |
 | — How-to worksheets | **six of six** | `bolt`, `shaft`, `column`, `bearing`, `spring`, `vessel` — a bolted joint, a shaft in combined bending and torsion, a column across the buckling transition, bearing life, a compression spring against six constraints, and a pressure vessel worked thin-wall and thick-wall side by side. The first worksheets written *for* the language rather than to exercise it; their acceptance is an engineer agreeing with the method rather than a green gate. Each says what it leaves out |
 | — The editor assists | **done** | Completion offering a name with what it holds and a unit with its dimension, hover saying what a name is, F12 to its definition, and a Typeset toggle that puts §18's MathML where a reader actually looks. All from the engine's own symbol table — no second parser in the front end. **Multiple open documents is the one piece not built**; the boundary already supports it and the reason is below |
-| — Typeset output | **first phase done** | `nomo html --mathml` renders the symbolic and substituted columns as MathML: division becomes a fraction, a power a superscript, `sqrt` a radical, and a bracket the fraction bar makes unnecessary is dropped. Off by default. `check-mathml.mjs` asks Chrome where the numerator ended up, because a browser without MathML draws it *beside* the denominator rather than failing. `math` names a math-font stack in both stylesheets instead of inheriting `.step`'s monospace: MathML layout reads the fraction bar, the axis and the script shifts from an OpenType MATH table, and the fonts are named, never fetched. **Third phase (§8.48):** the font is
+| — Typeset output | **first phase done** | `nomo html --mathml` renders the symbolic and substituted columns as MathML: division becomes a fraction, a power a superscript, `sqrt` a radical, and a bracket the fraction bar makes unnecessary is dropped. Off by default. `check-mathml.mjs` asks Chrome where the numerator ended up, because a browser without MathML draws it *beside* the denominator rather than failing. `math` names a math-font stack in both stylesheets instead of inheriting `.step`'s monospace: MathML layout reads the fraction bar, the axis and the script shifts from an OpenType MATH table, and the fonts are named, never fetched. **Fourth phase (§8.51):** a conversion is
+transparent rather than a fallback, which is most of what typeset output ever
+fell back on; the substituted column is set as a number and a unit rather than
+as running text, so a unit exponent is a real superscript and `8.427e-5` is
+8.427 × 10⁻⁵; and every operator states its own spacing, because `<mtext>` is
+space-like in MathML and an operator beside it was getting none. Two `<msup>`
+arity bugs fell out, one of them present since step 18. **Third phase (§8.48):** the font is
 *shipped* rather than named — a 162 kB subset of STIX Two Math, fetched and
 hash-verified rather than committed, precached by the service worker, with the
 named stack behind it as the fallback. `nomo html` gained `--font-url` and
@@ -112,7 +115,7 @@ self-contained file. **Second phase:** a name that spells a Greek letter is set 
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Prose as Markdown | **block level done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline formatting is not built and `_` emphasis never will be. Design note §8.41, `examples/prose.nomo` |
 
-661 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+667 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -149,7 +152,7 @@ does not survive it, and then:
 
 ```bash
 cd /files/work/nomo
-cargo test --workspace                                  # 661 tests
+cargo test --workspace                                  # 667 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ./scripts/check-no-host-math.sh                         # determinism guard
@@ -291,7 +294,7 @@ The whole tag run took under two minutes: 26–50 s per binary and 29 s for the
 module, so the cost of releasing is not a reason to release less often.
 
 Before it was cut, every gate that can run on a development machine was run
-here: 661 tests, 29 snapshots, native and WebAssembly byte-identical, 114 corpus
+here: 667 tests, 29 snapshots, native and WebAssembly byte-identical, 114 corpus
 worksheets unmoved, nine browser checks. `compare-arch.sh` was not among them —
 `qemu-user` is not installed here — and CI's `arm64` job is what covers it.
 

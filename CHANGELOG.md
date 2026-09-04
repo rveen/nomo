@@ -63,6 +63,31 @@
 
 ### Fixed
 
+- **A conversion no longer hides the expression it converts.** `A = pi/4*d^2 ->
+  mm^2` has `Convert` at the top of its trace, and the typeset renderer fell
+  back for it — dropping the *whole* expression to running text. Since a
+  worksheet writes a conversion more often than not, that was most of what
+  typeset output ever fell back on: 135 of the 342 whole-expression fallbacks
+  across `examples/`. The linear renderer has always walked straight through a
+  conversion, because `-> mm^2` belongs to the result column.
+- **The substituted column is mathematics, not a caption.** It was `<mtext>` of
+  a formatted string, which cost three things at once: `<mtext>` is *space-like*
+  in MathML, so an operator beside it got no spacing at all and a comparison
+  read `160≥105.5`; a unit's `²` was a literal character where the symbolic
+  column beside it drew a real superscript; and `8.427e-5` is not how a typeset
+  document writes 8.427 × 10⁻⁵. All three are fixed. A vector, a matrix, a
+  string and a complex number are not "a number and a unit" and stay as text.
+- **Every operator states its own spacing.** Measured in Chrome against the
+  MathML operator dictionary — 5/18 em for a relation, 4/18 for a sum, 3/18 for
+  a product, which are TeX's values. Nothing changes where the operands are
+  ordinary markup; where one has to stay running text, the spacing no longer
+  depends on what it is made of.
+- **`<msup>` and `<msub>` are given the two children they take.** `(a+b)^2` has
+  been emitting a superscript with *six* children since typeset output was
+  built, so the bracket drew inside the exponent. A browser lays the extra
+  children out flat rather than failing, which is why it lasted. A substituted
+  quantity under a power is now bracketed as well: `(50 mm)²`, not `50 mm²`,
+  which is a different quantity.
 - **A unit stands off its number.** ISO 80000-1 requires a space between a
   numerical value and its unit symbol, and `ImplicitMul` emitted U+2062
   INVISIBLE TIMES, which is exactly zero wide — so `d = 50 mm` typeset as
@@ -76,7 +101,7 @@ MathJax was measured and declined: 850 kB of script plus 1.8 MB of fonts fetched
 at run time, which ends `nomo html`'s self-containment and makes typesetting
 asynchronous where printing is synchronous — to buy cross-browser consistency
 that MathML Core already provides for the repertoire this renderer emits. Design
-note §8.47 through §8.50.
+note §8.47 through §8.51.
 
 ## 0.2.1 — a font that can set the mathematics
 

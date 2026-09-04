@@ -1153,10 +1153,15 @@ the subscript describes the quantity, it is not one. Built-in constants are
 upright too: π, e and ∞ are set in roman, which is what distinguishes them from
 a variable of the same name.
 
-Constructs with no typeset form — a conditional, a conversion, a comparison —
-are carried through as the linear text instead, because a sentence in the middle
-of a formula beats a gap in the middle of a worksheet. That text has no Greek
-convention, so a name inside one of those is shown as written.
+The substituted column is set as the numbers and units it holds, so a unit's
+exponent is a real superscript and a value outside the range shown in full reads
+8.427 × 10⁻⁵ rather than `8.427e-5`. What is not a number and a unit — a vector,
+a matrix, a string, a complex number — is carried through as text.
+
+The **conditional** is the one construct with no typeset form. It is carried
+through as the linear text, because a sentence in the middle of a formula beats
+a gap in the middle of a worksheet. That text has no Greek convention, so a name
+inside a conditional is shown as written.
 
 The worksheets under `examples/` are drawn from this document, and their rendered
 output is committed in `tests/golden/` and compared byte for byte on every build

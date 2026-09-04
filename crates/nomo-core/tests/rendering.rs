@@ -466,6 +466,101 @@ fn the_plane_angle_degree_is_the_exception_the_standard_names() {
 }
 
 #[test]
+fn a_conversion_is_transparent_rather_than_a_fallback() {
+    // `-> mm^2` says what unit to show the *answer* in. It belongs to the
+    // result column and is echoed there, and the linear renderer walks straight
+    // through it — but the typeset renderer used to fall back for it, dropping
+    // the whole expression to running text. Since a worksheet writes
+    // `A = pi/4*d^2 -> mm^2` far more often than it writes anything without a
+    // conversion, that was most of what typeset output ever fell back on.
+    let out = typeset("d = 12 mm\nA = pi/4*d^2 -> mm^2\n");
+    assert!(
+        out.contains("<mfrac>"),
+        "a conversion hid a fraction: {out}"
+    );
+    assert!(
+        !out.contains("<mtext>π/4"),
+        "the expression fell back to text: {out}"
+    );
+}
+
+#[test]
+fn a_substituted_value_is_a_number_and_a_unit_rather_than_a_caption() {
+    // `<mtext>` is a *space-like* element in MathML, so an operator whose
+    // siblings are all space-like gets no spacing from the operator dictionary
+    // — which is how a comparison came to read `160≥105.5`. Setting the value
+    // as the number and unit it is fixes that, and gets the unit's exponent
+    // drawn as a real superscript at the same time.
+    let out = typeset("A = 84.27 mm^2\nF = 36 kN\ns = F/A\n");
+    assert!(
+        out.contains("<msup><mi mathvariant=\"normal\">m</mi><mn>2</mn></msup>"),
+        "the unit exponent should be a superscript: {out}"
+    );
+    assert!(
+        !out.contains("<mtext>36 kN</mtext>"),
+        "a substituted quantity should not be running text: {out}"
+    );
+}
+
+#[test]
+fn a_relation_is_spaced_whatever_its_operands_are_made_of() {
+    // Measured in Chrome: a relation between `<mn>` operands is set with 5/18em
+    // either side and between `<mtext>` operands with none. Asking for the
+    // spacing explicitly reproduces the first exactly and rescues the second.
+    let out = typeset("a = 160\nb = 105.5\nc = a >= b\n");
+    assert!(
+        out.contains("<mo lspace=\"0.278em\" rspace=\"0.278em\">&#8805;</mo>"),
+        "a relation should state its spacing: {out}"
+    );
+}
+
+#[test]
+fn a_power_of_ten_is_drawn_as_one() {
+    // `number::format` writes `8.427e-5` once a value leaves the range it shows
+    // in full. Right in a text column, wrong in a typeset one.
+    let out = typeset("x = 2.5e9\ny = x*2\n");
+    assert!(
+        out.contains("<msup><mn>10</mn><mn>9</mn></msup>"),
+        "the exponent should be a superscript: {out}"
+    );
+    assert!(!out.contains("2.5e9"), "the `e` notation survived: {out}");
+}
+
+#[test]
+fn a_base_that_is_more_than_one_element_is_wrapped_and_bracketed() {
+    // `<msup>` takes exactly two children. A bracketed base is five and a
+    // substituted quantity is seven, and a browser handed more lays them out
+    // flat rather than failing — `(a+b)^2` drew the bracket *inside* the
+    // superscript and `(50 mm)^2` came out as `50 mm2`.
+    let out = typeset("a = 2\nb = 3\nc = (a + b)^2\n");
+    assert!(
+        out.contains("<msup><mrow><mo>(</mo>"),
+        "a bracketed base should be wrapped: {out}"
+    );
+
+    // And a substituted quantity binds like the product it is drawn as, so it
+    // gets the brackets that say `(50 mm)²` rather than `50 mm²`.
+    let squared = typeset("d = 50 mm\nA = d^2\n");
+    assert!(
+        squared.contains("<msup><mrow><mo>(</mo><mn>50</mn>"),
+        "a substituted quantity under a power needs brackets: {squared}"
+    );
+}
+
+#[test]
+fn what_is_not_a_number_and_a_unit_stays_running_text() {
+    // A vector, a matrix, a string and a complex number are not "a magnitude
+    // and a unit". They keep `<mtext>`, and the explicit operator spacing is
+    // what stops them losing their spacing with it.
+    let out = typeset("v = [1 m, 2 m]\nw = v*2\n");
+    assert!(out.contains("<mtext>[1 m, 2 m]</mtext>"), "{out}");
+    assert!(
+        out.contains("<mo lspace=\"0.167em\" rspace=\"0.167em\">&#183;</mo>"),
+        "a product beside running text still needs its spacing: {out}"
+    );
+}
+
+#[test]
 fn a_typeset_line_is_set_whole_rather_than_half() {
     // The result, the `=` between the columns and the words `check` and `pass`
     // sit outside the `<math>` elements, so without this they keep `.step`'s

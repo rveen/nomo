@@ -3332,8 +3332,7 @@ columns line up — that is what monospace is for.
 and both in the markup rather than the typography:
 
 - A quantity written directly sets as `50mm` with no space. **Fixed — §8.50.**
-- A relation between substituted values sets as `160≥105.5`. The operands are
-  `<mtext>` and the `<mo>` between them is not getting a relation's spacing.
+- A relation between substituted values sets as `160≥105.5`. **Fixed — §8.51.**
 
 Neither is a font question, which is why neither is fixed here.
 
@@ -3378,6 +3377,78 @@ the output, and a browser that ignored it would set `6m` while every assertion
 about the markup still passed. `check-mathml.mjs` measures the gap between the
 number and the unit in the rendered page. Confirmed to fail with the rule
 disabled — it reports that there is no spaced juxtaposition to measure.
+
+### 8.51 The substituted column becomes mathematics (2026-09-04)
+
+Two things were left open after §8.47: which constructs still fall back to
+running text, and whether to close the gap by mapping Greek in the *linear*
+renderer instead. Measuring settled both, and the measurement changed the
+question.
+
+**Most of the fallback was a conversion, and it was never necessary.** Of 342
+whole-expression `<mtext>` fallbacks across `examples/`, the dominant cause was
+not the conditional but `->`. A line like `A = pi/4*d^2 -> mm^2` has `Convert`
+at the top of its trace, so the *entire* expression dropped to text. The linear
+renderer has always walked straight through a conversion — `render/mod.rs`,
+`Convert { value, .. } => self.walk(value, mode)` — because `-> mm^2` says what
+unit to show the answer in and belongs to the result column. One line makes the
+typeset renderer agree, and fallbacks drop from 342 to 207. Of the 207 left,
+**191 are substituted values**, which are `<mtext>` by design and not defects,
+and **16 are conditionals**. That is the whole of it.
+
+**So Greek in the linear renderer is not the answer, and would not have been.**
+The choice looked like a trade between two ways of closing a large gap; the gap
+is 16 lines. And the option is wrong on its own terms: a displayed name has to
+round-trip, and `λ` does not. The existing `pi` → `π` mapping is safe *because*
+`pi` and `π` are the same name — `eval.rs` matches `"pi" | "π"` — while `lambda`
+and `λ` are two names (§8.47). Mapping Greek in `nomo render` would print a name
+that, typed back into a worksheet, binds nothing, and would rewrite 29 golden
+snapshots to do it. The conditional gets a typeset form instead; that is still
+to build.
+
+**`<mtext>` is space-like, which is why `160≥105.5` had no spaces.** MathML
+treats `<mtext>` as a space-like element, and an operator whose siblings are all
+space-like gets no spacing from the operator dictionary. Measured in Chrome at
+36 px: a relation between `<mn>` operands is set with 5/18 em either side, a sum
+with 4/18, a product with 3/18 — TeX's values exactly — and between `<mtext>`
+operands, **zero**. The renderer now states those spacings itself. Where the
+operands are ordinary markup this changes nothing, because the numbers are the
+dictionary's own; where an operand must stay running text — a vector, a string,
+a complex number — the spacing no longer depends on what it is made of.
+
+**And the substituted column stops being a caption.** A substituted name held
+`<mtext>` of the string the linear renderer produced, which cost three things at
+once: the spacing above, a literal `²` where the symbolic column beside it drew
+a real `<msup>`, and `8.427e-5` where a typeset document writes 8.427 × 10⁻⁵.
+`Renderer::quantity_parts` hands back the magnitude and the unit symbol
+separately and the MathML renderer sets each. A unit symbol that is one name
+with an exponent becomes a superscript; anything else is set upright as it
+stands, because `docs/language.md` makes that a rule — a conversion target is
+echoed *as it was written*, so `kip*ft` keeps its `*`. What is not a magnitude
+and a unit — a vector, a matrix, a string, a complex number — keeps `<mtext>`.
+
+**Two arity bugs fell out of it, one of them older than this work.** `<msup>`
+and `<msub>` take exactly two children, and a browser handed more lays them out
+flat rather than failing. `(a+b)^2` has been emitting `<msup>` with *six*
+children since step 18 — the bracket drew inside the superscript — and it only
+became visible when a conversion stopped hiding such lines behind `<mtext>`.
+Both bases are wrapped now.
+
+The second was introduced here and caught by looking at the page: a substituted
+quantity is several elements, so `(50 mm)²` first came out as `50 mm2`. It needs
+the wrapper *and* brackets, because a quantity is a product — `50 mm²` is a
+different quantity from `(50 mm)²`. The linear renderer has always known this,
+its `Piece` carrying `PRODUCT` for a value with a unit; typeset output only
+needs it now that a conversion no longer arrives with the brackets already in
+the text. A number written as a power of ten binds the same way, for the same
+reason: `(2.5 × 10⁹)²` is not `2.5 × 10⁹²`.
+
+**What is still wrong here.** A complex value stays `<mtext>`, so `(3 + 4i)²`
+draws without its brackets — unchanged from before, and fixing it means the
+substituted column knowing what a complex number is, which is the same step as
+giving it a real `<mn>` and unit. And the result column is still a plain span,
+so a result in scientific notation reads `e-5` beside a substituted value that
+reads 10⁻⁵.
 
 ### 8.8 Strategy: corpus-driven
 

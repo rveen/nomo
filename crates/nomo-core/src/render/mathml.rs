@@ -86,11 +86,54 @@ fn precedence(node: &TraceNode) -> u8 {
 
 fn bracketed(r: &Renderer, trace: &Trace, linear: &str, least: u8, sub: bool) -> String {
     let inner = node(r, trace, linear, sub);
-    if precedence(&trace.node) < least {
+    if binding(r, trace, sub) < least {
         format!("<mo>(</mo>{inner}<mo>)</mo>")
     } else {
         inner
     }
+}
+
+/// How tightly a node binds *as it will be drawn*.
+///
+/// [`precedence`] reads the expression; this reads the rendering, and they
+/// differ in one place. A substituted name is an atom when it holds a bare
+/// number, and a *product* when it holds a number and a unit — `50 mm` is two
+/// things juxtaposed, so under a power it needs the brackets that say `(50 mm)²`
+/// and not `50 mm²`, which is a different quantity.
+///
+/// The linear renderer has always known this: its `Piece` carries a precedence
+/// that becomes `PRODUCT` for a value with a unit. Typeset output only needs it
+/// now because a conversion no longer falls back to that renderer's text, which
+/// arrived with the brackets already in it.
+///
+/// A complex value is the case this still gets wrong, exactly as before: it
+/// stays `<mtext>`, so `(3 + 4i)²` draws without its brackets. Fixing that means
+/// the substituted column knowing what a complex number is, which is the same
+/// step as giving it a real `<mn>` and unit.
+fn binding(r: &Renderer, trace: &Trace, sub: bool) -> u8 {
+    if sub {
+        if let TraceNode::Variable { .. } = &trace.node {
+            return match r.substituted_parts(trace) {
+                Some((magnitude, symbol)) if !symbol.is_empty() || scientific(&magnitude) => 4,
+                _ => 9,
+            };
+        }
+    }
+    // A number is an atom until it is written as a power of ten, and then it is
+    // a product: `(2.5 × 10⁹)²` is not `2.5 × 10⁹²`.
+    if let TraceNode::Number = &trace.node {
+        if let Ok(Value::Scalar(q)) = &trace.value {
+            if scientific(&number::format(q.value, &r.numbers)) {
+                return 4;
+            }
+        }
+    }
+    precedence(&trace.node)
+}
+
+/// Whether this renderer's own number formatter wrote a power of ten.
+fn scientific(formatted: &str) -> bool {
+    matches!(formatted.split_once('e'), Some((m, e)) if !m.is_empty() && !e.is_empty())
 }
 
 fn node(r: &Renderer, trace: &Trace, linear: &str, sub: bool) -> String {
@@ -100,7 +143,12 @@ fn node(r: &Renderer, trace: &Trace, linear: &str, sub: bool) -> String {
     // two cannot disagree about a value.
     if sub {
         if let TraceNode::Variable { .. } = &trace.node {
-            return format!("<mtext>{}</mtext>", escape(&r.substituted(trace)));
+            return match r.substituted_parts(trace) {
+                Some((magnitude, symbol)) => quantity(&magnitude, &symbol),
+                // A vector, a matrix, a string or a complex number is not a
+                // magnitude and a unit, so it stays running text.
+                None => format!("<mtext>{}</mtext>", escape(&r.substituted(trace))),
+            };
         }
     }
     match &trace.node {
@@ -108,9 +156,7 @@ fn node(r: &Renderer, trace: &Trace, linear: &str, sub: bool) -> String {
         // way the linear renderer reads it — and it is formatted by the same
         // code, so a number cannot read one way typeset and another in text.
         TraceNode::Number => match &trace.value {
-            Ok(Value::Scalar(q)) => {
-                format!("<mn>{}</mn>", escape(&number::format(q.value, &r.numbers)))
-            }
+            Ok(Value::Scalar(q)) => decimal(&number::format(q.value, &r.numbers)),
             _ => String::from("<mo>?</mo>"),
         },
         // A built-in constant is a symbol, not a quantity, so it is upright:
@@ -170,9 +216,9 @@ fn node(r: &Renderer, trace: &Trace, linear: &str, sub: bool) -> String {
                 .map(|i| node(r, i, linear, sub))
                 .collect::<Vec<_>>();
             format!(
-                "<msub>{}<mrow>{}</mrow></msub>",
+                "<msub><mrow>{}</mrow><mrow>{}</mrow></msub>",
                 bracketed(r, base, linear, 9, sub),
-                subscript.join("<mo>,</mo>")
+                subscript.join("<mo lspace=\"0\" rspace=\"0.167em\">,</mo>")
             )
         }
 
@@ -198,9 +244,19 @@ fn node(r: &Renderer, trace: &Trace, linear: &str, sub: bool) -> String {
             bracket_table(&body.join(""))
         }
 
+        // A conversion is transparent, exactly as it is to the linear renderer
+        // (`render/mod.rs`, which walks straight through it). `-> mm^2` says
+        // what unit to *show the answer in*; it belongs to the result column
+        // and is echoed there. Falling back for it dropped the whole expression
+        // to running text — and since a worksheet writes `A_s = pi/4*d^2 ->
+        // mm^2` far more often than it writes anything without a conversion,
+        // that was most of what the typeset output ever fell back on: 135 of
+        // the 342 whole-expression fallbacks across `examples/`.
+        TraceNode::Convert { value, .. } => node(r, value, linear, sub),
+
         // No typeset form here, and a hole would be worse than a sentence: the
         // linear rendering is what this worksheet has always shown.
-        TraceNode::Conditional { .. } | TraceNode::Convert { .. } | TraceNode::Malformed => {
+        TraceNode::Conditional { .. } | TraceNode::Malformed => {
             format!("<mtext>{}</mtext>", escape(linear))
         }
     }
@@ -220,8 +276,14 @@ fn binary(r: &Renderer, op: BinaryOp, lhs: &Trace, rhs: &Trace, linear: &str, su
             ungrouped(r, lhs, linear, sub),
             ungrouped(r, rhs, linear, sub)
         ),
+        // Both children wrapped, because `<msup>` takes exactly two and a base
+        // is very often more than one element: `(a+b)²` is five, and a
+        // substituted `(50 mm)²` is seven. Without the wrapper the browser is
+        // handed `<msup>` with six children and lays them out flat — `(a+b)²`
+        // came out as `(a + b)²` with the bracket *inside* the superscript, and
+        // `(50 mm)²` as `50 mm2`. Nothing errors; it simply reads wrong.
         BinaryOp::Pow => format!(
-            "<msup>{}<mrow>{}</mrow></msup>",
+            "<msup><mrow>{}</mrow><mrow>{}</mrow></msup>",
             bracketed(r, lhs, linear, 9, sub),
             node(r, rhs, linear, sub)
         ),
@@ -256,7 +318,8 @@ fn binary(r: &Renderer, op: BinaryOp, lhs: &Trace, rhs: &Trace, linear: &str, su
                     None => format!("<mo>{symbol}</mo>"),
                 }
             } else {
-                format!("<mo>{symbol}</mo>")
+                let space = spacing(op);
+                format!("<mo lspace=\"{space}\" rspace=\"{space}\">{symbol}</mo>")
             };
             format!(
                 "{}{operator}{}",
@@ -272,6 +335,41 @@ fn binary(r: &Renderer, op: BinaryOp, lhs: &Trace, rhs: &Trace, linear: &str, su
                 )
             )
         }
+    }
+}
+
+/// The space an operator is set with, stated rather than left to the browser.
+///
+/// MathML's operator dictionary already gives these, and asking for them
+/// explicitly changes nothing where the operands are ordinary markup: measured
+/// in Chrome, a relation between `<mn>` operands is set with 5/18 em either
+/// side, a sum with 4/18 and a product with 3/18, which are exactly the values
+/// below and exactly the ones TeX uses.
+///
+/// It changes everything where an operand is `<mtext>`. That element is
+/// *space-like* in MathML, and an operator whose siblings are all space-like
+/// gets no spacing from the dictionary at all — which is why a comparison in
+/// the substituted column read `160≥105.5`. Setting the values here means the
+/// spacing no longer depends on what the operands happen to be made of, and a
+/// string or a vector, which must stay running text, is set correctly too.
+fn spacing(op: BinaryOp) -> &'static str {
+    match op {
+        // Relations, at TeX's thickmathspace.
+        BinaryOp::Lt
+        | BinaryOp::Gt
+        | BinaryOp::Le
+        | BinaryOp::Ge
+        | BinaryOp::Equal
+        | BinaryOp::NotEqual => "0.278em",
+        // Sums, at mediummathspace.
+        BinaryOp::Add | BinaryOp::Sub => "0.222em",
+        // Products, at thinmathspace.
+        BinaryOp::Mul => "0.167em",
+        // Handled before this is reached: juxtaposition asks `unit_space`, and
+        // a division and a power are drawn rather than spaced.
+        BinaryOp::ImplicitMul | BinaryOp::Div | BinaryOp::Pow => "0",
+        // Words, which have their own wider spacing at the call site.
+        BinaryOp::And | BinaryOp::Or => "0.3em",
     }
 }
 
@@ -350,7 +448,10 @@ fn call(r: &Renderer, name: &str, args: &[Trace], linear: &str, sub: bool) -> St
         _ => format!(
             "<mi>{}</mi><mo>&#8289;</mo><mo>(</mo>{}<mo>)</mo>",
             symbol(name),
-            inner.join("<mo>,</mo>")
+            // The comma's own dictionary spacing: nothing before it, a thin
+            // space after. Stated for the same reason as the rest — an argument
+            // that is running text would otherwise lose it.
+            inner.join("<mo lspace=\"0\" rspace=\"0.167em\">,</mo>")
         ),
     }
 }
@@ -358,6 +459,88 @@ fn call(r: &Renderer, name: &str, args: &[Trace], linear: &str, sub: bool) -> St
 /// A vector or matrix in square brackets, which is how this language writes one.
 fn bracket_table(rows: &str) -> String {
     format!("<mo>[</mo><mtable>{rows}</mtable><mo>]</mo>")
+}
+
+/// A substituted value, set as the number and unit it is rather than as text.
+///
+/// The substituted column used to be `<mtext>` of the string the linear
+/// renderer produced, and that cost three things at once. `<mtext>` is a
+/// *space-like* element in MathML, so an operator whose siblings are all
+/// space-like loses the spacing the operator dictionary gives it — measured in
+/// Chrome, a relation between `<mn>` operands is set with 5/18 em either side
+/// and between `<mtext>` operands with none, which is why a comparison read
+/// `160≥105.5`. The `²` in `8.427e-5 m²` was a literal superscript character
+/// where the symbolic column beside it drew a real `<msup>`. And `e-5` is not
+/// how a typeset document writes a power of ten.
+///
+/// `symbol` is empty for a dimensionless quantity.
+fn quantity(magnitude: &str, symbol: &str) -> String {
+    if symbol.is_empty() {
+        return decimal(magnitude);
+    }
+    // The same ISO 80000-1 rule and the same exception as `unit_space`: a unit
+    // stands off its number, except the plane-angle symbols. `join` in the
+    // linear renderer applies it to `°` and `%` alike; here `%` is spaced,
+    // because the standard's exception names the angle symbols and not percent.
+    let space = if symbol.starts_with('°') {
+        String::from("<mo>&#8290;</mo>")
+    } else {
+        String::from("<mo lspace=\"0\" rspace=\"0.167em\">&#8290;</mo>")
+    };
+    format!("{}{space}{}", decimal(magnitude), unit(symbol))
+}
+
+/// A unit symbol as markup.
+///
+/// A single name with an exponent — `mm^2`, `m^3` — becomes a real superscript.
+/// Anything else is set upright as it stands, because `docs/language.md` makes
+/// that a rule rather than an oversight: a conversion target is echoed *as it
+/// was written*, so `kip*ft` keeps its `*` and `MN/m` its slash. A worksheet
+/// checked against a specification that spells a unit a particular way should
+/// show that spelling.
+fn unit(symbol: &str) -> String {
+    if let Some((name, exponent)) = symbol.split_once('^') {
+        let simple = !name.is_empty()
+            && !name.contains(['/', '*', '^'])
+            && !exponent.is_empty()
+            && exponent
+                .strip_prefix('-')
+                .unwrap_or(exponent)
+                .chars()
+                .all(|c| c.is_ascii_digit());
+        if simple {
+            return format!(
+                "<msup><mi mathvariant=\"normal\">{}</mi><mn>{}</mn></msup>",
+                escape(name),
+                escape(&exponent.replace('-', "\u{2212}"))
+            );
+        }
+    }
+    format!(
+        "<mi mathvariant=\"normal\">{}</mi>",
+        escape(&super::superscript_exponents(symbol))
+    )
+}
+
+/// A number, with a power of ten set as one.
+///
+/// `number::format` writes `8.427e-5` once a value leaves the range it shows in
+/// full. That is the right thing in a text column and the wrong thing in a
+/// typeset one, where the notation is 8.427 × 10⁻⁵. The mantissa and exponent
+/// are split on the `e` this renderer's own formatter wrote, so the shape is
+/// known rather than guessed; anything else — `NaN`, `∞` — passes through.
+fn decimal(formatted: &str) -> String {
+    // The same split `scientific` tests, so the two cannot drift apart: a
+    // number drawn as a product must also *bind* as one.
+    match formatted.split_once('e') {
+        Some((mantissa, exponent)) if !mantissa.is_empty() && !exponent.is_empty() => format!(
+            "<mn>{}</mn><mo lspace=\"0.167em\" rspace=\"0.167em\">&#215;</mo>\
+             <msup><mn>10</mn><mn>{}</mn></msup>",
+            escape(&mantissa.replace('-', "\u{2212}")),
+            escape(&exponent.replace('-', "\u{2212}"))
+        ),
+        _ => format!("<mn>{}</mn>", escape(formatted)),
+    }
 }
 
 /// The letter a spelled-out Greek name is conventionally written with.

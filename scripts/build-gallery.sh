@@ -1,11 +1,21 @@
 #!/usr/bin/env bash
 # Render every worksheet under examples/ and index them.
 #
-# `nomo html` already produces a self-contained page per worksheet — the
-# mathematics, the plots as inline SVG, the figures as data URIs, no assets and
-# no script. This puts them side by side behind one page, which is the first
-# thing a person wanting to know what Nomo is should be shown: not a feature
-# list, but a dozen worksheets an engineer recognises.
+# The mathematics is typeset: this is the shop window, and a fraction drawn as
+# one is the difference between showing what Nomo is and describing it. It is
+# still off by default everywhere else, for the reason design note §18 gives —
+# the layout is verified in one browser on one machine.
+#
+# `nomo html` produces a page per worksheet with the plots as inline SVG, the
+# figures as data URIs and no script at all. Here it is given one asset — the
+# math font, shared by every page rather than copied into each — because these
+# pages are served together. Rendered anywhere else, or saved and taken away,
+# the font reference simply misses and the named stack takes over, which is what
+# `nomo html` has always fallen back to.
+#
+# This puts them side by side behind one page, which is the first thing a person
+# wanting to know what Nomo is should be shown: not a feature list, but a dozen
+# worksheets an engineer recognises.
 #
 # The output goes into the front end's build directory so that whatever
 # publishes the editor publishes these with it, and so that opening the editor
@@ -36,7 +46,13 @@ for source in examples/*.nomo; do
     # suite and not in a gallery that is trying to show what the tool is for.
     [ "$name" = "diagnostics" ] && continue
 
-    ./target/release/nomo html "$source" >/dev/null || true
+    # Typeset, and laid out with the font `web/font.mjs` built. `--font-url`
+    # rather than `--embed-font`: these pages are served together, so one file
+    # serves all of them instead of each carrying a 162 kB copy. A page saved
+    # and taken elsewhere falls back to the named stack, which is what the
+    # default has always done.
+    ./target/release/nomo html --mathml --font-url ../fonts/stix-two-math-subset.woff2 \
+        "$source" >/dev/null || true
     mv "examples/$name.html" "$out/$name.html"
 
     title=$(grep -m1 "^' # " "$source" | sed "s/^' # //" || true)

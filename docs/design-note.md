@@ -3444,11 +3444,76 @@ the text. A number written as a power of ten binds the same way, for the same
 reason: `(2.5 × 10⁹)²` is not `2.5 × 10⁹²`.
 
 **What is still wrong here.** A complex value stays `<mtext>`, so `(3 + 4i)²`
-draws without its brackets — unchanged from before, and fixing it means the
-substituted column knowing what a complex number is, which is the same step as
-giving it a real `<mn>` and unit. And the result column is still a plain span,
-so a result in scientific notation reads `e-5` beside a substituted value that
-reads 10⁻⁵.
+draws without its brackets, and the result column is still a plain span, so a
+result in scientific notation reads `e-5` beside a substituted value that reads
+10⁻⁵. **Both fixed — §8.52.**
+
+### 8.52 The conditional, and the gallery turned on (2026-09-04)
+
+The last three things typeset output was getting wrong, and then the thing they
+were blocking.
+
+**A conditional is a brace over cases.** It was the one construct still running
+out as a sentence, and the one place typeset output read worse than the linear
+text it replaced. `else if` flattens into rows rather than nesting, because that
+is how the language chains them — the `else` arm "reaches as far as it can",
+which is exactly what makes the chain — and how a table of cases is written.
+An arm that did not run is rendered symbolically even in the substituted column,
+the same rule the linear renderer follows: the column should say which way the
+worksheet went, not pretend both arms were computed.
+
+Aligned by CSS, not by `columnalign`. MathML Core removed that attribute along
+with most of `mtable`'s; writing it anyway *looked* like alignment and did
+nothing, which is what a screenshot showed after the markup tests were all
+green.
+
+**An untaken arm is now resolved, and that is an evaluator fix.** Sketching an
+arm without evaluating it used to classify every name as a variable. The linear
+renderer hid that — it writes a name the same either way — and typeset output
+cannot: an unresolved `m` sets *italic* and loses the space a unit stands off
+its number by, so `0 m` came out `0m` beside a taken arm setting `3 m`
+correctly. The renderer could not fix it without guessing, because only the
+environment can tell a metre from a worksheet that binds `m` itself. So `sketch`
+became a method and asks the same questions `eval_ident` asks, in the same
+order: a binding, then a constant, then a unit.
+
+That moved one golden snapshot, and the move is the point: `column.nomo`'s
+untaken arm read `(2·pi)` beside a taken arm reading `π²` on the same line, and
+now reads `(2·π)`. The text column was inconsistent with itself and nobody had
+noticed.
+
+**Bracketing comes from the linear renderer now.** §8.51 special-cased a
+substituted scalar with a unit. The linear renderer has always answered this for
+*every* kind of value — a unit-bearing scalar is a product, a complex number is a
+sum, a vector is an atom because it brackets itself — so typeset output asks it
+rather than judging a second time. `(3 + 4i)²` gets its brackets back as a
+consequence rather than as a fix. The one case the two see differently is a power
+of ten, which is one token of linear text and a product when drawn.
+
+**The result column is typeset too.** It was the last plain text on a typeset
+line, and it showed: a result read `8.427e-5` beside a substituted value on the
+same line reading 8.427 × 10⁻⁵. An error, a vector, a string and a complex
+number keep their text, which is the rule the substituted column already
+follows.
+
+A typeset result is not bold, for the reason a typeset name is not (§8.49): the
+page does not need the weight, since a result is the last thing on its line and
+the only thing after the final `=`. Both stylesheets now say so, because a
+column that quietly stopped being bold reads as a bug.
+
+**And the gallery is typeset.** That is what all of this was for. It is the shop
+window, and a fraction drawn as one is the difference between showing what Nomo
+is and describing it. The pages take `--font-url`, not `--embed-font`: they are
+served together, so one 162 kB file serves all 28 rather than each carrying a
+copy. A page saved and taken elsewhere misses the reference and falls back to
+the named stack, which is what `nomo html` has always done. Typesetting stays
+off by default everywhere else, for the reason §18 gives — the layout is
+verified in one browser on one machine.
+
+**What the shop window now shows that it did not.** `examples/bolt.nomo` has
+`**preload**` in its prose, and it renders as literal asterisks: inline Markdown
+is not built (§8.41, which builds the block level and says so). It was invisible
+while the gallery was a wall of monospace and is not any more.
 
 ### 8.8 Strategy: corpus-driven
 

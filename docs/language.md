@@ -1158,10 +1158,13 @@ exponent is a real superscript and a value outside the range shown in full reads
 8.427 × 10⁻⁵ rather than `8.427e-5`. What is not a number and a unit — a vector,
 a matrix, a string, a complex number — is carried through as text.
 
-The **conditional** is the one construct with no typeset form. It is carried
-through as the linear text, because a sentence in the middle of a formula beats
-a gap in the middle of a worksheet. That text has no Greek convention, so a name
-inside a conditional is shown as written.
+A **conditional** is drawn as a brace over its cases, the way mathematics draws
+one, and an `else if` chain flattens into rows rather than nesting. The arm that
+did not run is shown as written rather than substituted, because the column
+should say which way the worksheet went.
+
+The worked examples under `examples/` are published typeset, so the gallery is
+what all of this looks like.
 
 The worksheets under `examples/` are drawn from this document, and their rendered
 output is committed in `tests/golden/` and compared byte for byte on every build

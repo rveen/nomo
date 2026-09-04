@@ -13,7 +13,7 @@
 //! signed and filed, and retrofitting print styles is much harder than keeping
 //! them.
 
-use super::{base64, escape, plot, MathFont, RenderOptions, Renderer};
+use super::{base64, escape, mathml, plot, MathFont, RenderOptions, Renderer};
 use crate::doc::Sheet;
 use crate::eval::OutcomeKind;
 use crate::prose::{self, Block};
@@ -87,14 +87,24 @@ math {
   font-family: "STIX Two Math Subset", "Latin Modern Math", "STIX Two Math",
                "TeX Gyre Pagella Math", "Cambria Math", math;
 }
+/* A conditional, drawn as mathematics draws one: a brace over its cases. The
+   rows are laid out by CSS because MathML Core removed `columnalign` and most
+   of `mtable`'s other attributes — an `<mtd>` is a table cell and `text-align`
+   reaches it, which the attribute no longer does. Left in both columns: the
+   reader is looking down the values, and a centred column of them wanders. */
+mtable.cases > mtr > mtd { text-align: left; padding: 0.1em 0; }
+mtable.cases > mtr > mtd:first-child { padding-right: 1em; }
 .name { font-weight: 600; }
-/* A typeset name is deliberately not bold. The name column is bold so that a
-   worksheet's definitions scan down the left edge of the page — but bold has a
-   *meaning* in mathematics, where a bold σ is a tensor rather than a stress, so
-   a symbol that has become mathematics must not inherit it. MathML Core's own
-   stylesheet already resets the weight; this says so out loud, because a name
-   that stopped being bold otherwise reads as a bug worth fixing. */
-.name math { font-weight: normal; }
+/* A typeset name and a typeset result are deliberately not bold. The two columns
+   are bold in a text worksheet so the definitions scan down the left edge and
+   the eye lands on the answer — but bold has a *meaning* in mathematics, where
+   a bold σ is a tensor rather than a stress, so a symbol that has become
+   mathematics must not inherit it. MathML Core's own stylesheet already resets
+   the weight; this says so out loud, because a column that stopped being bold
+   otherwise reads as a bug worth fixing. The typeset page does not need the
+   weight: a result is the last thing on its line and the only thing after the
+   final `=`. */
+.name math, .result math { font-weight: normal; }
 .eq { opacity: 0.45; padding: 0 0.35rem; }
 .subst { opacity: 0.7; }
 .result { font-weight: 600; }
@@ -364,7 +374,7 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                 if !r.is_literal_quantity(trace) {
                     let result = r.result(trace);
                     if result != r.symbolic(trace) {
-                        line.push_str(&format!("{eq}{}", result_span(trace, &result)));
+                        line.push_str(&format!("{eq}{}", result_span(&r, trace, &result)));
                     }
                 }
                 line.push_str("</div>\n");
@@ -449,7 +459,7 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                     ));
                 }
                 let result = r.result(trace);
-                line.push_str(&format!("{eq}{}</div>\n", result_span(trace, &result)));
+                line.push_str(&format!("{eq}{}</div>\n", result_span(&r, trace, &result)));
                 body.push_str(&line);
             }
 
@@ -554,13 +564,24 @@ fn prose_html(blocks: &[Block]) -> String {
     out
 }
 
-fn result_span(trace: &crate::trace::Trace, result: &str) -> String {
+/// The result column.
+///
+/// Typeset with the rest of the line when the answer is a number and a unit,
+/// because it is the same statement: a result reading `8.427e-5` beside a
+/// substituted value reading 8.427 × 10⁻⁵ is one line saying a number two ways.
+/// An error, a vector, a string and a complex number keep the text
+/// [`Renderer::result`] wrote — the same rule the substituted column follows.
+fn result_span(r: &Renderer, trace: &crate::trace::Trace, result: &str) -> String {
     let class = if trace.value.is_err() {
         "error"
     } else {
         "result"
     };
-    format!("<span class=\"{class}\">{}</span>", escape(result))
+    let body = match r.opts.mathml.then(|| mathml::result(r, trace)).flatten() {
+        Some(markup) => markup,
+        None => escape(result),
+    };
+    format!("<span class=\"{class}\">{body}</span>")
 }
 
 /// One image, inline.

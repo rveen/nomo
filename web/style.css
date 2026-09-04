@@ -250,14 +250,25 @@ footer p { margin: 0; }
   padding: 0.5rem;
   background:#f8f8f7;
 }
+/* A conditional, drawn as mathematics draws one: a brace over its cases. The
+   rows are laid out by CSS because MathML Core removed `columnalign` and most
+   of `mtable`'s other attributes — an `<mtd>` is a table cell and `text-align`
+   reaches it, which the attribute no longer does. Left in both columns: the
+   reader is looking down the values, and a centred column of them wanders. */
+#output mtable.cases > mtr > mtd { text-align: left; padding: 0.1em 0; }
+#output mtable.cases > mtr > mtd:first-child { padding-right: 1em; }
+
 #output .name   { font-weight: 600; }
-/* A typeset name is deliberately not bold. The name column is bold so that a
-   worksheet's definitions scan down the left edge of the page — but bold has a
-   *meaning* in mathematics, where a bold σ is a tensor rather than a stress, so
-   a symbol that has become mathematics must not inherit it. MathML Core's own
-   stylesheet already resets the weight; this says so out loud, because a name
-   that stopped being bold otherwise reads as a bug worth fixing. */
-#output .name math { font-weight: normal; }
+/* A typeset name and a typeset result are deliberately not bold. The two columns
+   are bold in a text worksheet so the definitions scan down the left edge and
+   the eye lands on the answer — but bold has a *meaning* in mathematics, where
+   a bold σ is a tensor rather than a stress, so a symbol that has become
+   mathematics must not inherit it. MathML Core's own stylesheet already resets
+   the weight; this says so out loud, because a column that stopped being bold
+   otherwise reads as a bug worth fixing. The typeset page does not need the
+   weight: a result is the last thing on its line and the only thing after the
+   final `=`. */
+#output .name math, #output .result math { font-weight: normal; }
 #output .eq     { opacity: 0.45; padding: 0 0.35rem; }
 #output .subst  { opacity: 0.7; }
 #output .result { font-weight: 600; }

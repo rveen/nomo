@@ -561,6 +561,104 @@ fn what_is_not_a_number_and_a_unit_stays_running_text() {
 }
 
 #[test]
+fn a_conditional_is_drawn_as_cases_under_a_brace() {
+    // The one construct that still ran out as a sentence, and the one place
+    // typeset output read worse than the linear text it replaced.
+    let out = typeset("x = 4 m\ny = if x > 3 m then x - 3 m else 0 m\n");
+    assert!(
+        out.contains("<mtable class=\"cases\">"),
+        "no cases table: {out}"
+    );
+    assert!(out.contains("<mo>{</mo>"), "no brace: {out}");
+    assert!(
+        out.contains("<mtext>otherwise</mtext>"),
+        "no final case: {out}"
+    );
+    assert!(
+        !out.contains("<mtext>if "),
+        "it fell back to a sentence: {out}"
+    );
+}
+
+#[test]
+fn else_if_flattens_into_rows_rather_than_nesting() {
+    // Three cases, not a case containing a case. That is how the language
+    // chains them and how a table of cases is written.
+    let out =
+        typeset("load = 7 kN\nn = if load < 5 kN then 1 else if load < 10 kN then 2 else 3\n");
+    let table = out
+        .split("<mtable class=\"cases\">")
+        .nth(1)
+        .and_then(|s| s.split("</mtable>").next())
+        .expect("a cases table");
+    assert_eq!(
+        table.matches("<mtr>").count(),
+        3,
+        "expected three rows: {table}"
+    );
+    assert_eq!(out.matches("<mtable class=\"cases\">").count(), 2, "{out}");
+}
+
+#[test]
+fn an_arm_that_did_not_run_is_still_resolved() {
+    // An untaken arm is *shown*, and showing it means saying whether `m` is a
+    // metre or a variable. The evaluator sketches such an arm without values;
+    // it used to sketch every name as a variable too, which the linear renderer
+    // hid — it writes a name the same either way — and typeset output cannot:
+    // an unresolved `m` sets italic and loses the space a unit stands off its
+    // number by, so `0 m` came out `0m` beside a taken arm setting `3 m`.
+    let out = typeset("x = 4 m\ny = if x > 3 m then x - 3 m else 0 m\n");
+    assert!(
+        out.contains("<mi mathvariant=\"normal\">m</mi>"),
+        "the untaken arm's unit should be upright: {out}"
+    );
+    assert!(
+        !out.contains("<mo>&#8290;</mo><mi>m</mi>"),
+        "the untaken arm's unit is still a variable: {out}"
+    );
+}
+
+#[test]
+fn a_complex_value_keeps_the_brackets_it_needs() {
+    // The linear renderer has always called a complex value a sum, so it
+    // brackets one inside anything tighter. Typeset output asks the same
+    // question of the same renderer rather than answering it a second way.
+    let out = typeset("z = 3 + 4i\nw = z^2\n");
+    assert!(
+        out.contains("<msup><mrow><mo>(</mo><mtext>3 + 4i</mtext><mo>)</mo></mrow>"),
+        "a complex value under a power needs its brackets: {out}"
+    );
+
+    // And a vector brackets itself, so it must not gain a second pair.
+    let vector = typeset("v = [1 m, 2 m]\nu = v*2\n");
+    assert!(
+        !vector.contains("<mo>(</mo><mtext>[1 m"),
+        "a vector brackets itself already: {vector}"
+    );
+}
+
+#[test]
+fn the_result_column_is_typeset_with_the_rest_of_the_line() {
+    // The last plain text on a typeset line. A result reading `8.427e-5` beside
+    // a substituted value reading 8.427 × 10⁻⁵ is one line saying a number two
+    // ways.
+    let out = typeset("A = 84.27 mm^2\nF = 36 kN\ns = F/A\n");
+    let result = out
+        .split("<span class=\"result\">")
+        .nth(1)
+        .and_then(|s| s.split("</span>").next())
+        .expect("a result");
+    assert!(result.contains("<math"), "the result stayed text: {result}");
+
+    // An error is not a quantity and keeps its sentence.
+    let bad = typeset("x = 1 m + 1 s\n");
+    assert!(
+        bad.contains("<span class=\"error\">[") && !bad.contains("<span class=\"error\"><math"),
+        "an error should stay text: {bad}"
+    );
+}
+
+#[test]
 fn a_typeset_line_is_set_whole_rather_than_half() {
     // The result, the `=` between the columns and the words `check` and `pass`
     // sit outside the `<math>` elements, so without this they keep `.step`'s

@@ -24,14 +24,6 @@
   which would have left `sigma_allow` on the left of a line whose formula read
   σ_allow. `unit … = …` and `fn … defined` stay as prose notes.
 
-### Fixed
-
-- **`pi` no longer typesets as the word "pi".** The MathML renderer had no
-  symbol table of its own and did not use the one the linear renderer already
-  had, so the typeset column drew `pi` beside a text column showing π. Both now
-  read from one table. Constants are marked upright, which is how ISO 80000-2
-  sets π, e and ∞ and what distinguishes them from a variable of the same name.
-
 ### Added
 
 - **The math font is shipped rather than named.** Typeset output is laid out
@@ -47,7 +39,6 @@
   unchanged: no `@font-face`, nothing fetched, one self-contained file.
   `--embed-font` also embeds the licence file sitting beside the font, because a
   document that carries a font redistributes it.
-
 - **A text face for the prose.** A worksheet is a document, and prose set in the
   machine's UI sans beside mathematics set in a book face looks like two things
   stapled together. The editor now ships STIX Two Text — the face STIX Two Math
@@ -55,6 +46,17 @@
   400–700 weight axis. A standalone `nomo html` *names* it rather than carrying
   it: a missing text face gives Georgia, while a missing math font gives wrong
   mathematics, and only the second is worth the weight in every exported file.
+- **A conditional is drawn as a brace over its cases**, which is how mathematics
+  draws one. `else if` flattens into rows rather than nesting, and an arm that
+  did not run is shown as written rather than pretending it was computed. It was
+  the last construct still running out as a sentence.
+- **The gallery is typeset.** All 28 worked examples show their mathematics as
+  mathematics, sharing one math font file rather than carrying a copy each.
+  Typesetting stays off by default everywhere else.
+- **The result column is typeset with the rest of the line.** It was the last
+  plain text on a typeset line, and it showed — a result reading `8.427e-5`
+  beside a substituted value on the same line reading 8.427 × 10⁻⁵. An error, a
+  vector, a string and a complex number keep their text.
 - **A typeset line is set whole.** The result, the `=` between the columns and
   the words `check` and `pass` sit outside the `<math>` elements and were staying
   in monospace while the formula beside them was a book face. Typeset lines are
@@ -63,6 +65,20 @@
 
 ### Fixed
 
+- **`pi` no longer typesets as the word "pi".** The MathML renderer had no
+  symbol table of its own and did not use the one the linear renderer already
+  had, so the typeset column drew `pi` beside a text column showing π. Both now
+  read from one table. Constants are marked upright, which is how ISO 80000-2
+  sets π, e and ∞ and what distinguishes them from a variable of the same name.
+- **An arm of a conditional that did not run is now resolved.** The evaluator
+  sketches such an arm without evaluating it, and classified every name in it as
+  a variable. The text column hid that — it writes a name the same either way —
+  but it was wrong there too: `column.nomo` read `(2·pi)` in an untaken arm
+  beside `π²` in the taken one on the same line. It now reads `(2·π)`, and
+  typeset output stops setting a metre in italic. One golden snapshot moved.
+- **A complex value keeps the brackets it needs**, so `(3 + 4i)²` is not
+  `3 + 4i²`. Bracketing is asked of the linear renderer, which has always had to
+  answer it, rather than judged a second time.
 - **A conversion no longer hides the expression it converts.** `A = pi/4*d^2 ->
   mm^2` has `Convert` at the top of its trace, and the typeset renderer fell
   back for it — dropping the *whole* expression to running text. Since a
@@ -101,7 +117,7 @@ MathJax was measured and declined: 850 kB of script plus 1.8 MB of fonts fetched
 at run time, which ends `nomo html`'s self-containment and makes typesetting
 asynchronous where printing is synchronous — to buy cross-browser consistency
 that MathML Core already provides for the repertoire this renderer emits. Design
-note §8.47 through §8.51.
+note §8.47 through §8.52.
 
 ## 0.2.1 — a font that can set the mathematics
 

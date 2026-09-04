@@ -42,6 +42,7 @@
 use crate::ast::{BinaryOp, UnaryOp};
 use crate::render::{constant_symbol, escape, number, Renderer};
 use crate::trace::{Trace, TraceNode};
+use crate::value::EvalError;
 use crate::value::Value;
 
 /// One expression as a MathML element.
@@ -113,10 +114,14 @@ fn bracketed(r: &Renderer, trace: &Trace, linear: &str, least: u8, sub: bool) ->
 fn binding(r: &Renderer, trace: &Trace, sub: bool) -> u8 {
     if sub {
         if let TraceNode::Variable { .. } = &trace.node {
-            return match r.substituted_parts(trace) {
-                Some((magnitude, symbol)) if !symbol.is_empty() || scientific(&magnitude) => 4,
-                _ => 9,
-            };
+            // A power of ten is drawn as a product where the linear text is one
+            // token, so it is the one case the two renderers see differently.
+            if let Some((magnitude, _)) = r.substituted_parts(trace) {
+                if scientific(&magnitude) {
+                    return 4;
+                }
+            }
+            return from_linear(r.substituted_binding(trace));
         }
     }
     // A number is an atom until it is written as a power of ten, and then it is
@@ -129,6 +134,25 @@ fn binding(r: &Renderer, trace: &Trace, sub: bool) -> u8 {
         }
     }
     precedence(&trace.node)
+}
+
+/// The linear renderer's precedence, in this one's levels.
+///
+/// Two scales for the same idea, because the two renderers bracket for
+/// different reasons: a fraction bar and a radical group what they contain, so
+/// division and exponentiation need no level here. This maps between them
+/// rather than duplicating the judgement, which is what stops a complex value
+/// losing the brackets in `(3 + 4i)²` — the linear renderer calls it a sum, and
+/// now so does this one.
+fn from_linear(prec: u8) -> u8 {
+    match prec {
+        super::prec::CONDITIONAL => 0,
+        super::prec::LOGICAL => 1,
+        super::prec::SUM => 3,
+        super::prec::PRODUCT | super::prec::UNARY => 4,
+        // A power and an atom are both drawn as one thing here.
+        _ => 9,
+    }
 }
 
 /// Whether this renderer's own number formatter wrote a power of ten.
@@ -254,11 +278,11 @@ fn node(r: &Renderer, trace: &Trace, linear: &str, sub: bool) -> String {
         // the 342 whole-expression fallbacks across `examples/`.
         TraceNode::Convert { value, .. } => node(r, value, linear, sub),
 
+        TraceNode::Conditional { .. } => cases(r, trace, linear, sub),
+
         // No typeset form here, and a hole would be worse than a sentence: the
         // linear rendering is what this worksheet has always shown.
-        TraceNode::Conditional { .. } | TraceNode::Malformed => {
-            format!("<mtext>{}</mtext>", escape(linear))
-        }
+        TraceNode::Malformed => format!("<mtext>{}</mtext>", escape(linear)),
     }
 }
 
@@ -433,6 +457,77 @@ fn ungrouped(r: &Renderer, trace: &Trace, linear: &str, sub: bool) -> String {
     }
 }
 
+/// A conditional, drawn the way mathematics draws one: a brace over cases.
+///
+/// `if c then a else b` is a *choice between values*, and running it out as a
+/// sentence — which is what the fallback did — is the one place typeset output
+/// still read worse than the linear text it replaced. A brace and two rows says
+/// the same thing in the shape a reader already knows.
+///
+/// # `else if` flattens
+///
+/// `if a then 1 else if b then 2 else 3` is three cases, not a case containing a
+/// case. That is how the language chains them — `docs/language.md`'s `else` arm
+/// "reaches as far as it can", which is exactly what makes the chain — and it is
+/// how a table of cases is written. So the `otherwise` arm is unwrapped for as
+/// long as it is another conditional.
+///
+/// # An arm that did not run is shown as written
+///
+/// The same rule the linear renderer follows, and for the same reason: the
+/// substituted column should say which way the worksheet went, not pretend both
+/// arms were computed. An arm carrying [`EvalError::NotTaken`] has no values in
+/// it, so it is rendered symbolically even in the substituted column.
+fn cases(r: &Renderer, trace: &Trace, linear: &str, sub: bool) -> String {
+    // Value, then the condition that selects it — the column order of every
+    // cases block ever set, because the reader is looking for the value.
+    let mut rows = String::new();
+    let mut current = trace;
+    loop {
+        let TraceNode::Conditional {
+            cond,
+            then,
+            otherwise,
+        } = &current.node
+        else {
+            // The tail of the chain: the value with no condition left to test.
+            rows.push_str(&format!(
+                "<mtr><mtd>{}</mtd><mtd><mtext>otherwise</mtext></mtd></mtr>",
+                arm(r, current, linear, sub)
+            ));
+            return braced(&rows);
+        };
+        rows.push_str(&format!(
+            "<mtr><mtd>{}</mtd><mtd><mtext>if&#160;</mtext>{}</mtd></mtr>",
+            arm(r, then, linear, sub),
+            arm(r, cond, linear, sub),
+        ));
+        current = otherwise;
+    }
+}
+
+/// One arm of a conditional, substituted only if it was the arm that ran.
+fn arm(r: &Renderer, trace: &Trace, linear: &str, sub: bool) -> String {
+    let taken = !matches!(trace.value, Err(EvalError::NotTaken));
+    node(r, trace, linear, sub && taken)
+}
+
+/// A table of cases under a brace that grows to fit it.
+///
+/// The `{` is stretchy in MathML's operator dictionary and takes its height from
+/// the rest of the row, which is what the `<mrow>` around both is for. The font
+/// carries the pieces it is assembled from: they are reached through the MATH
+/// table's variant records rather than by character code, which is why
+/// `web/font.mjs` does not enumerate them and does not have to.
+///
+/// Aligned by a class and CSS rather than by `columnalign`, which MathML Core
+/// removed along with most of `mtable`'s attributes. Writing the attribute
+/// anyway would have looked like alignment and done nothing — it was, until a
+/// screenshot showed the columns still centred.
+fn braced(rows: &str) -> String {
+    format!("<mrow><mo>{{</mo><mtable class=\"cases\">{rows}</mtable></mrow>")
+}
+
 fn call(r: &Renderer, name: &str, args: &[Trace], linear: &str, sub: bool) -> String {
     let inner: Vec<String> = args.iter().map(|a| node(r, a, linear, sub)).collect();
     match (name, args.len()) {
@@ -459,6 +554,19 @@ fn call(r: &Renderer, name: &str, args: &[Trace], linear: &str, sub: bool) -> St
 /// A vector or matrix in square brackets, which is how this language writes one.
 fn bracket_table(rows: &str) -> String {
     format!("<mo>[</mo><mtable>{rows}</mtable><mo>]</mo>")
+}
+
+/// A whole result as a `<math>` element, when it is a number and a unit.
+///
+/// The third column was the last plain text on a typeset line, which showed:
+/// a result outside the range shown in full read `8.427e-5` beside a
+/// substituted value on the same line reading 8.427 × 10⁻⁵.
+pub(super) fn result(r: &Renderer, trace: &Trace) -> Option<String> {
+    let (magnitude, symbol) = r.result_parts(trace)?;
+    Some(format!(
+        "<math display=\"inline\"><mrow>{}</mrow></math>",
+        quantity(&magnitude, &symbol)
+    ))
 }
 
 /// A substituted value, set as the number and unit it is rather than as text.

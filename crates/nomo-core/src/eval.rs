@@ -497,16 +497,16 @@ impl Env {
         let (then_trace, else_trace, value) = match taken {
             // The condition is unusable, so neither arm runs and neither is
             // blamed: the diagnostic belongs on the condition.
-            Err(e) => (sketch(then), sketch(otherwise), Err(e)),
+            Err(e) => (self.sketch(then), self.sketch(otherwise), Err(e)),
             Ok(true) => {
                 let t = self.eval(then);
                 let v = clone_or_poison(&t);
-                (t, sketch(otherwise), v)
+                (t, self.sketch(otherwise), v)
             }
             Ok(false) => {
                 let o = self.eval(otherwise);
                 let v = clone_or_poison(&o);
-                (sketch(then), o, v)
+                (self.sketch(then), o, v)
             }
         };
         Trace::new(
@@ -530,11 +530,11 @@ impl Env {
             Ok(v) => truth(v),
         };
         let (rhs_trace, value) = match left {
-            Err(e) => (sketch(rhs), Err(e)),
+            Err(e) => (self.sketch(rhs), Err(e)),
             // `false and _` is false; `true or _` is true. Either way the right
             // operand is never looked at.
             Ok(decided) if decided == matches!(op, BinaryOp::Or) => {
-                (sketch(rhs), Ok(truth_value(decided)))
+                (self.sketch(rhs), Ok(truth_value(decided)))
             }
             Ok(_) => {
                 let r = self.eval(rhs);
@@ -784,7 +784,7 @@ impl Env {
                     span,
                     TraceNode::Call {
                         name: name.into(),
-                        args: args.iter().map(sketch).collect(),
+                        args: args.iter().map(|a| self.sketch(a)).collect(),
                     },
                     Err(EvalError::Singular(if named == 1 {
                         "the first argument names a function, so it must be a plain name"
@@ -3277,6 +3277,102 @@ impl Env {
             },
         }
     }
+
+    /// The shape of an expression as a trace, with nothing evaluated.
+    ///
+    /// Used for the arm of a conditional that was not taken. The renderer still
+    /// has to show it — a worksheet shows its work, and "which arm" is part of
+    /// the work — so the structure has to survive even though no value does.
+    /// Numeric literals keep their value because a literal needs no evaluating
+    /// to be known, and without them the unrendered arm would print as a row of
+    /// question marks.
+    ///
+    /// A name is classified here the way [`Self::eval_ident`] classifies one — a
+    /// binding first, then a constant, then a unit — because an untaken arm is
+    /// still *shown*, and showing it means saying whether `m` is a metre or a
+    /// variable. It used to say "variable" for everything, which the linear
+    /// renderer hid (it writes a name the same either way) and typeset output
+    /// cannot: an unresolved `m` sets italic and loses the space a unit stands off
+    /// its number by, so `0 m` came out as `0m` in an arm beside a taken one
+    /// setting `3 m` correctly.
+    ///
+    /// This is not the renderer guessing from a unit table. It is the evaluator
+    /// answering with the environment it already has, in the order it already
+    /// uses — which is the only thing that can tell a metre from a worksheet that
+    /// binds `m` itself.
+    fn sketch(&self, expr: &Expr) -> Trace {
+        let sketch = |e: &Expr| self.sketch(e);
+        let node = match expr {
+            Expr::Number { value, span } => {
+                return Trace::new(*span, TraceNode::Number, Ok(Value::scalar(*value)))
+            }
+            Expr::Text { value, span } => {
+                return Trace::new(*span, TraceNode::Text, Ok(Value::Text(value.clone())))
+            }
+            Expr::Ident(name) => {
+                let text = name.text.as_str();
+                // A binding takes precedence over both, and a failed binding is
+                // still a binding — the same rule and the same order as evaluation.
+                if self.vars.contains_key(text) || self.failed.contains(text) {
+                    TraceNode::Variable {
+                        name: name.text.clone(),
+                        unit: None,
+                    }
+                } else if constant(text).is_some() || imaginary_constant(text).is_some() {
+                    TraceNode::Constant(name.text.clone())
+                } else if self.units.resolve(text).is_ok() {
+                    TraceNode::UnitRef(name.text.clone())
+                } else {
+                    TraceNode::Variable {
+                        name: name.text.clone(),
+                        unit: None,
+                    }
+                }
+            }
+            Expr::Unary { op, operand, .. } => TraceNode::Unary {
+                op: *op,
+                operand: Box::new(sketch(operand)),
+            },
+            Expr::Binary { op, lhs, rhs, .. } => TraceNode::Binary {
+                op: *op,
+                lhs: Box::new(sketch(lhs)),
+                rhs: Box::new(sketch(rhs)),
+            },
+            Expr::Call { callee, args, .. } => TraceNode::Call {
+                name: callee.text.clone(),
+                args: args.iter().map(sketch).collect(),
+            },
+            Expr::Index { base, indices, .. } => TraceNode::Index {
+                base: Box::new(sketch(base)),
+                indices: indices.iter().map(sketch).collect(),
+            },
+            Expr::Vector { elements, .. } => {
+                TraceNode::Vector(elements.iter().map(sketch).collect())
+            }
+            Expr::Matrix { rows, .. } => TraceNode::Matrix(
+                rows.iter()
+                    .map(|r| r.iter().map(sketch).collect())
+                    .collect(),
+            ),
+            Expr::Paren { inner, .. } => TraceNode::Paren(Box::new(sketch(inner))),
+            Expr::If {
+                cond,
+                then,
+                otherwise,
+                ..
+            } => TraceNode::Conditional {
+                cond: Box::new(sketch(cond)),
+                then: Box::new(sketch(then)),
+                otherwise: Box::new(sketch(otherwise)),
+            },
+            Expr::Convert { value, .. } => TraceNode::Convert {
+                value: Box::new(sketch(value)),
+                target: None,
+            },
+            Expr::Error { .. } => TraceNode::Malformed,
+        };
+        Trace::new(expr.span(), node, Err(EvalError::NotTaken))
+    }
 }
 
 /// What one statement produced.
@@ -3581,68 +3677,6 @@ fn compare(op: BinaryOp, a: &Value, b: &Value) -> Result<Value, EvalError> {
         BinaryOp::NotEqual => x.value != y.value,
         _ => unreachable!("compare called with {op:?}"),
     }))
-}
-
-/// The shape of an expression as a trace, with nothing evaluated.
-///
-/// Used for the arm of a conditional that was not taken. The renderer still has
-/// to show it — a worksheet shows its work, and "which arm" is part of the work
-/// — so the structure has to survive even though no value does. Numeric literals
-/// keep their value because a literal needs no evaluating to be known, and
-/// without them the unrendered arm would print as a row of question marks.
-fn sketch(expr: &Expr) -> Trace {
-    let node = match expr {
-        Expr::Number { value, span } => {
-            return Trace::new(*span, TraceNode::Number, Ok(Value::scalar(*value)))
-        }
-        Expr::Text { value, span } => {
-            return Trace::new(*span, TraceNode::Text, Ok(Value::Text(value.clone())))
-        }
-        Expr::Ident(name) => TraceNode::Variable {
-            name: name.text.clone(),
-            unit: None,
-        },
-        Expr::Unary { op, operand, .. } => TraceNode::Unary {
-            op: *op,
-            operand: Box::new(sketch(operand)),
-        },
-        Expr::Binary { op, lhs, rhs, .. } => TraceNode::Binary {
-            op: *op,
-            lhs: Box::new(sketch(lhs)),
-            rhs: Box::new(sketch(rhs)),
-        },
-        Expr::Call { callee, args, .. } => TraceNode::Call {
-            name: callee.text.clone(),
-            args: args.iter().map(sketch).collect(),
-        },
-        Expr::Index { base, indices, .. } => TraceNode::Index {
-            base: Box::new(sketch(base)),
-            indices: indices.iter().map(sketch).collect(),
-        },
-        Expr::Vector { elements, .. } => TraceNode::Vector(elements.iter().map(sketch).collect()),
-        Expr::Matrix { rows, .. } => TraceNode::Matrix(
-            rows.iter()
-                .map(|r| r.iter().map(sketch).collect())
-                .collect(),
-        ),
-        Expr::Paren { inner, .. } => TraceNode::Paren(Box::new(sketch(inner))),
-        Expr::If {
-            cond,
-            then,
-            otherwise,
-            ..
-        } => TraceNode::Conditional {
-            cond: Box::new(sketch(cond)),
-            then: Box::new(sketch(then)),
-            otherwise: Box::new(sketch(otherwise)),
-        },
-        Expr::Convert { value, .. } => TraceNode::Convert {
-            value: Box::new(sketch(value)),
-            target: None,
-        },
-        Expr::Error { .. } => TraceNode::Malformed,
-    };
-    Trace::new(expr.span(), node, Err(EvalError::NotTaken))
 }
 
 fn diagnose(trace: &Trace) -> Vec<Diagnostic> {

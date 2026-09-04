@@ -7,7 +7,7 @@ complex numbers, plots, several curves on one plot, a plot of a table of
 measured points, the importer's side of it, a definition that is really a
 function of `x`, prose as Markdown (§8.41), the v0.1.0 release, labelled axes,
 the v0.2.0 release, the v0.2.1 release, and Greek letters in the typeset
-columns (§8.47), the math font the output is set in (§8.48), the text face around it (§8.49), the space a unit stands off its number by (§8.50), and the substituted column becoming mathematics (§8.51).
+columns (§8.47), the math font the output is set in (§8.48), the text face around it (§8.49), the space a unit stands off its number by (§8.50), the substituted column becoming mathematics (§8.51), and the conditional drawn as cases with the gallery turned on (§8.52).
 
 **A four-step plan for typographic quality is under way (2026-09-04).** It was
 costed against the alternative of shipping MathJax, which was measured and
@@ -43,15 +43,11 @@ of those three arrive. The steps, in order:
 committed and pushed, and every gate named here is green. Three things are
 pending, in the order they are worth doing:
 
-1. **A typeset form for the conditional**, which is the last thing standing
-   between the gallery and being typeset. §8.51 measured what actually falls
-   back: of 342 whole-expression fallbacks across `examples/`, 135 were
-   conversions (fixed), 191 are substituted values that are `<mtext>` by design,
-   and **16 are conditionals**. A case brace is the standard notation for one.
-   Mapping Greek in the linear renderer was considered and **rejected** — the
-   gap is 16 lines, and a displayed name must round-trip, which `λ` does not
-   (§8.51). **The gallery is not typeset until this is done**, which is why it
-   does not yet use the shipped font.
+1. **Inline Markdown in prose.** `examples/bolt.nomo` writes `**preload**` and
+   the gallery now shows it as literal asterisks. §8.41 built the block level
+   and said inline was not built; turning the gallery on (§8.52) is what made it
+   visible. `_` emphasis is still refused on purpose — a name like `sigma_allow`
+   is not emphasis.
 2. **The importer's plot configuration.** `XYPlot'Labels'XLabel` and
    `Traces#n'Name` are still refused, and the reason they were refused is gone:
    the language can say them now. Before translating, three things need
@@ -82,10 +78,16 @@ installed on this machine. CI's `arm64` job covers it.
 | — SMath importer | **seven phases in** | `nomo-smath`: reads **both** corpora — 54 wiki worksheets (0.82–0.98) and 60 mechanics worksheets (1.3–1.5) — emits `.nomo`, and checks itself against 1179 stored answers. Agreement: 312/344 wiki, 283/283 mechanics. Design note §8.13–§8.39 |
 | — A second batch of builtins | **done** | `mod` `hypot` `nthroot` `log(x, b)` `cot` `sec` `csc` `asinh` `acosh` `atanh` `product` `mean` `median` `sort` `reverse` `trace` `submatrix`. Conventions read from SMath where it has one — `mod`'s sign, `submatrix`'s inclusive one-based bounds. `stdev` and `rank` are deliberately absent; `docs/language.md` says why. Took the wiki corpus from 304/337 to **312/344** |
 | — Releasing | **run three times** | A tag builds a binary per architecture with no cross-compilation, each published only after passing the golden suite on the machine that built it; the wasm module goes out with its hash after agreeing with native byte for byte; the editor and gallery deploy to Pages from `main`. `v0.1.0` proved the shell on real runners and found the tag-versus-branch fault in the `pages` job; `v0.2.0` is the first tag cut with that split already in place, and `v0.2.1` is a patch carrying the math-font fix |
-| — The gallery, and migration shown | **done** | `build-gallery.sh` renders every example into a browsable set of self-contained pages, and `docs/smath.md` finally *shows* an import: an SMath worksheet written here — ours to publish, unlike the corpora — beside what Nomo makes of it and what it computes. That fixture is also the only importer test that runs without the corpora |
+| — The gallery, and migration shown | **done** | `build-gallery.sh` renders every example into a browsable set of pages, typeset since §8.52 and sharing one math font file, and `docs/smath.md` finally *shows* an import: an SMath worksheet written here — ours to publish, unlike the corpora — beside what Nomo makes of it and what it computes. That fixture is also the only importer test that runs without the corpora |
 | — How-to worksheets | **six of six** | `bolt`, `shaft`, `column`, `bearing`, `spring`, `vessel` — a bolted joint, a shaft in combined bending and torsion, a column across the buckling transition, bearing life, a compression spring against six constraints, and a pressure vessel worked thin-wall and thick-wall side by side. The first worksheets written *for* the language rather than to exercise it; their acceptance is an engineer agreeing with the method rather than a green gate. Each says what it leaves out |
 | — The editor assists | **done** | Completion offering a name with what it holds and a unit with its dimension, hover saying what a name is, F12 to its definition, and a Typeset toggle that puts §18's MathML where a reader actually looks. All from the engine's own symbol table — no second parser in the front end. **Multiple open documents is the one piece not built**; the boundary already supports it and the reason is below |
-| — Typeset output | **first phase done** | `nomo html --mathml` renders the symbolic and substituted columns as MathML: division becomes a fraction, a power a superscript, `sqrt` a radical, and a bracket the fraction bar makes unnecessary is dropped. Off by default. `check-mathml.mjs` asks Chrome where the numerator ended up, because a browser without MathML draws it *beside* the denominator rather than failing. `math` names a math-font stack in both stylesheets instead of inheriting `.step`'s monospace: MathML layout reads the fraction bar, the axis and the script shifts from an OpenType MATH table, and the fonts are named, never fetched. **Fourth phase (§8.51):** a conversion is
+| — Typeset output | **first phase done** | `nomo html --mathml` renders the symbolic and substituted columns as MathML: division becomes a fraction, a power a superscript, `sqrt` a radical, and a bracket the fraction bar makes unnecessary is dropped. Off by default. `check-mathml.mjs` asks Chrome where the numerator ended up, because a browser without MathML draws it *beside* the denominator rather than failing. `math` names a math-font stack in both stylesheets instead of inheriting `.step`'s monospace: MathML layout reads the fraction bar, the axis and the script shifts from an OpenType MATH table, and the fonts are named, never fetched. **Fifth phase (§8.52):** a conditional is
+a brace over cases, `else if` flattening into rows; an arm that did not run is
+resolved by the evaluator rather than left as bare names, which moved one golden
+snapshot and made the text column consistent with itself; bracketing is asked of
+the linear renderer rather than judged twice, so a complex value keeps its
+brackets; and the result column is typeset. **The gallery is typeset**, sharing
+one font file across all 28 pages. **Fourth phase (§8.51):** a conversion is
 transparent rather than a fallback, which is most of what typeset output ever
 fell back on; the substituted column is set as a number and a unit rather than
 as running text, so a unit exponent is a real superscript and `8.427e-5` is
@@ -115,7 +117,7 @@ self-contained file. **Second phase:** a name that spells a Greek letter is set 
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Prose as Markdown | **block level done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline formatting is not built and `_` emphasis never will be. Design note §8.41, `examples/prose.nomo` |
 
-667 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+672 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -152,7 +154,7 @@ does not survive it, and then:
 
 ```bash
 cd /files/work/nomo
-cargo test --workspace                                  # 667 tests
+cargo test --workspace                                  # 672 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ./scripts/check-no-host-math.sh                         # determinism guard
@@ -294,7 +296,7 @@ The whole tag run took under two minutes: 26–50 s per binary and 29 s for the
 module, so the cost of releasing is not a reason to release less often.
 
 Before it was cut, every gate that can run on a development machine was run
-here: 667 tests, 29 snapshots, native and WebAssembly byte-identical, 114 corpus
+here: 672 tests, 29 snapshots, native and WebAssembly byte-identical, 114 corpus
 worksheets unmoved, nine browser checks. `compare-arch.sh` was not among them —
 `qemu-user` is not installed here — and CI's `arm64` job is what covers it.
 

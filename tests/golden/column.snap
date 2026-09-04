@@ -38,7 +38,7 @@ is_long = lambda ≥ lambda_c = 160 ≥ 105.5 = 1
 
 One expression with the decision inside it, so the worksheet cannot be read
 as having chosen a formula and forgotten to say which.
-sigma_cr = if is_long then π²·E_steel/lambda² else Fy_S355 - (Fy_S355·lambda/(2·pi))²/E_steel = if 1 then π²·(200 GPa)/160² else Fy_S355 - (Fy_S355·lambda/(2·pi))²/E_steel = 77110000 Pa
+sigma_cr = if is_long then π²·E_steel/lambda² else Fy_S355 - (Fy_S355·lambda/(2·π))²/E_steel = if 1 then π²·(200 GPa)/160² else Fy_S355 - (Fy_S355·lambda/(2·π))²/E_steel = 77110000 Pa
 sigma_cr = 77.11 MPa
 P_cr = sigma_cr·A = 77110000 Pa·(1963 mm²) = 151.4 kN
 ## The check
@@ -86,7 +86,7 @@ happening; a code check is what a drawing is signed against.
 <div class="step"><span class="name">is_long</span><span class="eq">=</span>lambda ≥ lambda_c<span class="eq">=</span><span class="subst">160 ≥ 105.5</span><span class="eq">=</span><span class="result">1</span></div>
 <h2 class="prose">The critical stress</h2>
 <p class="prose">One expression with the decision inside it, so the worksheet cannot be read as having chosen a formula and forgotten to say which.</p>
-<div class="step"><span class="name">sigma_cr</span><span class="eq">=</span>if is_long then π²·E_steel/lambda² else Fy_S355 - (Fy_S355·lambda/(2·pi))²/E_steel<span class="eq">=</span><span class="subst">if 1 then π²·(200 GPa)/160² else Fy_S355 - (Fy_S355·lambda/(2·pi))²/E_steel</span><span class="eq">=</span><span class="result">77110000 Pa</span></div>
+<div class="step"><span class="name">sigma_cr</span><span class="eq">=</span>if is_long then π²·E_steel/lambda² else Fy_S355 - (Fy_S355·lambda/(2·π))²/E_steel<span class="eq">=</span><span class="subst">if 1 then π²·(200 GPa)/160² else Fy_S355 - (Fy_S355·lambda/(2·π))²/E_steel</span><span class="eq">=</span><span class="result">77110000 Pa</span></div>
 <div class="step">sigma_cr<span class="eq">=</span><span class="result">77.11 MPa</span></div>
 <div class="step"><span class="name">P_cr</span><span class="eq">=</span>sigma_cr·A<span class="eq">=</span><span class="subst">77110000 Pa·(1963 mm²)</span><span class="eq">=</span><span class="result">151.4 kN</span></div>
 <h2 class="prose">The check</h2>

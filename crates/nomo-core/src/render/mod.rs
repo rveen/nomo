@@ -618,6 +618,39 @@ impl<'a> Renderer<'a> {
         }
     }
 
+    /// The result column, as a magnitude and a unit symbol.
+    ///
+    /// `None` unless the line answers with a plain scalar: an error, a vector, a
+    /// matrix, a string and a complex number all keep the text
+    /// [`Self::result`] writes. The three ways a result picks its unit are the
+    /// three [`Self::result`] uses, in the same order — an explicit `->`, then a
+    /// unit the expression wears plainly, then a coherent SI name.
+    pub fn result_parts(&self, trace: &Trace) -> Option<(String, String)> {
+        let q = trace.value.as_ref().ok()?.as_scalar()?;
+        if let Some(t) = self.target_of(trace) {
+            return Some(self.quantity_parts(&q, Some(t)));
+        }
+        match self.inferred_unit(trace) {
+            Some(u) => match q.to_unit(&u) {
+                Ok(m) => Some((number::format(m, &self.numbers), u.symbol.clone())),
+                Err(_) => Some(self.quantity_parts(&q, None)),
+            },
+            None => Some(self.quantity_parts(&q, None)),
+        }
+    }
+
+    /// How tightly a substituted value binds, as the linear renderer works it
+    /// out.
+    ///
+    /// The linear renderer has always had to answer this — a value with a unit
+    /// is a product, a complex number is a sum, a vector is an atom because it
+    /// brackets itself — and it answers it for every kind of value, not just
+    /// the scalars [`Self::substituted_parts`] can take apart. Typeset output
+    /// asks the same question and must not answer it a second way.
+    pub fn substituted_binding(&self, trace: &Trace) -> u8 {
+        self.walk(trace, Mode::Substituted).prec
+    }
+
     /// What a substituted name holds, as a magnitude and a unit symbol.
     ///
     /// `None` when the value is not a plain scalar. A vector, a matrix, a

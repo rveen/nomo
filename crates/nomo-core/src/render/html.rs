@@ -46,6 +46,17 @@ ul.prose li, ol.prose li { margin: 0.2rem 0; }
   font-size: 0.95rem; margin: 0.15rem 0; padding: 0.15rem 0;
   overflow-x: auto;
 }
+/* Typeset mathematics needs a font with an OpenType MATH table: the fraction
+   bar thickness, the axis height, the script shifts and the stretchy brackets
+   are all read from it, and a font without one leaves the browser guessing from
+   ordinary text metrics. A worked line otherwise inherits the monospace above,
+   which is the worst case for a fraction. These are named, never fetched — the
+   artifact stays a single self-contained file — and `math` is the CSS generic
+   that lets each platform offer whatever math font it has. */
+math {
+  font-family: "Latin Modern Math", "STIX Two Math", "TeX Gyre Pagella Math",
+               "Cambria Math", math;
+}
 .name { font-weight: 600; }
 .eq { opacity: 0.45; padding: 0 0.35rem; }
 .subst { opacity: 0.7; }

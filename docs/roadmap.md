@@ -394,6 +394,20 @@ passes. The check therefore asks the page where the numerator *ended up* —
 above the denominator, and taller than a letter — and was confirmed to fail
 against output rendered without the flag.
 
+The font is part of the layout rather than a matter of taste. MathML Core reads
+the fraction bar thickness, the axis height, the script shifts and the stretchy
+bracket recipes from the font's OpenType MATH table, and a font without one
+leaves the browser guessing them from ordinary text metrics — which is what was
+happening, because a worked line inherits the monospace stack `.step` sets and
+monospace is the worst case for a fraction. So `math` names a stack of its own
+in both stylesheets: Latin Modern Math, STIX Two Math, TeX Gyre Pagella Math,
+Cambria Math, then the `math` generic so a platform can offer whatever it has.
+Named and never fetched, for the same reason the plots are markup the engine
+draws: the artifact stays one self-contained file. Which entry wins is the
+machine's business — on this one it is STIX Two Math, confirmed by asking Chrome
+to measure the same string set in the stack and set in that font and getting the
+same width, against a different width for the monospace it replaced.
+
 ### 19. The editor — **done, less the multi-document part**
 
 Completion, hover and go-to-definition, all from a symbol table the engine now

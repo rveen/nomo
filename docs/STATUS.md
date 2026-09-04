@@ -225,15 +225,41 @@ the `gh release create` call cannot be exercised from a development machine;
 `v0.1.0` exercised them for the first time and `v0.2.0` is the second, and the
 only way to check either is to read the run.
 
-**What the second tag is.** `v0.2.0` carries labelled axes and named curves, the
-two evaluator leaks that work uncovered, and the `pages` fix — so it is the
-first tag cut with the branch-versus-tag split already in place, and the first
-where the site deployment and the artifacts are expected to travel by different
-triggers rather than one failing. Before it was cut, every gate that can run on
-a development machine was run here: 650 tests, 29 snapshots, native and
-WebAssembly byte-identical, 114 corpus worksheets unmoved, nine browser checks.
-`compare-arch.sh` was not among them — `qemu-user` is not installed here — and
-CI's `arm64` job is what covers it.
+**What the second tag settled.** `v0.2.0` carries labelled axes and named
+curves, the two evaluator leaks that work uncovered, and the `pages` fix — so it
+is the first tag cut with the branch-versus-tag split already in place, and it
+confirmed the split: the push to `main` ran `pages` alone and skipped the other
+three, the tag ran the other three and skipped `pages`, and both went green.
+That is the fault `v0.1.0` found, fixed and now demonstrated rather than
+argued. All five artifacts published — three tarballs, the module, and one
+`SHA256SUMS.txt` covering them — and **macOS agreed again**, which is the second
+tag's word on the central claim.
+
+The whole tag run took under two minutes: 26–50 s per binary and 29 s for the
+module, so the cost of releasing is not a reason to release less often.
+
+Before it was cut, every gate that can run on a development machine was run
+here: 650 tests, 29 snapshots, native and WebAssembly byte-identical, 114 corpus
+worksheets unmoved, nine browser checks. `compare-arch.sh` was not among them —
+`qemu-user` is not installed here — and CI's `arm64` job is what covers it.
+
+**What it warns about.** Every job now annotates that Node 20 is deprecated and
+being forced onto Node 24: `actions/upload-artifact@v4` and
+`download-artifact@v4` in this workflow, `configure-pages@v5` and
+`deploy-pages@v4` in the `pages` job. `checkout` and `setup-node` were already
+moved to v7 for exactly this reason; these four have no newer major to move to
+yet, so the annotation stands until they publish one. It is a warning rather
+than a failure, and the thing to watch is that a forced runtime upgrade is the
+runner deciding, not this repository — the same reason the toolchain is pinned.
+
+**What the published hash does and does not claim.** `SHA256SUMS.txt` lets a
+reader check that the module they downloaded is the one this workflow built. It
+is **not** a claim that a build of the same source on another machine produces
+the same bytes — the artifact carries absolute paths and a toolchain fingerprint
+and it does not. The claim this project makes is about *answers*, and
+`compare-targets.sh` is what checks it: it ran inside the `wasm` job before the
+module was uploaded, so what went out had been shown to agree with a native
+build byte for byte on the results themselves.
 
 ## Timings
 

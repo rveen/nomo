@@ -222,8 +222,8 @@ packaging, the checksums, the collection of artifacts into one `SHA256SUMS.txt`,
 the release notes — was extracted from the YAML and run against stand-in
 artifacts, and does what it says. The runner behaviour, the Pages deployment and
 the `gh release create` call cannot be exercised from a development machine;
-`v0.1.0` exercised them for the first time and `v0.2.0` is the second, and the
-only way to check either is to read the run.
+`v0.1.0` exercised them for the first time, `v0.2.0` is the second and `v0.2.1`
+the third, and the only way to check any of them is to read the run.
 
 **What the second tag settled.** `v0.2.0` carries labelled axes and named
 curves, the two evaluator leaks that work uncovered, and the `pages` fix — so it
@@ -243,14 +243,31 @@ here: 650 tests, 29 snapshots, native and WebAssembly byte-identical, 114 corpus
 worksheets unmoved, nine browser checks. `compare-arch.sh` was not among them —
 `qemu-user` is not installed here — and CI's `arm64` job is what covers it.
 
-**What it warns about.** Every job now annotates that Node 20 is deprecated and
-being forced onto Node 24: `actions/upload-artifact@v4` and
-`download-artifact@v4` in this workflow, `configure-pages@v5` and
-`deploy-pages@v4` in the `pages` job. `checkout` and `setup-node` were already
-moved to v7 for exactly this reason; these four have no newer major to move to
-yet, so the annotation stands until they publish one. It is a warning rather
-than a failure, and the thing to watch is that a forced runtime upgrade is the
-runner deciding, not this repository — the same reason the toolchain is pinned.
+**What the third tag settled.** `v0.2.1` is a patch: the typeset columns name a
+math font, `repository` names the right repository, and the five workflow
+actions still on Node 20 move to their current majors. It is the first tag whose
+content changes *nothing in any answer* — a font is layout — so the golden suite
+was there to show exactly that, and 29 snapshots and 114 corpus worksheets
+stayed put.
+
+What it actually settles is the action bump, which until it ran was the one
+change this repository could not check. Only `pages` runs on a push to `main`,
+so `upload-artifact@v7`, `download-artifact@v8` and the `release` job's use of
+them had never executed anywhere; a tag was the only thing that would run them.
+It ran them, and the annotations are gone: the `v0.2.0` tag run carried five
+Node 20 deprecation warnings — four for `upload-artifact@v4`, one for
+`download-artifact@v4` — and the `v0.2.1` run carries none, read from the
+check-run annotations of both. `download-artifact@v8`'s stricter digest check
+passed rather than rejecting anything, and `upload-pages-artifact@v5`'s dropping
+of hidden files left the site unaffected exactly as `web/dist` predicted: the
+deployed `style.css` was fetched afterwards and carries the font stack.
+
+The split held a second time — the tag ran `binaries`, `wasm` and `release` and
+skipped `pages`, the push to `main` ran `pages` and skipped the other three —
+and **macOS agreed a third time**, which is the third tag's word on the central
+claim. Timings are steady enough to plan around: 25 s, 32 s and 49 s for the
+three binaries, 27 s for the module, 12 s to collect and publish, and 1 m 42 s
+for the site.
 
 **What the published hash does and does not claim.** `SHA256SUMS.txt` lets a
 reader check that the module they downloaded is the one this workflow built. It

@@ -3094,6 +3094,85 @@ names are indexed and need not be dense, and the block names its plot by a
 region name that the emitter does not otherwise track. That is an importer step,
 with its own measurements, not a tack-on to this one.
 
+### 8.47 A name that spells a Greek letter is set as one (2026-09-04)
+
+Step 18 gave the worksheet fractions, superscripts and radicals and stopped
+there, which left the typeset column drawing `sigma_allow` as the *word*
+"sigma" with "allow" under it. That is the largest remaining distance between
+output that has been typeset and output that looks as though it has, and it
+costs nothing: no font, no library, one table in `render/mathml.rs`.
+
+It also fixes an inconsistency the flag had all along. `pi` typeset as the word
+`pi` beside a text column that showed π, because the MathML renderer had no
+table of its own and did not use the one `render/mod.rs` already had. It uses it
+now, so the two columns cannot disagree about a constant — the same rule the
+linear rendering already follows for everything else.
+
+**The letter a name maps to is the one Unicode gives that name.** `phi` is
+U+03C6 GREEK SMALL LETTER PHI. TeX's `\phi` is the *symbol* form ϕ instead, and
+following TeX there would mean `phi` and `φ` drawing as different letters —
+which is exactly the confusion the table exists to remove, because the language
+accepts a Greek letter typed directly (`lex::is_ident_start` takes any
+alphabetic character) and always has. The `var` names take the symbol forms, as
+they do in TeX.
+
+**A name maps only where the Greek letter is distinct from the Latin letter it
+would otherwise be set as.** There is no `omicron`, because ο is o; no `Alpha`,
+`Beta` or `Eta`, because Α, Β and Η are A, B and H. Mapping those changes the
+codepoint without changing the glyph, and takes the name away from a worksheet
+using it as an ordinary variable — a cost with no visible return. That single
+rule reproduces TeX's uppercase set exactly and explains the gap TeX leaves at
+omicron, which is the sort of agreement worth having before trusting a table.
+
+Units are not passed through it, and must not be: `psi` is pounds per square
+inch in `unit.rs`, not ψ. A `UnitRef` has its own branch and its own upright
+rendering, and a test pins it.
+
+**The italic and the upright are MathML's job, and this is what makes it do it.**
+Nothing in the renderer asks for either. MathML Core italicises a
+one-character `<mi>` and leaves a longer one upright, which is ISO 80000-2's
+rule already: a quantity symbol is a single italic letter, and a subscript that
+is a word describing it — the `allow` in `σ_allow`, the `required` in
+`d_required` — is upright because it is not a quantity. So the Greek table is
+*also* the italic fix. As the word `sigma` the stem was five characters, and
+five characters are upright; as σ it is one.
+
+Chrome was measured rather than trusted on that: at 40 px in STIX Two Math a
+bare `<mi>V</mi>` sets 25.61 px wide against 27.20 px for
+`<mi mathvariant="normal">V</mi>`, so the transform to U+1D449 really happens.
+It is not made a gate here, because the width it produces depends on the machine
+having a math font at all — which is what the next step ships. The check belongs
+with the font, not before it.
+
+Built-in constants go the other way and are marked upright explicitly: ISO
+80000-2 sets π, e and ∞ in roman, and that is also what tells the constant from
+a variable somebody named the same.
+
+**The name column had to follow.** It was plain text, so the first version of
+this change produced lines reading `sigma_allow` on the left and σ_allow in the
+formula beside it — the same quantity, twice, differently. `name_markup` puts
+the binding through the same identifier renderer. `unit m2 = …` and `fn f
+defined` do not follow, because they are annotations set as prose in a `.note`
+line rather than part of the worksheet's mathematics, and a declared unit is
+upright regardless.
+
+**A typeset name is not bold, and that is deliberate.** The name column is
+bold so a worksheet's definitions scan down the left edge, but bold has a
+*meaning* in mathematics — a bold σ is a tensor rather than a stress — so a
+symbol that has become mathematics must not inherit it. Chrome's MathML Core
+stylesheet already resets the weight, measured at 400 against the `.name` rule's
+600, so nothing had to be built; both stylesheets now say it out loud instead,
+because a name that quietly stopped being bold reads as a bug worth fixing.
+
+**What this leaves.** The constructs with no typeset form — a conditional, a
+conversion, a comparison — still fall back to the linear text, and that text has
+no Greek table of its own. So `examples/column.nomo` now draws λ and σ_cr on the
+lines that typeset and carries `lambda` and `sigma_cr` inside the `<mtext>` of
+the lines that do not. Closing it means either giving those constructs typeset
+forms, or mapping Greek in the linear renderer too — and the second changes the
+default output of `nomo render` and every one of the 29 golden snapshots, so it
+is a decision on its own rather than a tail of this one.
+
 ### 8.8 Strategy: corpus-driven
 
 Build the importer as a separate crate emitting the Nomo document format, then run it across every

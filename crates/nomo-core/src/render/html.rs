@@ -58,6 +58,13 @@ math {
                "Cambria Math", math;
 }
 .name { font-weight: 600; }
+/* A typeset name is deliberately not bold. The name column is bold so that a
+   worksheet's definitions scan down the left edge of the page — but bold has a
+   *meaning* in mathematics, where a bold σ is a tensor rather than a stress, so
+   a symbol that has become mathematics must not inherit it. MathML Core's own
+   stylesheet already resets the weight; this says so out loud, because a name
+   that stopped being bold otherwise reads as a bug worth fixing. */
+.name math { font-weight: normal; }
 .eq { opacity: 0.45; padding: 0 0.35rem; }
 .subst { opacity: 0.7; }
 .result { font-weight: 600; }
@@ -241,7 +248,7 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                 if let Ok(Value::Plot(p)) = &trace.value {
                     body.push_str(&format!(
                         "<div class=\"step\"><span class=\"name\">{}</span>{eq}{}</div>\n",
-                        escape(name),
+                        r.name_markup(name),
                         r.symbolic_markup(trace)
                     ));
                     body.push_str(&plot::svg(p, r.units, &r.numbers));
@@ -249,7 +256,7 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                 }
                 let mut line = format!(
                     "<div class=\"step\"><span class=\"name\">{}</span>{eq}{}",
-                    escape(name),
+                    r.name_markup(name),
                     r.symbolic_markup(trace)
                 );
                 if r.substitution_is_informative(trace) {

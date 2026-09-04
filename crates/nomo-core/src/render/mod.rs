@@ -211,6 +211,27 @@ impl<'a> Renderer<'a> {
         }
     }
 
+    /// The name a line binds, typeset when the options ask for it.
+    ///
+    /// The left column has to follow the other two or the change is worse than
+    /// no change: a line reading `sigma_allow` beside a formula reading
+    /// σ_allow, both naming the same quantity, is a page that looks wrong in a
+    /// way the untypeset page did not.
+    ///
+    /// Only a binding gets this. `unit m2 = ...` and `fn f defined` are
+    /// annotations set as prose in a `.note` line rather than as part of the
+    /// worksheet's mathematics, and a declared unit is upright in any case.
+    pub fn name_markup(&self, name: &str) -> String {
+        if self.opts.mathml {
+            format!(
+                "<math display=\"inline\"><mrow>{}</mrow></math>",
+                mathml::identifier(name)
+            )
+        } else {
+            escape(name)
+        }
+    }
+
     /// The same for the substituted column, which is the one an engineer audits.
     pub fn substituted_markup(&self, trace: &Trace) -> String {
         let linear = self.substituted(trace);

@@ -318,9 +318,91 @@ fn a_fraction_bar_replaces_the_brackets_it_makes_unnecessary() {
 fn a_subscripted_name_is_drawn_as_one() {
     let out = typeset("sigma_allow = 1 MPa\nx = sigma_allow*2\n");
     assert!(
-        out.contains("<msub><mi>sigma</mi><mi>allow</mi></msub>"),
+        out.contains("<msub><mi>σ</mi><mi>allow</mi></msub>"),
         "the underscore should become a subscript: {out}"
     );
+}
+
+#[test]
+fn the_name_column_is_typeset_with_the_rest_of_the_line() {
+    // A line reading `sigma_allow` on the left beside a formula reading σ_allow
+    // on the right, both naming the same quantity, is worse than a page that
+    // typesets neither.
+    let out = typeset("sigma_allow = 1 MPa\nx = sigma_allow*2\n");
+    assert!(
+        out.contains("<span class=\"name\"><math display=\"inline\"><mrow><msub><mi>σ</mi><mi>allow</mi></msub>"),
+        "the name column was left as text: {out}"
+    );
+    let sheet = nomo_core::Sheet::new("sigma_allow = 1 MPa\n");
+    let plain = nomo_core::render::html::body(&sheet, &RenderOptions::default());
+    assert!(
+        plain.contains("<span class=\"name\">sigma_allow</span>"),
+        "the name column should be plain text without the flag: {plain}"
+    );
+}
+
+#[test]
+fn a_name_that_spells_a_greek_letter_is_set_as_one() {
+    // What an engineer types on an ordinary keyboard for σ, λ and Δ. Setting
+    // them as the words is the difference between output that has been typeset
+    // and output that only looks as though it has.
+    let out = typeset("lambda = 2\nDelta_p = 3 Pa\ntheta = 1\nx = lambda*theta\n");
+    assert!(out.contains("<mi>λ</mi>"), "lambda: {out}");
+    assert!(out.contains("<mi>θ</mi>"), "theta: {out}");
+    assert!(
+        out.contains("<msub><mi>Δ</mi><mi>p</mi></msub>"),
+        "Delta_p: {out}"
+    );
+    assert!(!out.contains("lambda"), "the word survived: {out}");
+}
+
+#[test]
+fn the_greek_table_stops_where_the_glyph_stops_being_latin() {
+    // Ο is o and Β is B to look at, so mapping them would change the codepoint
+    // without changing the glyph and would take the name from a worksheet using
+    // it as an ordinary variable. That rule is why TeX has no `\omicron`
+    // either.
+    let out = typeset("omicron = 1\nBeta = 2\nx = omicron*Beta\n");
+    assert!(out.contains("<mi>omicron</mi>"), "omicron mapped: {out}");
+    assert!(out.contains("<mi>Beta</mi>"), "Beta mapped: {out}");
+}
+
+#[test]
+fn a_greek_name_and_the_letter_itself_draw_the_same() {
+    // The point of taking Unicode's name for the character rather than TeX's:
+    // `phi` and `φ` are two spellings of one letter, and a reader who typed one
+    // must not see the other. TeX's `\phi` is the symbol form ϕ, which would
+    // have made these two disagree.
+    let spelled = typeset("phi = 1\nx = phi*2\n");
+    let typed = typeset("φ = 1\nx = φ*2\n");
+    assert!(spelled.contains("<mi>φ</mi>"), "spelled: {spelled}");
+    assert!(typed.contains("<mi>φ</mi>"), "typed: {typed}");
+}
+
+#[test]
+fn a_unit_is_never_read_as_a_greek_name() {
+    // `psi` is pounds per square inch, not ψ. Units resolve in their own branch
+    // and render upright; the table must not reach them.
+    let out = typeset("p = 30 psi\nq = p*2\n");
+    assert!(
+        out.contains("<mi mathvariant=\"normal\">psi</mi>"),
+        "a unit was read as a Greek name: {out}"
+    );
+    assert!(!out.contains("ψ"), "a unit was read as a Greek name: {out}");
+}
+
+#[test]
+fn a_constant_is_upright_and_says_what_the_text_column_says() {
+    // The typeset column used to draw the *word* `pi` beside a text column
+    // showing π, because it had no table of its own and did not use the
+    // renderer's. Upright because ISO 80000-2 sets a mathematical constant in
+    // roman, which is also what tells it from a variable of the same name.
+    let out = typeset("r = 5 cm\nh = 12 cm\nV = pi*r^2*h\n");
+    assert!(
+        out.contains("<mi mathvariant=\"normal\">π</mi>"),
+        "pi should be an upright π: {out}"
+    );
+    assert!(!out.contains("<mi>pi</mi>"), "the word survived: {out}");
 }
 
 #[test]

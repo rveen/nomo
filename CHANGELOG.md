@@ -1,5 +1,39 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **A name that spells a Greek letter is typeset as one.** `sigma_allow` draws
+  as σ_allow, `lambda` as λ, `Delta_p` as Δ_p — in `nomo html --mathml` and
+  behind the editor's **Typeset** toggle. Presentation only: the language
+  already accepted `σ` typed directly and still treats the two spellings as two
+  names. The letter is the one *Unicode* gives that name rather than the one
+  TeX gives it, so `phi` and a typed `φ` are the same letter; the `var` names
+  take the symbol forms. A name maps only where the Greek glyph differs from
+  the Latin one it would otherwise be set as, which is why there is no
+  `omicron` and no `Alpha` — and which reproduces TeX's uppercase set exactly.
+  Units are never read this way: `psi` stays pounds per square inch.
+- **The italic and the upright now follow ISO 80000-2**, and the Greek table is
+  what does it. Nothing asks for either: MathML Core italicises a
+  one-character `<mi>` and leaves a longer one upright, which is already the
+  rule that a quantity symbol is a single italic letter and a descriptive
+  subscript is an upright word. As the word `sigma` a stem was five characters
+  and set upright; as σ it is one.
+- **The name column is typeset with the rest of the line.** It was plain text,
+  which would have left `sigma_allow` on the left of a line whose formula read
+  σ_allow. `unit … = …` and `fn … defined` stay as prose notes.
+
+### Fixed
+
+- **`pi` no longer typesets as the word "pi".** The MathML renderer had no
+  symbol table of its own and did not use the one the linear renderer already
+  had, so the typeset column drew `pi` beside a text column showing π. Both now
+  read from one table. Constants are marked upright, which is how ISO 80000-2
+  sets π, e and ∞ and what distinguishes them from a variable of the same name.
+
+Design note §8.47.
+
 ## 0.2.1 — a font that can set the mathematics
 
 Typeset output was asking a font with no MATH table to lay out a fraction. No

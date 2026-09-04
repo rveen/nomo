@@ -184,6 +184,13 @@ footer p { margin: 0; }
   background:#f8f8f7;
 }
 #output .name   { font-weight: 600; }
+/* A typeset name is deliberately not bold. The name column is bold so that a
+   worksheet's definitions scan down the left edge of the page — but bold has a
+   *meaning* in mathematics, where a bold σ is a tensor rather than a stress, so
+   a symbol that has become mathematics must not inherit it. MathML Core's own
+   stylesheet already resets the weight; this says so out loud, because a name
+   that stopped being bold otherwise reads as a bug worth fixing. */
+#output .name math { font-weight: normal; }
 #output .eq     { opacity: 0.45; padding: 0 0.35rem; }
 #output .subst  { opacity: 0.7; }
 #output .result { font-weight: 600; }

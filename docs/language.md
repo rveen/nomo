@@ -1083,6 +1083,46 @@ A unit that does not fit the value is ignored rather than applied: `M = 500 N*m`
 offers `m` as the unit it was written in, and a moment shown as `500 m` would be
 worse than one shown in base units.
 
+### Typeset output
+
+`nomo html --mathml` sets the symbolic and substituted columns as mathematics
+rather than as text: a division becomes a fraction, a power a superscript, a
+`sqrt` a radical, and a bracket that only said "divide all of this" is dropped
+because the bar says it. The editor has the same thing behind a **Typeset**
+toggle. It is off by default.
+
+**A name that spells a Greek letter is set as that letter.** `sigma_allow`
+draws as σ_allow, `lambda` as λ, `Delta_p` as Δ_p. This is presentation only —
+the two spellings stay two distinct names, so a worksheet that binds both
+`sigma` and `σ` has two variables that draw alike.
+
+The letter you get is the one Unicode gives that name, so the spelled-out form
+and the typed form agree: `phi` and `φ` are both U+03C6. The `var` names —
+`varepsilon`, `vartheta`, `varkappa`, `varpi`, `varrho`, `varsigma`, `varphi` —
+give the symbol variants ϵ ϑ ϰ ϖ ϱ ς ϕ, as in TeX.
+
+A name maps only where the Greek letter looks different from the Latin letter
+it would otherwise be set as. So there is no `omicron` (ο is o) and no `Alpha`,
+`Beta`, `Epsilon`, `Zeta`, `Eta`, `Iota`, `Kappa`, `Mu`, `Nu`, `Omicron`,
+`Rho`, `Tau` or `Chi` — those capitals are Latin letters to look at, and the
+names stay yours to use. The uppercase names that do map are `Gamma`, `Delta`,
+`Theta`, `Lambda`, `Xi`, `Pi`, `Sigma`, `Upsilon`, `Phi`, `Psi` and `Omega`.
+
+**Units are never read as Greek names.** `psi` is pounds per square inch, and it
+draws upright as `psi`.
+
+Italic and upright follow ISO 80000-2, and you get them by writing the name the
+way you would say it: a single-letter symbol is italic, and a word is upright.
+That is why `sigma_allow` comes out as an italic σ with an upright `allow` —
+the subscript describes the quantity, it is not one. Built-in constants are
+upright too: π, e and ∞ are set in roman, which is what distinguishes them from
+a variable of the same name.
+
+Constructs with no typeset form — a conditional, a conversion, a comparison —
+are carried through as the linear text instead, because a sentence in the middle
+of a formula beats a gap in the middle of a worksheet. That text has no Greek
+convention, so a name inside one of those is shown as written.
+
 The worksheets under `examples/` are drawn from this document, and their rendered
 output is committed in `tests/golden/` and compared byte for byte on every build
 (`cargo run -p nomo-cli -- test`). A rule stated here that no example

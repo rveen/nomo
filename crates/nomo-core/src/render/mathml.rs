@@ -20,6 +20,11 @@
 //! dropped because the fraction says it now. That is most of what makes a
 //! formula look like one.
 //!
+//! A name that spells a Greek letter is set as that letter — `sigma_allow` is
+//! σ_allow — which is the rest of it. See [`greek`] for which names map and
+//! why, and [`identifier`] for why that single change is also what gets the
+//! italic and upright right.
+//!
 //! Everything it has no typeset form for — a conditional, a conversion, a
 //! comparison, a plot — falls back to the linear text this renderer has always
 //! produced, wrapped in `<mtext>`. A fallback rather than a refusal because the
@@ -35,7 +40,7 @@
 //! than a claim about those browsers.
 
 use crate::ast::{BinaryOp, UnaryOp};
-use crate::render::{escape, number, Renderer};
+use crate::render::{constant_symbol, escape, number, Renderer};
 use crate::trace::{Trace, TraceNode};
 use crate::value::Value;
 
@@ -108,7 +113,17 @@ fn node(r: &Renderer, trace: &Trace, linear: &str, sub: bool) -> String {
             }
             _ => String::from("<mo>?</mo>"),
         },
-        TraceNode::Constant(name) => identifier(name),
+        // A built-in constant is a symbol, not a quantity, so it is upright:
+        // ISO 80000-2 sets π, e and ∞ in roman, and that is also what tells the
+        // constant apart from a variable someone named the same. The symbol
+        // comes from the renderer's own table rather than a second one here, so
+        // that the typeset column and the text column cannot disagree about it
+        // — until now they did, and `pi` typeset as the *word* "pi" beside a
+        // text column showing π.
+        TraceNode::Constant(name) => format!(
+            "<mi mathvariant=\"normal\">{}</mi>",
+            escape(&constant_symbol(name))
+        ),
         TraceNode::Variable { name, .. } | TraceNode::FnRef(name) => identifier(name),
         TraceNode::UnitRef(name) => format!("<mi mathvariant=\"normal\">{}</mi>", escape(name)),
         TraceNode::Text => format!("<mtext>{}</mtext>", escape(linear)),
@@ -267,9 +282,12 @@ fn call(r: &Renderer, name: &str, args: &[Trace], linear: &str, sub: bool) -> St
             "<mo>|</mo>{}<mo>|</mo>",
             ungrouped(r, &args[0], linear, sub)
         ),
+        // A function's name goes through the same table: `fn phi(x)` is φ(x).
+        // `sin`, `max` and the rest are more than one character and so stay
+        // upright, which is what ISO 80000-2 asks of a function name anyway.
         _ => format!(
             "<mi>{}</mi><mo>&#8289;</mo><mo>(</mo>{}<mo>)</mo>",
-            escape(name),
+            symbol(name),
             inner.join("<mo>,</mo>")
         ),
     }
@@ -280,15 +298,114 @@ fn bracket_table(rows: &str) -> String {
     format!("<mo>[</mo><mtable>{rows}</mtable><mo>]</mo>")
 }
 
-fn identifier(name: &str) -> String {
+/// The letter a spelled-out Greek name is conventionally written with.
+///
+/// A worksheet is typed on an ordinary keyboard, so `sigma_allow` is what an
+/// engineer writes for σ_allow and `lambda` is what they write for the
+/// slenderness ratio in `examples/column.nomo`. Setting those as the *words*
+/// "sigma" and "lambda" is the difference between output that has been typeset
+/// and output that looks like it.
+///
+/// This is a display convention and nothing more. The language already accepts
+/// `σ` directly — `lex::is_ident_start` takes any alphabetic character — and
+/// nothing here changes that: the two spellings remain two distinct names to
+/// the graph, and a worksheet that binds both will draw them the same way.
+///
+/// # Which name maps, and to what
+///
+/// **The character a name maps to is the one Unicode gives that name**, so the
+/// spelled-out form and the typed form agree. `phi` is U+03C6 GREEK SMALL
+/// LETTER PHI, which is what a worksheet gets by typing `φ`; TeX's `\phi`
+/// is the *symbol* form ϕ instead, and following TeX here would mean `phi` and
+/// `φ` drawing as different letters, which is precisely the confusion this
+/// table exists to remove. The `var` names take the symbol forms, as they do
+/// in TeX.
+///
+/// **A name maps only where the Greek letter is distinct from the Latin letter
+/// it would otherwise be set as.** So there is no `omicron` (ο is o) and no
+/// `Alpha`, `Beta` or `Eta` (Α, Β, Η are A, B, H). Mapping those would change
+/// the codepoint without changing the glyph, and would take the name away from
+/// a worksheet using it as an ordinary variable — a cost with no visible
+/// return. That one rule reproduces TeX's uppercase set exactly, and explains
+/// the gap TeX leaves at omicron.
+///
+/// Units are not passed through here, and must not be: `psi` is pounds per
+/// square inch in `unit.rs`, not ψ. A `UnitRef` has its own branch and its own
+/// upright rendering.
+fn greek(name: &str) -> Option<&'static str> {
+    Some(match name {
+        "alpha" => "α",
+        "beta" => "β",
+        "gamma" => "γ",
+        "delta" => "δ",
+        "epsilon" => "ε",
+        "zeta" => "ζ",
+        "eta" => "η",
+        "theta" => "θ",
+        "iota" => "ι",
+        "kappa" => "κ",
+        "lambda" => "λ",
+        "mu" => "μ",
+        "nu" => "ν",
+        "xi" => "ξ",
+        "pi" => "π",
+        "rho" => "ρ",
+        "sigma" => "σ",
+        "tau" => "τ",
+        "upsilon" => "υ",
+        "phi" => "φ",
+        "chi" => "χ",
+        "psi" => "ψ",
+        "omega" => "ω",
+        // The symbol forms, under the names TeX gives them.
+        "varepsilon" => "ϵ",
+        "vartheta" => "ϑ",
+        "varkappa" => "ϰ",
+        "varpi" => "ϖ",
+        "varrho" => "ϱ",
+        "varsigma" => "ς",
+        "varphi" => "ϕ",
+        // Uppercase, stopping where the glyph stops being Latin.
+        "Gamma" => "Γ",
+        "Delta" => "Δ",
+        "Theta" => "Θ",
+        "Lambda" => "Λ",
+        "Xi" => "Ξ",
+        "Pi" => "Π",
+        "Sigma" => "Σ",
+        "Upsilon" => "Υ",
+        "Phi" => "Φ",
+        "Psi" => "Ψ",
+        "Omega" => "Ω",
+        _ => return None,
+    })
+}
+
+/// A name as it should be set: its Greek letter if it spells one, else itself.
+fn symbol(name: &str) -> String {
+    escape(greek(name).unwrap_or(name))
+}
+
+/// A name, with the underscore in it drawn as the subscript it stands for.
+///
+/// Nothing here asks for italic or upright, and that is the whole of the
+/// discipline rather than an omission. MathML Core italicises a one-character
+/// `<mi>` and leaves a longer one upright, which is ISO 80000-2's rule already:
+/// a quantity symbol is a single italic letter, and a subscript that is a word
+/// describing it — the `allow` in `σ_allow`, the `required` in `d_required` —
+/// is upright because it is not a quantity.
+///
+/// So [`greek`] is also what makes the *stem* italic. As the word `sigma` it
+/// was five characters and five characters are upright; as σ it is one.
+pub(super) fn identifier(name: &str) -> String {
     // A subscripted name — `V_drop`, `sigma_allow` — is drawn as one, since that
     // is what the underscore was standing in for.
     match name.split_once('_') {
         Some((stem, sub)) if !stem.is_empty() && !sub.is_empty() => format!(
             "<msub><mi>{}</mi><mi>{}</mi></msub>",
-            escape(stem),
-            escape(sub)
+            symbol(stem),
+            symbol(sub)
         ),
-        _ => format!("<mi>{}</mi>", escape(name)),
+        _ => format!("<mi>{}</mi>", symbol(name)),
     }
 }

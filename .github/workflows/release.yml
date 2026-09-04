@@ -25,6 +25,31 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
 
+# The `actions/*` versions are the current majors, and they were bumped together
+# because the runner had begun annotating every job in this workflow: the five
+# below still targeted Node 20 and were being force-upgraded to Node 24. A forced
+# runtime upgrade is the runner deciding rather than this repository, which is
+# the same thing the pinned Rust toolchain exists to prevent, so the move is
+# deliberate rather than cosmetic. `checkout` and `setup-node` were already on
+# v7.
+#
+# Three of the five jump more than one major, and two carry a breaking change
+# that had to be checked against what this workflow actually does:
+#
+#   * `upload-pages-artifact` v4 stopped including hidden files. `web/dist`
+#     contains no dotfile — no `.nojekyll`, nothing — so the site is unaffected;
+#     v5 adds `include-hidden-files` if that ever stops being true.
+#   * `download-artifact` v8 turns a digest mismatch from a warning into an
+#     error. That is the direction this repository would have chosen anyway: an
+#     artifact that does not match the hash the server recorded is exactly what
+#     the release must not publish. Its other v5 break — path handling for a
+#     single artifact fetched by ID — does not apply, because the `release` job
+#     names no artifact and takes them all.
+#
+# `deploy-pages` requires an artifact from `upload-pages-artifact` v3 or newer,
+# which v5 satisfies. The Node 24 actions need runner 2.327.1 or later; every
+# runner here is GitHub-hosted, so that is GitHub's problem rather than this
+# file's.
 jobs:
   # The command-line tool, on the three targets that can be built on a runner
   # that owns the architecture. Cross-compilation is deliberately not used: this
@@ -70,7 +95,7 @@ jobs:
           sums() { if command -v sha256sum >/dev/null; then sha256sum "$@"; else shasum -a 256 "$@"; fi; }
           cd dist && sums ./*.tar.gz > "SHA256SUMS-${{ matrix.name }}.txt"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: binaries-${{ matrix.name }}
           path: dist/
@@ -105,7 +130,7 @@ jobs:
           cd dist && sha256sum ./*.wasm > SHA256SUMS-wasm.txt
           cat SHA256SUMS-wasm.txt
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wasm
           path: dist/
@@ -139,13 +164,13 @@ jobs:
       - name: Build and check the front end
         run: ./scripts/build-web.sh
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: web/dist
 
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   # Everything above, gathered into one release with its checksums.
   release:
@@ -153,7 +178,7 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
 

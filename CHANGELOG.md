@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.2.0 — what a plot is about
+
+A worksheet could draw a curve; it could not say what the curve was *of*. This
+release adds the two words a reader looks for first, and fixes what the work
+uncovered.
+
+### The language
+
+- **`axis x "Frequency"`** names what an axis measures, and **`label "Gain",
+  "Phase"`** names the curves in a legend. The unit stays at the end of the
+  axis rather than merging into the label: `Frequency` and `Hz` are questions a
+  reader asks at different moments, and merging them would mean rewriting the
+  label whenever the worksheet changed units. After `axis y`, the comma decides
+  — two expressions are limits, one is a label — which is syntactic rather than
+  by the kind of the expression, so a label can be a name holding a string.
+- A plot that names no axis is drawn exactly as it was: the label takes a row of
+  its own, so only two of 29 snapshots moved, and both because their worksheets
+  now use the feature.
+
+This was the most-wanted plot feature by corpus ranking — 88 `description` calls
+across the SMath worksheets, every one of them an axis label or a trace name.
+Design note §8.46. The importer still refuses `XYPlot'Labels'XLabel` and
+`Traces#n'Name`; the language can express them now, and what stands in the way
+is three measurements against the corpora rather than a missing construct.
+
+### Fixed
+
+- **Two leaks older than the feature that found them**, both because
+  `Sheet::update` never reset the environment even when it re-evaluated every
+  statement: a deleted definition went on applying, so removing `x = 5` left
+  `y = x` computing 5 from a name written nowhere in the document; and a deleted
+  `axis x log` went on drawing a logarithmic chart. A full pass now starts from
+  nothing, as opening the file does. Because a setting binds no name, the graph
+  has no edge from an `axis` or `label` line to the plots it governs, so
+  changing one is a full pass too — otherwise renaming an axis would leave the
+  old word on the chart until something unrelated redrew it.
+- **The site deploys from `main`, not from a tag.** The `github-pages`
+  environment allows deployments from branches only, so `v0.1.0`'s Pages job
+  failed in one second with no step run. Deploying the page from the default
+  branch and the artifacts from a tag is also the better arrangement on its own
+  terms: fixing a typo on a page should not require cutting a release.
+
+
 ## 0.1.0 — the first release
 
 The first build anybody outside this repository can have: a command-line tool

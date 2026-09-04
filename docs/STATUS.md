@@ -1,28 +1,25 @@
 # Status
 
-Snapshot for picking the work back up. Last updated after labelled axes and
-named curves (design note §8.46). The nine numbered phases were complete before
-any of the language work below; the most recent commits are the importer's
-seventh phase, figure sizing, complex numbers, plots, several curves on one
-plot, a plot of a table of measured points, the importer's side of it, a
-definition that is really a function of `x`, prose as Markdown (§8.41), the
-v0.1.0 release, and labelled axes.
+Snapshot for picking the work back up. Last updated at the **v0.2.0** release.
+The nine numbered phases were complete before any of the language work below;
+the most recent commits are the importer's seventh phase, figure sizing,
+complex numbers, plots, several curves on one plot, a plot of a table of
+measured points, the importer's side of it, a definition that is really a
+function of `x`, prose as Markdown (§8.41), the v0.1.0 release, labelled axes,
+and the v0.2.0 release.
 
 **Where the last session stopped, and what it left.** Everything below is
-committed and every gate named here is green. Three things are pending, in the
-order they are worth doing:
+committed and pushed, and every gate named here is green. Two things are
+pending, in the order they are worth doing:
 
-1. **`52ae56d` is committed but not pushed.** The labelled-axes commit is on
-   local `main` only. Push it before anything else — CI has not seen it, and
-   the `arm64` job is the only check on this change that cannot be run here.
-2. **The importer's plot configuration.** `XYPlot'Labels'XLabel` and
+1. **The importer's plot configuration.** `XYPlot'Labels'XLabel` and
    `Traces#n'Name` are still refused, and the reason they were refused is gone:
    the language can say them now. Before translating, three things need
    measuring against the corpora — whether a configuration block sits before or
    after the plot it configures, whether trace indices are dense from zero, and
    how the block's region name relates to the `plot(…)` call the emitter
    writes. Design note §8.46 and roadmap step 21 hold the detail.
-3. **Multiple open documents in the editor** — deferred by the owner, and
+2. **Multiple open documents in the editor** — deferred by the owner, and
    listed under "What this build does not do" with the reason.
 
 `./scripts/compare-arch.sh` did not run in that session: `qemu-user` is not
@@ -44,7 +41,7 @@ installed on this machine. CI's `arm64` job covers it.
 | 9 Local persistence, offline | **done** | Open/save with a cross-browser fallback, draft in IndexedDB, service worker |
 | — SMath importer | **seven phases in** | `nomo-smath`: reads **both** corpora — 54 wiki worksheets (0.82–0.98) and 60 mechanics worksheets (1.3–1.5) — emits `.nomo`, and checks itself against 1179 stored answers. Agreement: 312/344 wiki, 283/283 mechanics. Design note §8.13–§8.39 |
 | — A second batch of builtins | **done** | `mod` `hypot` `nthroot` `log(x, b)` `cot` `sec` `csc` `asinh` `acosh` `atanh` `product` `mean` `median` `sort` `reverse` `trace` `submatrix`. Conventions read from SMath where it has one — `mod`'s sign, `submatrix`'s inclusive one-based bounds. `stdev` and `rank` are deliberately absent; `docs/language.md` says why. Took the wiki corpus from 304/337 to **312/344** |
-| — Releasing | **written, unrun** | A tag builds a binary per architecture with no cross-compilation, each published only after passing the golden suite on the machine that built it; the wasm module goes out with its hash after agreeing with native byte for byte; the editor and gallery deploy to Pages. The shell was tested against stand-in artifacts; the runners have never run it |
+| — Releasing | **run twice** | A tag builds a binary per architecture with no cross-compilation, each published only after passing the golden suite on the machine that built it; the wasm module goes out with its hash after agreeing with native byte for byte; the editor and gallery deploy to Pages from `main`. `v0.1.0` proved the shell on real runners and found the tag-versus-branch fault in the `pages` job; `v0.2.0` is the first tag cut with that split already in place |
 | — The gallery, and migration shown | **done** | `build-gallery.sh` renders every example into a browsable set of self-contained pages, and `docs/smath.md` finally *shows* an import: an SMath worksheet written here — ours to publish, unlike the corpora — beside what Nomo makes of it and what it computes. That fixture is also the only importer test that runs without the corpora |
 | — How-to worksheets | **six of six** | `bolt`, `shaft`, `column`, `bearing`, `spring`, `vessel` — a bolted joint, a shaft in combined bending and torsion, a column across the buckling transition, bearing life, a compression spring against six constraints, and a pressure vessel worked thin-wall and thick-wall side by side. The first worksheets written *for* the language rather than to exercise it; their acceptance is an engineer agreeing with the method rather than a green gate. Each says what it leaves out |
 | — The editor assists | **done** | Completion offering a name with what it holds and a unit with its dimension, hover saying what a name is, F12 to its definition, and a Typeset toggle that puts §18's MathML where a reader actually looks. All from the engine's own symbol table — no second parser in the front end. **Multiple open documents is the one piece not built**; the boundary already supports it and the reason is below |
@@ -224,8 +221,19 @@ binaries for nothing.
 packaging, the checksums, the collection of artifacts into one `SHA256SUMS.txt`,
 the release notes — was extracted from the YAML and run against stand-in
 artifacts, and does what it says. The runner behaviour, the Pages deployment and
-the `gh release create` call cannot be exercised from a development machine and
-have not been.
+the `gh release create` call cannot be exercised from a development machine;
+`v0.1.0` exercised them for the first time and `v0.2.0` is the second, and the
+only way to check either is to read the run.
+
+**What the second tag is.** `v0.2.0` carries labelled axes and named curves, the
+two evaluator leaks that work uncovered, and the `pages` fix — so it is the
+first tag cut with the branch-versus-tag split already in place, and the first
+where the site deployment and the artifacts are expected to travel by different
+triggers rather than one failing. Before it was cut, every gate that can run on
+a development machine was run here: 650 tests, 29 snapshots, native and
+WebAssembly byte-identical, 114 corpus worksheets unmoved, nine browser checks.
+`compare-arch.sh` was not among them — `qemu-user` is not installed here — and
+CI's `arm64` job is what covers it.
 
 ## Timings
 

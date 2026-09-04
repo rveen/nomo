@@ -339,6 +339,38 @@ and it does not. The claim this project makes is about *answers*, and
 module was uploaded, so what went out had been shown to agree with a native
 build byte for byte on the results themselves.
 
+**What the fourth tag settled.** `v0.3.0` is the typography release, and two
+things about the machinery could only be checked by cutting it.
+
+**The build now fetches from the network, and it worked on a runner.** Every
+previous build needed nothing but the checkout; `scripts/fetch-font.sh` reaches
+raw.githubusercontent.com for the STIX faces and verifies them against
+`scripts/fonts/upstream.sha256`. That path had only ever run on the machine that
+wrote it. It ran on GitHub's, and the proof is stronger than a green tick: the
+three font files the deployed site serves are **162116, 82300 and 90256 bytes**,
+which are byte-for-byte the sizes built here. The runner fetched the same
+upstream files and hb-subset — pinned in `package-lock.json` — produced the same
+bytes from them, so the subset is reproducible in the way §8.48 claimed rather
+than merely believed.
+
+**The gallery is typeset on the live site.** `examples/conditions.html` carries
+five cases blocks and twenty `<math>` elements, `column.html` one and sixteen,
+and every page references `../fonts/stix-two-math-subset.woff2` rather than
+carrying a copy — one 162 kB file for 28 pages. That is §8.52's arrangement,
+observed on the deployment rather than in `web/dist`.
+
+The branch-versus-tag split held for the fourth time: the push to `main` ran
+`pages` alone and skipped the other three; the tag ran the other three, skipped
+`pages`, and published five artifacts in 2 m 46 s. **macOS agreed again**, which
+is this tag's word on the central claim. No deprecation annotations, so the
+action majors `v0.2.1` moved to are still current.
+
+Before it was cut, every gate that can run on a development machine was run
+here: 672 tests, 29 snapshots with one deliberately updated, native and
+WebAssembly byte-identical, and all ten browser checks from an empty
+`web/vendor` and `web/dist`. `compare-arch.sh` was not among them — `qemu-user`
+is not installed here — and CI's `arm64` job is what covers it.
+
 ## Timings
 
 `nomo bench` generates worksheets of fixed shape and times the whole pipeline —

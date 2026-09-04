@@ -370,6 +370,28 @@ WebAssembly byte-identical, and all ten browser checks from an empty
 `web/vendor` and `web/dist`. `compare-arch.sh` was not among them — `qemu-user`
 is not installed here — and CI's `arm64` job is what covers it.
 
+**What the fifth tag settled.** `v0.4.0` is the smallest tag yet — one feature —
+and what it checks is the *other* direction of §8.48's reproducibility claim.
+`v0.3.0` showed that a runner fetching the fonts produces the same subset bytes
+as this machine. `v0.4.0` changed neither the fonts nor `web/font.mjs`, and the
+deployed files are the same three sizes again: **162116, 82300 and 90256**. The
+subset is reproducible across *runs*, not only across machines, which is what a
+build that fetches from the network has to be before the fetch can be trusted.
+
+It also closed the loop the fourth tag opened. `v0.3.0` turned the gallery on
+and the published page immediately showed `**preload**` as literal asterisks;
+the deployed page now reads `<strong>preload</strong>`, and `bode.html` carries
+`<code>axis x log</code>`. The gap was found by looking at what was published
+rather than at what was built, which is the argument for publishing.
+
+The branch-versus-tag split held for the fifth time, and macOS agreed again.
+
+Before it was cut, every gate that can run on a development machine was run
+here: 681 tests, 29 snapshots with 20 deliberately updated, 114 corpus
+worksheets unmoved, native and WebAssembly byte-identical, and all ten browser
+checks. `compare-arch.sh` was not among them — `qemu-user` is not installed here
+— and CI's `arm64` job is what covers it.
+
 ## Timings
 
 `nomo bench` generates worksheets of fixed shape and times the whole pipeline —

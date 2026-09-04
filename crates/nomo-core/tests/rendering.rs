@@ -419,6 +419,53 @@ fn what_has_no_typeset_form_falls_back_rather_than_leaving_a_hole() {
 }
 
 #[test]
+fn a_unit_is_separated_from_its_number_and_algebra_is_not() {
+    // ISO 80000-1 §7.1.3: a space always separates the unit from the number.
+    // `ImplicitMul` emits U+2062, which says "multiply" and is exactly zero
+    // wide, so `50 mm` typeset as `50mm` — while the substituted column beside
+    // it, which goes through `<mtext>`, kept the space. One line disagreeing
+    // with itself.
+    let spaced = "<mo lspace=\"0\" rspace=\"0.167em\">&#8290;</mo>";
+
+    for (source, what) in [
+        ("d = 50 mm\nx = d*2\n", "a plain unit"),
+        ("w = 2.5 kN/m\nx = w*2\n", "a unit under a fraction bar"),
+        ("A = 2 m^2\nx = A*2\n", "a unit raised to a power"),
+        ("M = 5 N*m\nx = M*2\n", "a compound unit"),
+        ("t = 20 °C\nx = t\n", "an affine literal"),
+        (
+            "p = 50 %\nx = p*2\n",
+            "percent, which ISO spaces like any other",
+        ),
+    ] {
+        let out = typeset(source);
+        assert!(out.contains(spaced), "{what} lost its space: {out}");
+    }
+
+    // The same juxtaposition is ordinary algebra, and `2x` is correctly tight.
+    // What tells them apart is the right operand: a unit, or a name.
+    for (source, what) in [
+        ("x = 3\ny = 2 x\n", "a coefficient on a variable"),
+        ("x = 3\nz = 2 (x + 1)\n", "a coefficient on a bracket"),
+    ] {
+        let out = typeset(source);
+        assert!(!out.contains(spaced), "{what} should stay tight: {out}");
+    }
+}
+
+#[test]
+fn the_plane_angle_degree_is_the_exception_the_standard_names() {
+    // The same clause exempts the plane-angle symbols: `90°` takes no space
+    // where `20 °C` does. Matched by symbol, because that is what the exception
+    // is about.
+    let out = typeset("a = 90 °\nb = a*2\n");
+    assert!(
+        out.contains("<mn>90</mn><mo>&#8290;</mo><mi mathvariant=\"normal\">°</mi>"),
+        "a plane angle should be tight: {out}"
+    );
+}
+
+#[test]
 fn a_typeset_line_is_set_whole_rather_than_half() {
     // The result, the `=` between the columns and the words `check` and `pass`
     // sit outside the `<math>` elements, so without this they keep `.step`'s

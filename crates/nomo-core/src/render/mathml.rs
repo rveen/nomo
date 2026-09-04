@@ -128,8 +128,12 @@ fn node(r: &Renderer, trace: &Trace, linear: &str, sub: bool) -> String {
         TraceNode::UnitRef(name) => format!("<mi mathvariant=\"normal\">{}</mi>", escape(name)),
         TraceNode::Text => format!("<mtext>{}</mtext>", escape(linear)),
 
+        // `20 °C` — a magnitude and a unit, always, so it always takes the
+        // space `unit_space` decides for the general case. Not the plane-angle
+        // exception: an affine literal is a temperature scale, never an angle.
         TraceNode::AffineLiteral { magnitude, unit } => format!(
-            "<mn>{}</mn><mo>&#8290;</mo><mi mathvariant=\"normal\">{}</mi>",
+            "<mn>{}</mn><mo lspace=\"0\" rspace=\"0.167em\">&#8290;</mo>\
+             <mi mathvariant=\"normal\">{}</mi>",
             escape(&number::format(*magnitude, &r.numbers)),
             escape(unit)
         ),
@@ -228,6 +232,8 @@ fn binary(r: &Renderer, op: BinaryOp, lhs: &Trace, rhs: &Trace, linear: &str, su
                 BinaryOp::Mul => (4, "&#183;"),
                 // Juxtaposition is invisible multiplication, and it is what
                 // attaches a unit to a number: `5 cm` should look like `5 cm`.
+                // Which takes a space — see `unit_space` below, because U+2062
+                // is exactly zero wide and `5cm` is not what was written.
                 BinaryOp::ImplicitMul => (4, "&#8290;"),
                 BinaryOp::Lt => (2, "&lt;"),
                 BinaryOp::Gt => (2, "&gt;"),
@@ -242,6 +248,13 @@ fn binary(r: &Renderer, op: BinaryOp, lhs: &Trace, rhs: &Trace, linear: &str, su
             let word = matches!(op, BinaryOp::And | BinaryOp::Or);
             let operator = if word {
                 format!("<mo lspace=\"0.3em\" rspace=\"0.3em\">{symbol}</mo>")
+            } else if matches!(op, BinaryOp::ImplicitMul) {
+                match unit_space(rhs) {
+                    Some(width) => {
+                        format!("<mo lspace=\"0\" rspace=\"{width}\">{symbol}</mo>")
+                    }
+                    None => format!("<mo>{symbol}</mo>"),
+                }
             } else {
                 format!("<mo>{symbol}</mo>")
             };
@@ -259,6 +272,55 @@ fn binary(r: &Renderer, op: BinaryOp, lhs: &Trace, rhs: &Trace, linear: &str, su
                 )
             )
         }
+    }
+}
+
+/// The space between a number and the unit it is juxtaposed with, if any.
+///
+/// ISO 80000-1 §7.1.3: *"the numerical value always precedes the unit, and a
+/// space is always used to separate the unit from the number"*. The renderer
+/// was not doing it. `ImplicitMul` emits U+2062 INVISIBLE TIMES, which says
+/// "multiply" and is exactly zero wide, so `d = 50 mm` typeset as `50mm` — and
+/// only the *typeset* column did, because the substituted column goes through
+/// `<mtext>` and carries the space the linear renderer already put there. A
+/// worksheet therefore disagreed with itself across one line.
+///
+/// A thin space rather than a word space, at TeX's `\,` of 3/18 em, because
+/// that is what a unit is set with everywhere it is set well.
+///
+/// The same juxtaposition is also ordinary algebra, and `2x` is correctly
+/// tight, so this returns `None` for anything that is not a unit. What
+/// distinguishes them is the *right* operand: a `UnitRef` is a unit and a
+/// variable is not.
+///
+/// # The exception, which is in the standard
+///
+/// The same clause exempts the plane-angle symbols: `90°` takes no space, while
+/// `20 °C` does. So `°` is matched by name. `deg` is not exempt — the exception
+/// is about the symbol, and a unit spelled in letters reads as one.
+fn unit_space(rhs: &Trace) -> Option<&'static str> {
+    /// The unit a juxtaposition attaches, looking through what can wrap one.
+    ///
+    /// `2 m^2` puts the unit under a power and `2 (m/s)` puts it in a bracket;
+    /// `5 N*m` and `2.5 kN/m` do not, because juxtaposition binds tighter than
+    /// `*` and `/`, so the unit is already the right operand. Anything that
+    /// starts with a number or a name — `2 (x+1)`, `2 x` — is algebra and gets
+    /// nothing.
+    fn unit_of(trace: &Trace) -> Option<&str> {
+        match &trace.node {
+            TraceNode::UnitRef(name) => Some(name),
+            TraceNode::Paren(inner) => unit_of(inner),
+            TraceNode::Binary {
+                op: BinaryOp::Pow | BinaryOp::Mul | BinaryOp::ImplicitMul | BinaryOp::Div,
+                lhs,
+                ..
+            } => unit_of(lhs),
+            _ => None,
+        }
+    }
+    match unit_of(rhs)? {
+        "°" => None,
+        _ => Some("0.167em"),
     }
 }
 

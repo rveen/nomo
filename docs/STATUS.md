@@ -7,7 +7,7 @@ complex numbers, plots, several curves on one plot, a plot of a table of
 measured points, the importer's side of it, a definition that is really a
 function of `x`, prose as Markdown (§8.41), the v0.1.0 release, labelled axes,
 the v0.2.0 release, the v0.2.1 release, and Greek letters in the typeset
-columns (§8.47), the math font the output is set in (§8.48), and the text face around it (§8.49).
+columns (§8.47), the math font the output is set in (§8.48), the text face around it (§8.49), and the space a unit stands off its number by (§8.50).
 
 **A four-step plan for typographic quality is under way (2026-09-04).** It was
 costed against the alternative of shipping MathJax, which was measured and
@@ -43,11 +43,11 @@ of those three arrive. The steps, in order:
 committed and pushed, and every gate named here is green. Three things are
 pending, in the order they are worth doing:
 
-1. **Two typographic defects the shipped fonts made visible** (§8.49), both in
-   the markup rather than the typography, and neither fixed: a quantity written
-   directly sets as `50mm` because `ImplicitMul` emits a zero-width U+2062 where
-   ISO 80000-1 wants a space, and a relation between substituted values sets as
-   `160≥105.5`. And the loose end step 1 left: the constructs
+1. **One typographic defect left** of the two the shipped fonts made visible
+   (§8.49): a relation between substituted values sets as `160≥105.5`, because
+   the operands are `<mtext>` and the `<mo>` between them is not getting a
+   relation's spacing. The other — `50mm` — is fixed in §8.50. And the loose end
+   step 1 left: the constructs
    with no typeset form fall back to linear text that has no Greek table, so a
    worksheet draws `λ` on the lines that typeset and `lambda` inside the
    `<mtext>` of the lines that do not. Closing it means either giving those
@@ -112,7 +112,7 @@ self-contained file. **Second phase:** a name that spells a Greek letter is set 
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Prose as Markdown | **block level done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline formatting is not built and `_` emphasis never will be. Design note §8.41, `examples/prose.nomo` |
 
-659 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+661 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -149,7 +149,7 @@ does not survive it, and then:
 
 ```bash
 cd /files/work/nomo
-cargo test --workspace                                  # 659 tests
+cargo test --workspace                                  # 661 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ./scripts/check-no-host-math.sh                         # determinism guard
@@ -291,7 +291,7 @@ The whole tag run took under two minutes: 26–50 s per binary and 29 s for the
 module, so the cost of releasing is not a reason to release less often.
 
 Before it was cut, every gate that can run on a development machine was run
-here: 659 tests, 29 snapshots, native and WebAssembly byte-identical, 114 corpus
+here: 661 tests, 29 snapshots, native and WebAssembly byte-identical, 114 corpus
 worksheets unmoved, nine browser checks. `compare-arch.sh` was not among them —
 `qemu-user` is not installed here — and CI's `arm64` job is what covers it.
 

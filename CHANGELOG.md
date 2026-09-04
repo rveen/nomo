@@ -61,11 +61,22 @@
   now marked `step typeset` and set in the math face throughout. An untypeset
   line keeps its monospace, which is right for linear text whose columns line up.
 
+### Fixed
+
+- **A unit stands off its number.** ISO 80000-1 requires a space between a
+  numerical value and its unit symbol, and `ImplicitMul` emitted U+2062
+  INVISIBLE TIMES, which is exactly zero wide — so `d = 50 mm` typeset as
+  `50mm` beside a substituted column reading `(50 mm)`, one line disagreeing
+  with itself. Typeset quantities now carry a thin space. Ordinary algebra does
+  not: `2x` stays tight, because what tells them apart is whether the right
+  operand is a unit. `90°` stays tight too — the standard exempts the
+  plane-angle symbols, where `20 °C` is not exempt.
+
 MathJax was measured and declined: 850 kB of script plus 1.8 MB of fonts fetched
 at run time, which ends `nomo html`'s self-containment and makes typesetting
 asynchronous where printing is synchronous — to buy cross-browser consistency
 that MathML Core already provides for the repertoire this renderer emits. Design
-note §8.47, §8.48 and §8.49.
+note §8.47 through §8.50.
 
 ## 0.2.1 — a font that can set the mathematics
 

@@ -1136,6 +1136,11 @@ which is a perfectly good book face. So the prose of a standalone document names
 `"STIX Two Text", Georgia, "Times New Roman", serif` and carries nothing, while
 the editor — which serves its own assets — ships the face and uses it.
 
+**A unit stands off its number**, as ISO 80000-1 asks: `50 mm`, not `50mm`.
+Ordinary algebra does not — `2x` is tight, and what tells them apart is whether
+what follows the number is a unit. The plane-angle degree is the standard's own
+exception, so `90°` is tight where `20 °C` is not.
+
 **A typeset line is set whole.** The result, the `=` between the columns and the
 words `check` and `pass` are part of the same statement as the formula, so they
 take the same face. An *untypeset* line stays monospace, because it is linear

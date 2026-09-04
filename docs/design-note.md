@@ -3331,16 +3331,53 @@ columns line up — that is what monospace is for.
 **Two defects this makes visible and does not fix**, both older than this step
 and both in the markup rather than the typography:
 
-- A quantity written directly sets as `50mm` with no space. `ImplicitMul` emits
-  U+2062 INVISIBLE TIMES, which is exactly zero wide, and ISO 80000-1 requires a
-  space between a numerical value and its unit symbol. The substituted column
-  escapes it only because it goes through `<mtext>`. The fix is a thin space
-  where the right operand is a `UnitRef`, and not where it is algebra — `2x` is
-  correctly tight.
+- A quantity written directly sets as `50mm` with no space. **Fixed — §8.50.**
 - A relation between substituted values sets as `160≥105.5`. The operands are
   `<mtext>` and the `<mo>` between them is not getting a relation's spacing.
 
 Neither is a font question, which is why neither is fixed here.
+
+### 8.50 A unit stands off its number (2026-09-04)
+
+§8.49's first finding, fixed. ISO 80000-1 §7.1.3: *"the numerical value always
+precedes the unit, and a space is always used to separate the unit from the
+number"*. `ImplicitMul` emitted U+2062 INVISIBLE TIMES, which says "multiply"
+and is exactly zero wide, so `d = 50 mm` typeset as `50mm`.
+
+The revealing part is that only the *typeset* column did. The substituted column
+goes through `<mtext>` and carries the space the linear renderer had already put
+there, so one line disagreed with itself — `50mm` beside `(50 mm)`. That is the
+shape of defect the golden suite cannot see, because the golden suite compares
+the linear form and this only ever went wrong in the other one.
+
+**A thin space, at TeX's `\,` of 3/18 em**, because that is what a unit is set
+with everywhere it is set well. Expressed as `rspace` on the invisible-times
+operator rather than as an `<mspace>`, which keeps the operator saying what it
+means and matches how `and`, `or` and `not` already get their spacing in this
+renderer.
+
+**The same juxtaposition is also ordinary algebra**, and `2x` is correctly
+tight. What tells them apart is the right operand: a `UnitRef` is a unit and a
+variable is not. `unit_of` looks through what can wrap one — a power for
+`2 m^2`, a bracket for `2 (m/s)` — but not through an addition, so `2 (x+1)`
+stays tight. `5 N*m` and `2.5 kN/m` need no looking through at all, because
+juxtaposition binds tighter than `*` and `/`, so the unit is already the right
+operand. The limit is honest and narrow: `2 (1/s)` starts with a number and gets
+nothing.
+
+**The exception is in the standard too.** The same clause exempts the plane-angle
+symbols, so `90°` is tight where `20 °C` is not. Matched by the symbol `°`,
+because that is what the exception is about; `deg` spelled in letters reads as
+an ordinary unit name and is spaced. An `AffineLiteral` is always spaced without
+consulting any of this: it is a temperature scale by construction, never an
+angle.
+
+**Gated in the browser, not only in the markup.** Whether Chrome honours
+`rspace` on an `<mo>` is a different question from whether the attribute is in
+the output, and a browser that ignored it would set `6m` while every assertion
+about the markup still passed. `check-mathml.mjs` measures the gap between the
+number and the unit in the rendered page. Confirmed to fail with the rule
+disabled — it reports that there is no spaced juxtaposition to measure.
 
 ### 8.8 Strategy: corpus-driven
 

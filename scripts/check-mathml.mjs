@@ -141,6 +141,20 @@ try {
           mathCount: document.querySelectorAll("math").length,
           italic: box(document.getElementById("italic")),
           upright: box(document.getElementById("upright")),
+          // The gap a unit is set off from its number by. The renderer asks
+          // for it with rspace on the invisible-times operator; whether a
+          // browser honours that is a different question from whether the
+          // attribute is in the markup, and only this can answer it.
+          // (No backticks in here: this is inside a template literal.)
+          unitGap: (() => {
+            const op = document.querySelector("math mo[rspace]");
+            if (!op) return null;
+            const before = op.previousElementSibling;
+            const after = op.nextElementSibling;
+            if (!before || !after) return null;
+            return after.getBoundingClientRect().left -
+                   before.getBoundingClientRect().right;
+          })(),
           // Whether the embedded face is loaded, not merely named. A stack
           // that resolves to nothing reports the same family string as one
           // that resolves to the shipped font.
@@ -186,6 +200,22 @@ try {
       "ordinary text metrics, which is what shipping a font is meant to end",
   );
 
+  // ISO 80000-1 §7.1.3 wants a space between a numerical value and its unit,
+  // and U+2062 INVISIBLE TIMES is exactly zero wide, so the renderer asks for
+  // one explicitly. A browser that ignored `rspace` would set `6m` and every
+  // assertion about the markup would still pass.
+  check(
+    geometry.unitGap !== null,
+    "no spaced juxtaposition on the page — this check is measuring nothing",
+  );
+  if (geometry.unitGap !== null) {
+    check(
+      geometry.unitGap > 0.5,
+      `a unit should be set off from its number, but the gap is ` +
+        `${geometry.unitGap} — the browser is ignoring rspace, so this reads "6m"`,
+    );
+  }
+
   if (geometry.italic && geometry.upright) {
     check(
       Math.abs(geometry.italic.width - geometry.upright.width) > 0.5,
@@ -208,6 +238,6 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "ok: fractions stack, radicals enclose, the embedded font loads and " +
-    "variables are italic, in Chrome",
+  "ok: fractions stack, radicals enclose, units stand off their numbers, the " +
+    "embedded font loads and variables are italic, in Chrome",
 );

@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/nomo-core", "crates/nomo-cli", "crates/nomo-smath", "crates/nomo-wasm"]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 rust-version = "1.90"
 license = "MIT"

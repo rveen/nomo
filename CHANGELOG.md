@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.2.1 — a font that can set the mathematics
+
+Typeset output was asking a font with no MATH table to lay out a fraction. No
+language changes; the three commits since 0.2.0 are one visible fix and two
+pieces of repository hygiene.
+
+### Fixed
+
+- **The typeset columns name a math font.** MathML Core reads the fraction bar
+  thickness, the axis height, the script shifts and the stretchy bracket
+  recipes from the font's OpenType MATH table. Nothing named a font for `math`,
+  so a worked line inherited the monospace stack `.step` sets — no MATH table at
+  all, and the worst case for a fraction, because the browser then guesses every
+  one of those constants from ordinary text metrics. Both stylesheets now name
+  Latin Modern Math, STIX Two Math, TeX Gyre Pagella Math, Cambria Math and then
+  the `math` generic, so a platform can offer whatever it has. Named and never
+  fetched: the artifact stays one self-contained file that needs no script and
+  no font from the network, which is the same rule the SVG plots follow. Which
+  entry wins is the machine's business, and it was measured rather than assumed
+  — Chrome sets the same string to the same width in the stack and in the font
+  the stack resolved to, against a different width for the monospace it
+  replaced. No snapshot moves; the golden files carry no CSS.
+- **`repository` names the repository this actually is.** It pointed at
+  `trukeio/nomo-math`, which is neither the remote nor a repository that exists
+  — a name researched for availability in design note §2 had been written down
+  as a name that was taken. Nothing reads it today, but it becomes the
+  "Repository" link at the first `cargo publish`.
+
+### The build
+
+- **The five actions still on Node 20 move to their current majors.** The runner
+  had begun force-upgrading them to Node 24, and a forced runtime upgrade is the
+  runner deciding what the workflow runs on — the thing the pinned Rust
+  toolchain exists to prevent one layer down. Two of the jumps carry breaking
+  changes that were checked rather than assumed: `upload-pages-artifact` v4 stops
+  including hidden files, and `web/dist` has no dotfile in it; `download-artifact`
+  v8 makes a digest mismatch an error, which is the direction this repository
+  would have chosen anyway.
+
+
 ## 0.2.0 — what a plot is about
 
 A worksheet could draw a curve; it could not say what the curve was *of*. This

@@ -113,12 +113,12 @@ pythagoras = sin(x)² + cos(x)² = sin(0.7)² + cos(0.7)² = 1
 <div class="step"><span class="name">ath</span><span class="eq">=</span>atanh(0.5)<span class="eq">=</span><span class="result">0.549306</span></div>
 <p class="prose">A logarithm always states its base; log10, log2 and ln are the shorthands.</p>
 <div class="step"><span class="name">base7</span><span class="eq">=</span>log(n, 7)<span class="eq">=</span><span class="subst">log(3.25, 7)</span><span class="eq">=</span><span class="result">0.605709</span></div>
-<p class="prose">Numeric, on quantities. `mod` keeps the sign of its dividend and `nthroot` divides the dimension, which is what rational dimension exponents are for.</p>
+<p class="prose">Numeric, on quantities. <code>mod</code> keeps the sign of its dividend and <code>nthroot</code> divides the dimension, which is what rational dimension exponents are for.</p>
 <div class="step"><span class="name">remainder</span><span class="eq">=</span>mod(7 m, 2 m)<span class="eq">=</span><span class="result">1 m</span></div>
 <div class="step"><span class="name">diagonal</span><span class="eq">=</span>hypot(3 m, 4 m)<span class="eq">=</span><span class="result">5 m</span></div>
 <div class="step"><span class="name">cube_side</span><span class="eq">=</span>nthroot(8 m³, 3)<span class="eq">=</span><span class="result">2 m</span></div>
 <div class="step"><span class="name">odd_root</span><span class="eq">=</span>nthroot(-32, 5)<span class="eq">=</span><span class="result">-2</span></div>
-<p class="prose">Collections. `product` multiplies dimensions where `sum` requires them to agree; the rest need one dimension across the collection.</p>
+<p class="prose">Collections. <code>product</code> multiplies dimensions where <code>sum</code> requires them to agree; the rest need one dimension across the collection.</p>
 <div class="step"><span class="name">sizes</span><span class="eq">=</span>[5, 1, 9, 3] mm</div>
 <div class="step"><span class="name">volume</span><span class="eq">=</span>product([2 m, 3 m, 4 m])<span class="eq">=</span><span class="result">24 m³</span></div>
 <div class="step"><span class="name">average</span><span class="eq">=</span>mean(sizes)<span class="eq">=</span><span class="subst">mean([0.005 m, 0.001 m, 0.009 m, 0.003 m])</span><span class="eq">=</span><span class="result">0.0045 m</span></div>

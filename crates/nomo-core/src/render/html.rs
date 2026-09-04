@@ -54,6 +54,14 @@ h2.prose { font-size: 1.2rem; }
 h3.prose { font-size: 1.05rem; }
 h4.prose, h5.prose, h6.prose { font-size: 1rem; }
 ul.prose, ol.prose { margin: 0.8rem 0; padding-left: 1.6rem; }
+/* A code span in prose. Monospace at nine tenths, because a monospace face set
+   at the same size as a book face reads a size larger; the faint ground is what
+   makes a name inside a sentence findable without a border round it. */
+code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 0.9em; background: rgba(127, 127, 127, 0.12);
+  padding: 0.05em 0.3em; border-radius: 3px;
+}
 ul.prose li, ol.prose li { margin: 0.2rem 0; }
 .step {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
@@ -282,7 +290,9 @@ fn opening_heading(sheet: &Sheet) -> Option<String> {
     }
 
     match prose::blocks(&run).first() {
-        Some(Block::Heading { level: 1, text }) => Some(text.clone()),
+        // The markers come off rather than becoming tags: this is the `<title>`,
+        // which is text and cannot carry markup.
+        Some(Block::Heading { level: 1, text }) => Some(prose::plain(text)),
         _ => None,
     }
 }
@@ -521,6 +531,24 @@ fn flush(run: &mut Vec<&str>) -> String {
     html
 }
 
+/// One block's text as markup, with its inline formatting.
+///
+/// Every string that arrives here is worksheet text on its way into a document
+/// somebody is about to open, so **each span is escaped separately**. That is
+/// the point of `crate::prose` handing back structure rather than markup: the
+/// only tags in the output are the ones this function wrote, and a worksheet
+/// that writes `<script>` gets a paragraph about scripts.
+fn inline_html(text: &str) -> String {
+    prose::inline(text)
+        .into_iter()
+        .map(|span| match span {
+            prose::Span::Text(t) => escape(&t),
+            prose::Span::Code(t) => format!("<code>{}</code>", escape(&t)),
+            prose::Span::Strong(t) => format!("<strong>{}</strong>", escape(&t)),
+        })
+        .collect()
+}
+
 /// Markdown blocks as markup.
 ///
 /// Every string that arrives here is worksheet text on its way into a document
@@ -534,11 +562,11 @@ fn prose_html(blocks: &[Block]) -> String {
             Block::Heading { level, text } => {
                 out.push_str(&format!(
                     "<h{level} class=\"prose\">{}</h{level}>\n",
-                    escape(text)
+                    inline_html(text)
                 ));
             }
             Block::Paragraph { text } => {
-                out.push_str(&format!("<p class=\"prose\">{}</p>\n", escape(text)));
+                out.push_str(&format!("<p class=\"prose\">{}</p>\n", inline_html(text)));
             }
             Block::List {
                 ordered,
@@ -555,7 +583,7 @@ fn prose_html(blocks: &[Block]) -> String {
                 };
                 out.push_str(&format!("<{tag} class=\"prose\"{from}>\n"));
                 for item in items {
-                    out.push_str(&format!("<li>{}</li>\n", escape(item)));
+                    out.push_str(&format!("<li>{}</li>\n", inline_html(item)));
                 }
                 out.push_str(&format!("</{tag}>\n"));
             }
@@ -753,6 +781,16 @@ mod tests {
         assert!(!html.contains("<script>"), "{html}");
         assert!(!html.contains("<img"), "{html}");
         assert!(html.contains("&lt;script&gt;"), "{html}");
+
+        // Inline formatting is a second route into markup, so it takes the same
+        // rule: `crate::prose` hands back spans and *this* file decides what a
+        // tag is. A code span is the likeliest place for a worksheet to write
+        // something that looks like one.
+        let inline = body_of("' A `<script>alert(1)</script>` and **<img onerror=x>**\n");
+        assert!(!inline.contains("<script>"), "{inline}");
+        assert!(!inline.contains("<img"), "{inline}");
+        assert!(inline.contains("<code>&lt;script&gt;"), "{inline}");
+        assert!(inline.contains("<strong>&lt;img"), "{inline}");
     }
 
     #[test]

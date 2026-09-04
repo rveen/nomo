@@ -67,7 +67,7 @@ piled = stack([1, 2] m, [3, 4] m) = [1 m, 2 m, 3 m, 4 m]
 <p class="prose">Element-wise against matrix arithmetic, indexing, and the aggregates.</p>
 <div class="step"><span class="name">v</span><span class="eq">=</span>[3, 4, 12]</div>
 <div class="step"><span class="name">w</span><span class="eq">=</span>[1, 2, 3]</div>
-<p class="prose">Between two vectors of equal length, `*` is element-wise: what a tabulated calculation wants, column against column.</p>
+<p class="prose">Between two vectors of equal length, <code>*</code> is element-wise: what a tabulated calculation wants, column against column.</p>
 <div class="step"><span class="name">elementwise</span><span class="eq">=</span>v·w<span class="eq">=</span><span class="subst">[3, 4, 12]·([1, 2, 3])</span><span class="eq">=</span><span class="result">[3, 8, 36]</span></div>
 <p class="prose">An inner product is asked for by name, so it is never confused with the above.</p>
 <div class="step"><span class="name">inner</span><span class="eq">=</span>dot(v, w)<span class="eq">=</span><span class="subst">dot([3, 4, 12], [1, 2, 3])</span><span class="eq">=</span><span class="result">47</span></div>
@@ -80,7 +80,7 @@ piled = stack([1, 2] m, [3, 4] m) = [1 m, 2 m, 3 m, 4 m]
 <div class="step"><span class="name">n</span><span class="eq">=</span>length(v)<span class="eq">=</span><span class="subst">length([3, 4, 12])</span><span class="eq">=</span><span class="result">3</span></div>
 <p class="prose">Indexing is one-based.</p>
 <div class="step"><span class="name">second</span><span class="eq">=</span>v[2]<span class="eq">=</span><span class="subst">([3, 4, 12])[2]</span><span class="eq">=</span><span class="result">4</span></div>
-<p class="prose">A vector is the column of n that `rows` and `cols` say it is, so it takes the column index as well: these are the same element. Any other column is out of bounds, which is what a column of one means.</p>
+<p class="prose">A vector is the column of n that <code>rows</code> and <code>cols</code> say it is, so it takes the column index as well: these are the same element. Any other column is out of bounds, which is what a column of one means.</p>
 <div class="step"><span class="name">also_second</span><span class="eq">=</span>v[2, 1]<span class="eq">=</span><span class="subst">([3, 4, 12])[2, 1]</span><span class="eq">=</span><span class="result">4</span></div>
 <p class="prose">Vectors carry units element by element, so a tabulated calculation keeps them.</p>
 <div class="step"><span class="name">f</span><span class="eq">=</span>[5, 10, 15] Hz</div>
@@ -90,10 +90,10 @@ piled = stack([1, 2] m, [3, 4] m) = [1 m, 2 m, 3 m, 4 m]
 <p class="prose">A matrix is a vector of rows, and is indexed row first.</p>
 <div class="step"><span class="name">K</span><span class="eq">=</span>[[1, 2], [3, 4]]</div>
 <div class="step"><span class="name">k21</span><span class="eq">=</span>K[2, 1]<span class="eq">=</span><span class="subst">([[1, 2], [3, 4]])[2, 1]</span><span class="eq">=</span><span class="result">3</span></div>
-<p class="prose">Between two matrices `*` is the matrix product, not element-wise. `identity(n)` writes the n×n one, which is dimensionless so that `S - λ*identity(2)` — the characteristic equation of a stress tensor — takes its dimension from λ.</p>
+<p class="prose">Between two matrices <code>*</code> is the matrix product, not element-wise. <code>identity(n)</code> writes the n×n one, which is dimensionless so that <code>S - λ*identity(2)</code> — the characteristic equation of a stress tensor — takes its dimension from λ.</p>
 <div class="step"><span class="name">I</span><span class="eq">=</span>identity(2)<span class="eq">=</span><span class="result">[[1, 0], [0, 1]]</span></div>
 <div class="step"><span class="name">product</span><span class="eq">=</span>K·I<span class="eq">=</span><span class="subst">[[1, 2], [3, 4]]·([[1, 0], [0, 1]])</span><span class="eq">=</span><span class="result">[[1, 2], [3, 4]]</span></div>
-<p class="prose">`diag` writes a matrix with a vector down its diagonal — a mass matrix, here. The zeros carry the diagonal's dimension so the result is usable in arithmetic.</p>
+<p class="prose"><code>diag</code> writes a matrix with a vector down its diagonal — a mass matrix, here. The zeros carry the diagonal's dimension so the result is usable in arithmetic.</p>
 <div class="step"><span class="name">mass</span><span class="eq">=</span>diag([3, 4] kg)<span class="eq">=</span><span class="result">[[3 kg, 0 kg], [0 kg, 4 kg]]</span></div>
 <p class="prose">Linear algebra.</p>
 <div class="step"><span class="name">d</span><span class="eq">=</span>det(K)<span class="eq">=</span><span class="subst">det([[1, 2], [3, 4]])</span><span class="eq">=</span><span class="result">-2</span></div>
@@ -101,7 +101,7 @@ piled = stack([1, 2] m, [3, 4] m) = [1 m, 2 m, 3 m, 4 m]
 <div class="step"><span class="name">Kinv</span><span class="eq">=</span>inv(K)<span class="eq">=</span><span class="subst">inv([[1, 2], [3, 4]])</span><span class="eq">=</span><span class="result">[[-2, 1], [1.5, -0.5]]</span></div>
 <p class="prose">The check that inv is really an inverse.</p>
 <div class="step"><span class="name">back_to_I</span><span class="eq">=</span>K·Kinv<span class="eq">=</span><span class="subst">[[1, 2], [3, 4]]·([[-2, 1], [1.5, -0.5]])</span><span class="eq">=</span><span class="result">[[1, -1.11022e-16], [8.88178e-16, 1]]</span></div>
-<p class="prose">The cross product is three-dimensional, and units come out of the products it is made of: metres crossed with newtons give newton-metres. `-&gt; N*m` asks for the moment to be shown that way rather than in joules, which share the dimension but not the meaning.</p>
+<p class="prose">The cross product is three-dimensional, and units come out of the products it is made of: metres crossed with newtons give newton-metres. <code>-&gt; N*m</code> asks for the moment to be shown that way rather than in joules, which share the dimension but not the meaning.</p>
 <div class="step"><span class="name">r</span><span class="eq">=</span>[1, 0, 0] m</div>
 <div class="step"><span class="name">F</span><span class="eq">=</span>[0, 2, 0] N</div>
 <div class="step"><span class="name">M</span><span class="eq">=</span>cross(r, F)<span class="eq">=</span><span class="subst">cross([1 m, 0 m, 0 m], [0 N, 2 N, 0 N])</span><span class="eq">=</span><span class="result">[0 N*m, 0 N*m, 2 N*m]</span></div>

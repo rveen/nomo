@@ -75,7 +75,7 @@ matrix of complex numbers is not built at all.
 
 === html ===
 <h1 class="prose">Complex numbers</h1>
-<p class="prose">The imaginary unit is `i`, an ordinary constant. Juxtaposition is already multiplication, so `4i` is `4*i` and needs no special number syntax — the same reading that makes `2e` mean `2*e`.</p>
+<p class="prose">The imaginary unit is <code>i</code>, an ordinary constant. Juxtaposition is already multiplication, so <code>4i</code> is <code>4*i</code> and needs no special number syntax — the same reading that makes <code>2e</code> mean <code>2*e</code>.</p>
 <div class="step"><span class="name">z</span><span class="eq">=</span>3 + 4 i<span class="eq">=</span><span class="result">3 + 4i</span></div>
 <div class="step"><span class="name">w</span><span class="eq">=</span>1 - 2 i<span class="eq">=</span><span class="result">1 - 2i</span></div>
 <p class="prose">Arithmetic. Any operation with a complex operand on either side answers complex, promoting the real one.</p>
@@ -85,9 +85,9 @@ matrix of complex numbers is not built at all.
 <div class="step"><span class="name">quotient</span><span class="eq">=</span>z/w<span class="eq">=</span><span class="subst">(3 + 4i)/(1 - 2i)</span><span class="eq">=</span><span class="result">-1 + 2i</span></div>
 <div class="step"><span class="name">scaled</span><span class="eq">=</span>2·z<span class="eq">=</span><span class="subst">2·(3 + 4i)</span><span class="eq">=</span><span class="result">6 + 8i</span></div>
 <div class="step"><span class="name">negated</span><span class="eq">=</span>0 - z<span class="eq">=</span><span class="subst">0 - (3 + 4i)</span><span class="eq">=</span><span class="result">-3 - 4i</span></div>
-<p class="prose">`i` squared is where the whole thing comes from.</p>
+<p class="prose"><code>i</code> squared is where the whole thing comes from.</p>
 <div class="step">i²<span class="eq">=</span><span class="result">-1 + 0i</span></div>
-<p class="prose">Taking a value apart. `Re` and `Im` give real numbers; `Im` is the coefficient of `i`, so `Re(z) + Im(z)*i` rebuilds `z`.</p>
+<p class="prose">Taking a value apart. <code>Re</code> and <code>Im</code> give real numbers; <code>Im</code> is the coefficient of <code>i</code>, so <code>Re(z) + Im(z)*i</code> rebuilds <code>z</code>.</p>
 <div class="step">Re(z)<span class="eq">=</span><span class="subst">Re(3 + 4i)</span><span class="eq">=</span><span class="result">3</span></div>
 <div class="step">Im(z)<span class="eq">=</span><span class="subst">Im(3 + 4i)</span><span class="eq">=</span><span class="result">4</span></div>
 <div class="step">conj(z)<span class="eq">=</span><span class="subst">conj(3 + 4i)</span><span class="eq">=</span><span class="result">3 - 4i</span></div>
@@ -127,7 +127,7 @@ matrix of complex numbers is not built at all.
 <div class="step"><span class="name">angles</span><span class="eq">=</span>arg(branch)<span class="eq">=</span><span class="subst">arg([(32.3383 + 0i) Ω, (0 + 31.6915i) Ω, (0 - 31.6915i) Ω])</span><span class="eq">=</span><span class="result">[0°, 90°, -90°]</span></div>
 <p class="prose">Scaling the whole branch is one multiplication — two of everything in parallel halves each impedance.</p>
 <div class="step"><span class="name">halved</span><span class="eq">=</span>branch/2<span class="eq">=</span><span class="subst">[(32.3383 + 0i) Ω, (0 + 31.6915i) Ω, (0 - 31.6915i) Ω]/2</span><span class="eq">=</span><span class="result">[(16.1691 + 0i) Ω, (0 + 15.8458i) Ω, (0 - 15.8458i) Ω]</span></div>
-<p class="prose">What a complex vector does not do, it says. Ordering complex numbers has no meaning, so `sort` and `min` refuse one rather than answering emptily, and a matrix of complex numbers is not built at all.</p>
+<p class="prose">What a complex vector does not do, it says. Ordering complex numbers has no meaning, so <code>sort</code> and <code>min</code> refuse one rather than answering emptily, and a matrix of complex numbers is not built at all.</p>
 
 === values ===
 z = 3.0+4.0i dimensionless

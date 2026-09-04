@@ -50,6 +50,27 @@ A_used = 4 mm^2
 V_drop = 2*rho*L_run*I_load/A_used
 drop_ratio = V_drop/V_line
 
+' ## Inline
+
+' Two markers, and only two. A backtick pair sets a code span, like `this`,
+' and `**` sets **bold**.
+
+' A code span holds its content literally, so it is how a worksheet writes
+' about the markers themselves: `**` inside one stays `**`.
+
+' Everything else stays text, and each refusal has a corpus measurement behind
+' it rather than a preference:
+' - `_` is not emphasis. Worksheet prose is full of names like `V_drop`, and
+'   106 corpus prose lines carry two or more underscores — every one an
+'   identifier.
+' - A single `*` is not emphasis either, because `*` is the multiplication
+'   operator: 61 corpus prose lines pair one and every pair has arithmetic
+'   between it.
+' - `**` with a space just inside the pair is text, so a ** b is a product and
+'   not the start of anything.
+' - An unmatched marker is text. This ` is one backtick and the sentence
+'   continues past it.
+
 ' ## What stays prose
 
 ' The subset is closed. Three things are outside it on purpose, and this is

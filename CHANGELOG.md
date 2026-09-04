@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Inline formatting in a worksheet's prose**, and exactly two markers:
+  `` `code` `` sets a code span and `**strong**` sets bold. Both are admitted on
+  measurement rather than taste. Across the 120580 prose lines the importer
+  emits from both corpora, `**` appears on none, so nothing existing changes
+  meaning; a backtick appears on 1595, every one inside the importer's own
+  `[import] unsupported: …` marker, which already quotes an identifier in
+  backticks *because it is code*.
+- `_` is still not a marker and never will be, and a single `*` is refused for
+  the same reason: 61 corpus prose lines pair one, and every pair encloses
+  multiplication in an expression the importer commented out. Four of this
+  project's own worksheets were writing `*name*` meaning emphasis and now write
+  `**name**`.
+- An unmatched marker stays as written, `**` with a space inside the pair is
+  ordinary text, and nothing inside a code span is a marker — so a worksheet can
+  write *about* the markers. `examples/diagnostics.nomo` does.
+
 ## 0.3.0 — a worksheet set as a document
 
 Six commits that take the output from text with a bar drawn through it to

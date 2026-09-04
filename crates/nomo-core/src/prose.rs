@@ -44,8 +44,22 @@
 //!   commented out. Underscore emphasis would eat variable names in the kind of
 //!   prose this project has most of.
 //!
-//! This module returns plain text, never markup: escaping belongs to whichever
-//! renderer is consuming the blocks.
+//! Inline formatting is **now built**, and still only the two §8.41 allowed:
+//! `` ` `` for a code span and `**` for strong. The measurement that settles
+//! them is the same kind §8.41 made against `_`. Across the 120580 prose lines
+//! the importer emits from both corpora, `**` appears on **none**, so nothing
+//! existing changes meaning. A backtick appears on **1595**, every one of them
+//! inside the importer's own `[import] unsupported: …` marker, which already
+//! quotes an identifier in backticks *because it is code* — so a code span is
+//! what those lines have always meant and never got.
+//!
+//! Inline is read after the block join, not per source line, and one of this
+//! project's own worksheets says why: `examples/conditions.nomo` wraps a code
+//! span across two comment lines, leaving each with an odd number of backticks
+//! and only the joined paragraph with an even one.
+//!
+//! This module returns plain text and spans, never markup: escaping belongs to
+//! whichever renderer is consuming them.
 
 /// One block of prose.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -286,6 +300,128 @@ fn ordered(line: &str) -> Option<(u32, &str)> {
     }
     let number = line[..digits].parse().ok()?;
     Some((number, text))
+}
+
+/// A run of inline text, as much structure as the subset has.
+///
+/// Flat on purpose: a code span holds literal text and a strong span holds
+/// plain text, and neither nests in the other. Nesting buys nothing a worksheet
+/// has asked for and every level of it is another thing to be wrong about.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Span {
+    Text(String),
+    /// `` `code` `` — held literally, so nothing inside it is read as a marker.
+    Code(String),
+    /// `**strong**`.
+    Strong(String),
+}
+
+/// Read one block's text as inline spans.
+///
+/// # What is a marker and what is text
+///
+/// A backtick opens a code span and the next backtick closes it. An unmatched
+/// backtick is text, which is what keeps a worksheet that writes one about
+/// arithmetic from swallowing the rest of its paragraph.
+///
+/// `**` opens a strong span only when a non-space follows it, and closes one
+/// only when a non-space precedes it. That is CommonMark's flanking rule
+/// reduced to the part that matters here, and it is what makes `a ** b`
+/// ordinary text: `**` with air on both sides is not emphasis in anybody's
+/// Markdown.
+///
+/// `_` is not a marker and never will be — §8.41 counted 106 corpus prose lines
+/// carrying two or more underscores and every sampled one was an identifier.
+pub fn inline(text: &str) -> Vec<Span> {
+    let bytes = text.as_bytes();
+    let mut spans = Vec::new();
+    let mut plain = String::new();
+    let mut i = 0;
+
+    while i < bytes.len() {
+        // A code span, if this backtick has a partner.
+        if bytes[i] == b'`' {
+            if let Some(close) = text[i + 1..].find('`') {
+                let content = &text[i + 1..i + 1 + close];
+                // Two adjacent backticks are not an empty code span. This subset
+                // has no double-backtick delimiter, so `` is two characters a
+                // worksheet wrote, and drawing an empty box for them would put
+                // something on the page that nothing on the page asked for.
+                if content.is_empty() {
+                    plain.push('`');
+                    i += 1;
+                    continue;
+                }
+                flush_text(&mut spans, &mut plain);
+                spans.push(Span::Code(content.to_string()));
+                i += close + 2;
+                continue;
+            }
+        }
+        // A strong span, if this `**` opens one and something closes it.
+        if bytes[i..].starts_with(b"**") {
+            if let Some(content) = strong_at(text, i) {
+                flush_text(&mut spans, &mut plain);
+                spans.push(Span::Strong(content.to_string()));
+                i += content.len() + 4;
+                continue;
+            }
+        }
+        // Anything else is text, one character at a time so that a marker which
+        // turned out not to be one is kept exactly as written.
+        let c = text[i..]
+            .chars()
+            .next()
+            .expect("in bounds and on a boundary");
+        plain.push(c);
+        i += c.len_utf8();
+    }
+    flush_text(&mut spans, &mut plain);
+    spans
+}
+
+/// The content of a strong span opening at `i`, if one opens and closes there.
+fn strong_at(text: &str, i: usize) -> Option<&str> {
+    let rest = &text[i + 2..];
+    // Opening: a non-space has to follow, or `a ** b` would be emphasis.
+    if !rest.chars().next().is_some_and(|c| !c.is_whitespace()) {
+        return None;
+    }
+    let mut from = 0;
+    while let Some(at) = rest[from..].find("**") {
+        let end = from + at;
+        // Closing: a non-space has to precede.
+        if rest[..end]
+            .chars()
+            .next_back()
+            .is_some_and(|c| !c.is_whitespace())
+        {
+            return Some(&rest[..end]);
+        }
+        // That `**` cannot close; look past it rather than giving up, so
+        // `**a ** b**` closes at the last one.
+        from = end + 2;
+    }
+    None
+}
+
+fn flush_text(spans: &mut Vec<Span>, plain: &mut String) {
+    if !plain.is_empty() {
+        spans.push(Span::Text(std::mem::take(plain)));
+    }
+}
+
+/// A block's text with its markers removed and nothing else changed.
+///
+/// For the places that need words rather than formatting — a document's
+/// `<title>`, which is an attribute and cannot carry markup.
+pub fn plain(text: &str) -> String {
+    inline(text)
+        .into_iter()
+        .map(|span| match span {
+            Span::Text(t) | Span::Code(t) | Span::Strong(t) => t,
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -541,6 +677,106 @@ mod tests {
             vec![paragraph(
                 "[import] unsupported: a `for` loop: whose body reads Time2Alt"
             )]
+        );
+    }
+
+    // ---- inline ------------------------------------------------------------
+
+    use super::{inline, plain, Span};
+
+    fn text(t: &str) -> Span {
+        Span::Text(t.into())
+    }
+
+    #[test]
+    fn the_two_markers_the_subset_has() {
+        assert_eq!(
+            inline("its **preload** and the `else` arm"),
+            vec![
+                text("its "),
+                Span::Strong("preload".into()),
+                text(" and the "),
+                Span::Code("else".into()),
+                text(" arm"),
+            ]
+        );
+    }
+
+    #[test]
+    fn an_underscore_is_never_a_marker() {
+        // §8.41 counted 106 corpus prose lines carrying two or more
+        // underscores, and every sampled one was an identifier. Underscore
+        // emphasis would eat variable names in the prose this project has most
+        // of.
+        assert_eq!(
+            inline("sigma_allow against sigma_bolt"),
+            vec![text("sigma_allow against sigma_bolt")]
+        );
+    }
+
+    #[test]
+    fn a_double_star_with_air_on_both_sides_is_text() {
+        // CommonMark's flanking rule, reduced to the half that matters: `**`
+        // opens only with a non-space after it and closes only with a non-space
+        // before it. Without this, prose that writes about `**` acquires
+        // emphasis from the middle of a sentence.
+        assert_eq!(inline("a ** b"), vec![text("a ** b")]);
+        assert_eq!(inline("a ** b ** c"), vec![text("a ** b ** c")]);
+    }
+
+    #[test]
+    fn an_unmatched_marker_stays_as_written() {
+        // A worksheet writing one backtick about arithmetic must not swallow
+        // the rest of its paragraph.
+        assert_eq!(inline("the ` character"), vec![text("the ` character")]);
+        assert_eq!(inline("two **stars"), vec![text("two **stars")]);
+    }
+
+    #[test]
+    fn two_adjacent_backticks_are_two_characters() {
+        // The subset has no double-backtick delimiter, so `` is not an empty
+        // code span — drawing one would put an empty box on the page.
+        assert_eq!(inline("a `` b"), vec![text("a `` b")]);
+    }
+
+    #[test]
+    fn a_code_span_holds_its_content_literally() {
+        // Nothing inside a code span is a marker, which is what makes it usable
+        // for writing about the markers.
+        assert_eq!(
+            inline("`**not strong**`"),
+            vec![Span::Code("**not strong**".into())]
+        );
+    }
+
+    #[test]
+    fn a_strong_span_closes_at_the_last_pair_that_can_close_it() {
+        // `**a ** b**` has a `**` in the middle that cannot close — a space
+        // precedes it — so the span reaches the one that can.
+        assert_eq!(inline("**a ** b**"), vec![Span::Strong("a ** b".into())]);
+    }
+
+    #[test]
+    fn plain_takes_the_markers_off_and_changes_nothing_else() {
+        // For a `<title>`, which is text and cannot carry markup.
+        assert_eq!(plain("a **bold** `code` line"), "a bold code line");
+    }
+
+    #[test]
+    fn a_span_that_wraps_across_source_lines_is_read_after_the_join() {
+        // `examples/conditions.nomo` writes exactly this: each line carries an
+        // odd number of backticks and only the joined paragraph an even one.
+        let joined = blocks(&["the `else", "if` arm"]);
+        let Block::Paragraph { text } = &joined[0] else {
+            panic!("expected a paragraph: {joined:?}");
+        };
+        assert_eq!(
+            inline(text),
+            vec![
+                super::Span::Text("the ".into()),
+                Span::Code("else if".into()),
+                super::Span::Text(" arm".into()),
+            ]
         );
     }
 }

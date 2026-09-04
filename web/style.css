@@ -228,6 +228,16 @@ footer p { margin: 0; }
 }
 
 #output .prose { margin: 1.1rem 0 0.4rem; color: #999; }
+/* A code span in prose. Monospace at nine tenths, because a monospace face set
+   at the same size as a book face reads a size larger; the faint ground is what
+   makes a name inside a sentence findable without a border round it. */
+#output code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 0.9em;
+  background: rgba(127, 127, 127, 0.12);
+  padding: 0.05em 0.3em;
+  border-radius: 3px;
+}
 /* Set by the engine when the mathematics is typeset, and it takes the whole
    line rather than only the `<math>` in it — the result, the `=` between the
    columns and the words `check` and `pass` are part of the same statement.
@@ -244,11 +254,7 @@ footer p { margin: 0; }
   font-size: 0.9rem;
   margin: 0.5rem 0;
   overflow-x: auto;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  border-left: 4px solid #69a;
   padding: 0.5rem;
-  background:#f8f8f7;
 }
 /* A conditional, drawn as mathematics draws one: a brace over its cases. The
    rows are laid out by CSS because MathML Core removed `columnalign` and most

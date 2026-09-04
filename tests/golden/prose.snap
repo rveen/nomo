@@ -41,6 +41,23 @@ L_run = 35 m
 A_used = 4 mm²
 V_drop = 2·rho·L_run·I_load/A_used = 2·(1.75e-8 m³·kg·s⁻³·A⁻²)·(35 m)·(15.6522 A)/(4e-6 m²) = 4.79348 V
 drop_ratio = V_drop/V_line = 4.79348 V/(230 V) = 0.0208412
+## Inline
+Two markers, and only two. A backtick pair sets a code span, like `this`,
+and `**` sets **bold**.
+A code span holds its content literally, so it is how a worksheet writes
+about the markers themselves: `**` inside one stays `**`.
+Everything else stays text, and each refusal has a corpus measurement behind
+it rather than a preference:
+- `_` is not emphasis. Worksheet prose is full of names like `V_drop`, and
+  106 corpus prose lines carry two or more underscores — every one an
+  identifier.
+- A single `*` is not emphasis either, because `*` is the multiplication
+  operator: 61 corpus prose lines pair one and every pair has arithmetic
+  between it.
+- `**` with a space just inside the pair is text, so a ** b is a product and
+  not the start of anything.
+- An unmatched marker is text. This ` is one backtick and the sentence
+  continues past it.
 ## What stays prose
 The subset is closed. Three things are outside it on purpose, and this is
 what they look like when a worksheet writes them:
@@ -69,15 +86,15 @@ is four characters and a word, not bold text.
 <p class="prose">Consecutive comment lines are one paragraph. Prose wraps at whatever width the file is written to, and comes out as a paragraph rather than as a stack of one-line ones.</p>
 <p class="prose">A blank line starts the next paragraph, and so does a bare comment marker like the one above this line.</p>
 <h2 class="prose">Headings</h2>
-<p class="prose">`#` through `######`, with a space after the marker. A level-1 heading at the top of a worksheet names the document: `nomo html` takes the page's title from there rather than from the file name.</p>
+<p class="prose"><code>#</code> through <code>######</code>, with a space after the marker. A level-1 heading at the top of a worksheet names the document: <code>nomo html</code> takes the page's title from there rather than from the file name.</p>
 <h2 class="prose">Lists</h2>
-<p class="prose">Bullets take `-`, `*` or `+`:</p>
+<p class="prose">Bullets take <code>-</code>, <code>*</code> or <code>+</code>:</p>
 <ul class="prose">
 <li>the marker needs a space after it</li>
 <li>an item continues onto the lines under it, so a long one wraps like this rather than becoming a second item</li>
 <li>and there is no nesting: indentation is a wrap</li>
 </ul>
-<p class="prose">Numbered items take `1.` or `1)` and keep the number they were written with. That matters because a worksheet numbers its steps with the mathematics between them, so each step arrives on its own:</p>
+<p class="prose">Numbered items take <code>1.</code> or <code>1)</code> and keep the number they were written with. That matters because a worksheet numbers its steps with the mathematics between them, so each step arrives on its own:</p>
 <ol class="prose">
 <li>State the load and the supply.</li>
 </ol>
@@ -98,9 +115,19 @@ is four characters and a word, not bold text.
 <div class="step"><span class="name">A_used</span><span class="eq">=</span>4 mm²</div>
 <div class="step"><span class="name">V_drop</span><span class="eq">=</span>2·rho·L_run·I_load/A_used<span class="eq">=</span><span class="subst">2·(1.75e-8 m³·kg·s⁻³·A⁻²)·(35 m)·(15.6522 A)/(4e-6 m²)</span><span class="eq">=</span><span class="result">4.79348 V</span></div>
 <div class="step"><span class="name">drop_ratio</span><span class="eq">=</span>V_drop/V_line<span class="eq">=</span><span class="subst">4.79348 V/(230 V)</span><span class="eq">=</span><span class="result">0.0208412</span></div>
+<h2 class="prose">Inline</h2>
+<p class="prose">Two markers, and only two. A backtick pair sets a code span, like <code>this</code>, and <code>**</code> sets <strong>bold</strong>.</p>
+<p class="prose">A code span holds its content literally, so it is how a worksheet writes about the markers themselves: <code>**</code> inside one stays <code>**</code>.</p>
+<p class="prose">Everything else stays text, and each refusal has a corpus measurement behind it rather than a preference:</p>
+<ul class="prose">
+<li><code>_</code> is not emphasis. Worksheet prose is full of names like <code>V_drop</code>, and 106 corpus prose lines carry two or more underscores — every one an identifier.</li>
+<li>A single <code>*</code> is not emphasis either, because <code>*</code> is the multiplication operator: 61 corpus prose lines pair one and every pair has arithmetic between it.</li>
+<li><code>**</code> with a space just inside the pair is text, so a ** b is a product and not the start of anything.</li>
+<li>An unmatched marker is text. This ` is one backtick and the sentence continues past it.</li>
+</ul>
 <h2 class="prose">What stays prose</h2>
 <p class="prose">The subset is closed. Three things are outside it on purpose, and this is what they look like when a worksheet writes them:</p>
-<p class="prose">The three dashes on the next line are text, not a rule. --- There are no thematic breaks and no setext headings, because `' --- resources ---` is what opens the resource trailer and a worksheet must not acquire a section break by writing about a range of values.</p>
+<p class="prose">The three dashes on the next line are text, not a rule. --- There are no thematic breaks and no setext headings, because <code>' --- resources ---</code> is what opens the resource trailer and a worksheet must not acquire a section break by writing about a range of values.</p>
 <p class="prose">Leading whitespace is a wrap and not a code block, so a line indented like this one joins the line above it.</p>
 <p class="prose">#3 is a screw size rather than a heading, because a heading needs a space after its marker.</p>
 <p class="prose">A backslash protects a marker that was meant literally, so the line below is prose rather than a one-item list:</p>

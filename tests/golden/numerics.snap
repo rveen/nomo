@@ -4,7 +4,7 @@
 === text ===
 # Numerical methods
 Two things a worksheet reaches for that have no closed form: where a function
-crosses zero, and the area under it. Both take the *name* of a function, the
+crosses zero, and the area under it. Both take the **name** of a function, the
 way `map` and `iterate` do, and both do a fixed amount of work rather than
 testing a tolerance — so both give the same bits on every machine.
 A root, by bisection. It needs a bracket and says so if it does not have one.
@@ -65,7 +65,7 @@ direction = s/mag = [3000000 Pa, 4000000 Pa]/(5 MPa) = [0.6, 0.8]
 
 === html ===
 <h1 class="prose">Numerical methods</h1>
-<p class="prose">Two things a worksheet reaches for that have no closed form: where a function crosses zero, and the area under it. Both take the *name* of a function, the way `map` and `iterate` do, and both do a fixed amount of work rather than testing a tolerance — so both give the same bits on every machine.</p>
+<p class="prose">Two things a worksheet reaches for that have no closed form: where a function crosses zero, and the area under it. Both take the <strong>name</strong> of a function, the way <code>map</code> and <code>iterate</code> do, and both do a fixed amount of work rather than testing a tolerance — so both give the same bits on every machine.</p>
 <p class="prose">A root, by bisection. It needs a bracket and says so if it does not have one.</p>
 <div class="step note">fn f defined</div>
 <div class="step"><span class="name">r</span><span class="eq">=</span>root(f, 1, 2)<span class="eq">=</span><span class="result">1.41421</span></div>
@@ -73,7 +73,7 @@ direction = s/mag = [3000000 Pa, 4000000 Pa]/(5 MPa) = [0.6, 0.8]
 <p class="prose">Dimensions travel through: a root of a length equation is a length.</p>
 <div class="step note">fn overhang defined</div>
 <div class="step"><span class="name">a</span><span class="eq">=</span>root(overhang, 0 m, 10 m)<span class="eq">=</span><span class="result">3 m</span></div>
-<p class="prose">`root` needs a bracket. `roots` needs only a window: it samples a fixed 200 intervals across it and bisects every sign change it finds. That is the question a worksheet usually has — where does this cross zero between here and here — when the answer may be one place, two, or none.</p>
+<p class="prose"><code>root</code> needs a bracket. <code>roots</code> needs only a window: it samples a fixed 200 intervals across it and bisects every sign change it finds. That is the question a worksheet usually has — where does this cross zero between here and here — when the answer may be one place, two, or none.</p>
 <div class="step"><span class="name">q_0</span><span class="eq">=</span>2 kN/m</div>
 <div class="step"><span class="name">span</span><span class="eq">=</span>2 m</div>
 <div class="step note">fn V defined</div>
@@ -102,7 +102,7 @@ direction = s/mag = [3000000 Pa, 4000000 Pa]/(5 MPa) = [0.6, 0.8]
 <p class="prose">Its line of action, from the first moment of the same load.</p>
 <div class="step note">fn wx defined</div>
 <div class="step"><span class="name">x_bar</span><span class="eq">=</span>integral(wx, 0 m, L)/R<span class="eq">=</span><span class="subst">integral(wx, 0 m, 3 m)/(15 kN)</span><span class="eq">=</span><span class="result">2 m</span></div>
-<p class="prose">A system of equations linear in its unknowns, which is what statics is: the reactions of a body under load. `f` is a residual — what is left over when the unknowns are substituted — and the second argument names them by dimension.</p>
+<p class="prose">A system of equations linear in its unknowns, which is what statics is: the reactions of a body under load. <code>f</code> is a residual — what is left over when the unknowns are substituted — and the second argument names them by dimension.</p>
 <div class="step"><span class="name">weight</span><span class="eq">=</span>10 kg·9.81 m/s²<span class="eq">=</span><span class="result">98.1 N</span></div>
 <div class="step note">fn balance defined</div>
 <div class="step"><span class="name">reactions</span><span class="eq">=</span>solve_linear(balance, [0 N, 0 N, 0 N])<span class="eq">=</span><span class="result">[-39.05 N, 98.1 N, 59.05 N]</span></div>

@@ -46,11 +46,9 @@ of those three arrive. The steps, in order:
 committed and pushed, and every gate named here is green. Three things are
 pending, in the order they are worth doing:
 
-1. **Inline Markdown in prose.** `examples/bolt.nomo` writes `**preload**` and
-   the gallery now shows it as literal asterisks. §8.41 built the block level
-   and said inline was not built; turning the gallery on (§8.52) is what made it
-   visible. `_` emphasis is still refused on purpose — a name like `sigma_allow`
-   is not emphasis.
+1. **Nothing from the typography plan.** It is finished, and the last thing it
+   turned up — inline Markdown — is built (§8.53). The next items are the two
+   below.
 2. **The importer's plot configuration.** `XYPlot'Labels'XLabel` and
    `Traces#n'Name` are still refused, and the reason they were refused is gone:
    the language can say them now. Before translating, three things need
@@ -118,9 +116,9 @@ self-contained file. **Second phase:** a name that spells a Greek letter is set 
 | — Root finding | **done** | `root(f, a, b)` bisects a bracket; `roots(f, a, b)` scans a window — 200 intervals, every sign change bisected — and answers with one root or a vector of them. The second exists because SMath's `solve` is a search rather than a bracket, which was settled by reading `SpecialFunctions.dll` (design note §8.24) |
 | — Strings | **first phase done** | A literal, bindable, choosable by `if`, comparable with `==`. No arithmetic, no order, none inside a collection — which is what the 41 corpus markers for them needed and no more (§8.32) |
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
-| — Prose as Markdown | **block level done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline formatting is not built and `_` emphasis never will be. Design note §8.41, `examples/prose.nomo` |
+| — Prose as Markdown | **done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline is `` ` `` and `**`, and nothing else: `_` would eat identifiers and a single `*` is the multiplication operator — 61 corpus prose lines pair one and every pair encloses arithmetic. Design note §8.41 and §8.53, `examples/prose.nomo` |
 
-672 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+680 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -157,7 +155,7 @@ does not survive it, and then:
 
 ```bash
 cd /files/work/nomo
-cargo test --workspace                                  # 672 tests
+cargo test --workspace                                  # 680 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ./scripts/check-no-host-math.sh                         # determinism guard

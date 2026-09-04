@@ -96,10 +96,10 @@ plot(history) = plot([51x2 table]) = [plot history: 0 to 6280 s, 51 points, 301.
 <div class="step"><span class="name">tau</span><span class="eq">=</span>m_part·c_steel/(h_air·A_surf)<span class="eq">=</span><span class="subst">0.9813 kg·(480 m²·s⁻²·K⁻¹)/(25 kg·s⁻³·K⁻¹·(15000 mm²))</span><span class="eq">=</span><span class="result">1256 s</span></div>
 <div class="step"><span class="name">T_room</span><span class="eq">=</span>300 K</div>
 <div class="step"><span class="name">T_start</span><span class="eq">=</span>500 K</div>
-<p class="prose">Absolute temperatures throughout. An offset scale has no place in this arithmetic — the equation subtracts one temperature from another and scales the difference, and `°C` is refused for it — so the worksheet works in kelvin and converts at the end if a reader wants degrees.</p>
+<p class="prose">Absolute temperatures throughout. An offset scale has no place in this arithmetic — the equation subtracts one temperature from another and scales the difference, and <code>°C</code> is refused for it — so the worksheet works in kelvin and converts at the end if a reader wants degrees.</p>
 <div class="step note">fn cooling defined</div>
 <h2 class="prose">Integrating it</h2>
-<p class="prose">`rk4` names its method and takes its step count, because both change the answer. Fifty steps over five time constants is a step of a tenth of a time constant, which for a smooth exponential is far finer than it needs to be.</p>
+<p class="prose"><code>rk4</code> names its method and takes its step count, because both change the answer. Fifty steps over five time constants is a step of a tenth of a time constant, which for a smooth exponential is far finer than it needs to be.</p>
 <div class="step"><span class="name">t_end</span><span class="eq">=</span>5·tau<span class="eq">=</span><span class="subst">5·(1256 s)</span><span class="eq">=</span><span class="result">6280 s</span></div>
 <div class="step"><span class="name">steps</span><span class="eq">=</span>50</div>
 <div class="step"><span class="name">history</span><span class="eq">=</span>rk4(cooling, T_start, 0 s, t_end, steps)<span class="eq">=</span><span class="subst">rk4(cooling, 500 K, 0 s, 6280 s, 50)</span><span class="eq">=</span><span class="result">[51x2 table]</span></div>

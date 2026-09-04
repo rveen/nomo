@@ -30,7 +30,7 @@ with_units = 1 m/0
 
 ' Signed zero is a real IEEE 754 distinction and a deterministic one, unlike a
 ' NaN payload, so it is pinned rather than normalised away. Note that `0 - 0.0`
-' is *positive* zero: only unary negation reaches the other one.
+' is **positive** zero: only unary negation reaches the other one.
 negative_zero = -0.0
 positive_zero = 0 - 0.0
 sum_of_zeros = 0.0 + negative_zero

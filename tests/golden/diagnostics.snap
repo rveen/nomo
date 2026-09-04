@@ -46,11 +46,11 @@ fine = good·3 = 2 m·3 = 6 m
 === html ===
 <h1 class="prose">Diagnostics</h1>
 <p class="prose">A worksheet of deliberate mistakes, one per line.</p>
-<p class="prose">Error messages are output too, and output that nothing checks is output that drifts. This file pins what the engine says when a worksheet is wrong: the message, the code, and the position it points at. It is expected to fail `nomo check` — that is what it is for.</p>
+<p class="prose">Error messages are output too, and output that nothing checks is output that drifts. This file pins what the engine says when a worksheet is wrong: the message, the code, and the position it points at. It is expected to fail <code>nomo check</code> — that is what it is for.</p>
 <div class="step"><span class="name">good</span><span class="eq">=</span>2 m</div>
 <p class="prose">Dimensions that do not agree cannot be added.</p>
 <div class="step"><span class="name">mismatch</span><span class="eq">=</span>1 m + 1 s<span class="eq">=</span><span class="error">[cannot combine m with s]</span></div>
-<p class="prose">Two points on an offset scale do not add, and a point cannot be scaled. The brackets are needed: juxtaposition binds at `*`'s precedence, so `2*20 °C` is `(2*20) °C`, which is the ordinary reading 40 °C and no error.</p>
+<p class="prose">Two points on an offset scale do not add, and a point cannot be scaled. The brackets are needed: juxtaposition binds at <code>*</code>'s precedence, so <code>2*20 °C</code> is <code>(2*20) °C</code>, which is the ordinary reading 40 °C and no error.</p>
 <div class="step"><span class="name">sum_of_points</span><span class="eq">=</span>20°C + 5°C<span class="eq">=</span><span class="error">[cannot add two temperatures on an offset scale; add a difference instead, as in `20°C + 5 K`]</span></div>
 <div class="step"><span class="name">scaled_point</span><span class="eq">=</span>2·(20°C)<span class="eq">=</span><span class="error">[cannot scale a temperature on an offset scale; convert to an absolute scale such as K first]</span></div>
 <p class="prose">A name that was never bound.</p>
@@ -62,7 +62,7 @@ fine = good·3 = 2 m·3 = 6 m
 <div class="step"><span class="name">badunit</span><span class="eq">=</span>5 flurbles<span class="eq">=</span><span class="error">[`flurbles` is not defined]</span></div>
 <p class="prose">Trigonometry needs a dimensionless argument.</p>
 <div class="step"><span class="name">dimensional</span><span class="eq">=</span>sin(2 m)<span class="eq">=</span><span class="error">[expected a dimensionless value, found m]</span></div>
-<p class="prose">A binding that fails takes the name over anyway. `PF` is peta-farads to the unit table, and answering 1e15 F here rather than saying what went wrong is the worst thing this engine could do.</p>
+<p class="prose">A binding that fails takes the name over anyway. <code>PF</code> is peta-farads to the unit table, and answering 1e15 F here rather than saying what went wrong is the worst thing this engine could do.</p>
 <div class="step"><span class="name">PF</span><span class="eq">=</span>missing<span class="eq">=</span><span class="error">[`missing` is not defined]</span></div>
 <div class="step">PF<span class="eq">=</span><span class="error">[`PF` has no value: the statement that defines it failed]</span></div>
 <p class="prose">A matrix whose rows are not the same length. One missing comma does it: the second row reads as a juxtaposition, so it is one element wide rather than two. Nothing is evaluated from a literal like this — a matrix that claimed a shape its data did not have crashed the engine outright, which is what the randomized tests found within a second of existing.</p>

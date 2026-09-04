@@ -29,7 +29,7 @@ negative = 0 - 1/0 = -∞
 with_units = 1 m/0 = ∞ m
 Signed zero is a real IEEE 754 distinction and a deterministic one, unlike a
 NaN payload, so it is pinned rather than normalised away. Note that `0 - 0.0`
-is *positive* zero: only unary negation reaches the other one.
+is **positive** zero: only unary negation reaches the other one.
 negative_zero = -0
 positive_zero = 0 - 0 = 0
 sum_of_zeros = 0 + negative_zero = 0 + 0 = 0
@@ -54,7 +54,7 @@ reciprocal_of_negative_zero = 1/negative_zero = 1/0 = -∞
 <div class="step"><span class="name">positive</span><span class="eq">=</span>1/0<span class="eq">=</span><span class="result">∞</span></div>
 <div class="step"><span class="name">negative</span><span class="eq">=</span>0 - 1/0<span class="eq">=</span><span class="result">-∞</span></div>
 <div class="step"><span class="name">with_units</span><span class="eq">=</span>1 m/0<span class="eq">=</span><span class="result">∞ m</span></div>
-<p class="prose">Signed zero is a real IEEE 754 distinction and a deterministic one, unlike a NaN payload, so it is pinned rather than normalised away. Note that `0 - 0.0` is *positive* zero: only unary negation reaches the other one.</p>
+<p class="prose">Signed zero is a real IEEE 754 distinction and a deterministic one, unlike a NaN payload, so it is pinned rather than normalised away. Note that <code>0 - 0.0</code> is <strong>positive</strong> zero: only unary negation reaches the other one.</p>
 <div class="step"><span class="name">negative_zero</span><span class="eq">=</span>-0</div>
 <div class="step"><span class="name">positive_zero</span><span class="eq">=</span>0 - 0<span class="eq">=</span><span class="result">0</span></div>
 <div class="step"><span class="name">sum_of_zeros</span><span class="eq">=</span>0 + negative_zero<span class="eq">=</span><span class="subst">0 + 0</span><span class="eq">=</span><span class="result">0</span></div>

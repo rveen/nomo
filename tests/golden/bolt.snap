@@ -95,7 +95,7 @@ plot(bolt_force, 0, 60) = [plot bolt_force: 0 to 60, 257 points, 36.4 to 60]
 
 === html ===
 <h1 class="prose">A bolted joint: preload, torque, and what the external load does</h1>
-<p class="prose">A bolted joint is not a bolt carrying a load. It is a spring in tension clamping springs in compression, and almost all of the external load is taken by the members relaxing rather than by the bolt stretching further. That is why a joint is designed around its **preload** and only then checked against the load it carries — and why a torque figure without a preload behind it says nothing.</p>
+<p class="prose">A bolted joint is not a bolt carrying a load. It is a spring in tension clamping springs in compression, and almost all of the external load is taken by the members relaxing rather than by the bolt stretching further. That is why a joint is designed around its <strong>preload</strong> and only then checked against the load it carries — and why a torque figure without a preload behind it says nothing.</p>
 <p class="prose">The joint: two 15 mm steel plates, one M12 × 1.75 bolt of property class 8.8, carrying 10 kN of external tension per bolt.</p>
 <div class="step note">use steel</div>
 <p class="prose">Four significant figures. A preload is not known to six, and a page of six digit numbers invites a reader to believe the last two.</p>

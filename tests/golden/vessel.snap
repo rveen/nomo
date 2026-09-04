@@ -126,7 +126,7 @@ the page.
 <p class="prose">Hoop stress at the bore against wall thickness, both ways, on one plot. They agree while the wall is thin and part company as it thickens — and the thin-wall line is the lower of the two, which is the dangerous direction.</p>
 <div class="step note">fn thin defined</div>
 <div class="step note">fn thick defined</div>
-<p class="prose">The legend would otherwise name the curves after the functions that drew them, which here are `thin` and `thick`. `label` says what they are.</p>
+<p class="prose">The legend would otherwise name the curves after the functions that drew them, which here are <code>thin</code> and <code>thick</code>. <code>label</code> says what they are.</p>
 <div class="step note">axis x &quot;Wall thickness&quot;</div>
 <div class="step note">axis y &quot;Hoop stress&quot;</div>
 <div class="step note">label &quot;Thin-wall&quot;, &quot;Thick-wall (Lamé)&quot;</div>

@@ -1,7 +1,7 @@
 ' nomo 1
 ' # Plots
 ' `plot(f, a, b)` samples a function across a span and draws it. Like `map`,
-' `iterate`, `root` and `integral`, it takes the *name* of a function — there
+' `iterate`, `root` and `integral`, it takes the **name** of a function — there
 ' are no lambdas, and a call's callee is always a name.
 
 fn parabola(x) = x^2 - 2

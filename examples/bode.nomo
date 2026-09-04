@@ -7,7 +7,7 @@
 ' first decade of a four-decade sweep is the leftmost thousandth of the chart
 ' and everything below the corner is a vertical line at the origin.
 '
-' `axis x log` says so — and it changes the *sampling* as well as the drawing.
+' `axis x log` says so — and it changes the **sampling** as well as the drawing.
 ' A fixed number of samples spaced linearly across 10 Hz to 100 kHz puts four of
 ' them below 1 kHz; spaced logarithmically, every decade gets the same number,
 ' which is what a reader of the chart assumes has happened.

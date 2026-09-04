@@ -2705,7 +2705,8 @@ flat lines still renders every worksheet — the property §7 asks of any format
 - **Inline emphasis is deferred, and `_` should never be built.** 106 corpus prose lines carry two or
   more underscores and every sampled one is an identifier — `fn qq_at_1(k) = 448.83*xx[k]`, a line
   the importer commented out. Underscore emphasis would eat variable names in the one kind of prose
-  this project has most of. If inline is ever wanted, `` ` `` and `**` only.
+  this project has most of. If inline is ever wanted, `` ` `` and `**` only. **Built — §8.53, and it
+  is those two and no others.**
 
 **One escape, for humans rather than for the importer:** a backslash before a leading marker,
 `' \# not a heading`. The measurement below says the importer needs to escape nothing.
@@ -3514,6 +3515,63 @@ verified in one browser on one machine.
 `**preload**` in its prose, and it renders as literal asterisks: inline Markdown
 is not built (§8.41, which builds the block level and says so). It was invisible
 while the gallery was a wall of monospace and is not any more.
+
+### 8.53 Inline prose: two markers, measured (2026-09-04)
+
+§8.41 deferred inline formatting and named what it should be if it ever
+arrived: *"`` ` `` and `**` only"*. Turning the gallery on (§8.52) is what made
+the gap visible — `examples/bolt.nomo` writes `**preload**` and a wall of
+monospace had been hiding the asterisks. This builds exactly the two, and the
+measurement that admits each is the same kind §8.41 made against `_`.
+
+Across the **120580** prose lines the importer emits from both corpora:
+
+| marker | lines | what they are |
+|---|---|---|
+| `_` twice or more | 106 | identifiers — §8.41's measurement, unchanged |
+| a matched single `*` | 61 | *arithmetic*: `*γw*`, `*D2^2/4*`, `*ρ^0*`, `*x)*` |
+| `**` | **0** | — |
+| `` ` `` | **1595** | every one inside the importer's own `[import] unsupported: …` marker |
+
+So `**` is admitted because nothing existing uses it, and `` ` `` because
+*this project already uses it as a code marker* — the importer quotes an
+identifier in backticks precisely because it is code, and 1595 lines have been
+asking for `<code>` and getting a pair of backticks. All 1595 have an even
+number of them.
+
+**A single `*` is refused for the reason `_` is.** 61 corpus lines pair one, and
+the pairs enclose multiplication in expressions the importer commented out.
+Admitting it would eat them. Four of this project's own worksheets were writing
+`*name*` and `*sampling*` meaning emphasis; they now write `**`, which is the
+marker the subset has.
+
+**Two rules keep a marker from firing where it should not.** An unmatched marker
+of either kind stays as written, so a paragraph about a backtick does not
+swallow the rest of itself. And `**` opens only when a non-space follows and
+closes only when a non-space precedes — CommonMark's flanking rule reduced to
+the half that matters, which is what makes `a ** b` ordinary text.
+
+`examples/diagnostics.nomo` is the case that proves the ordering: it writes
+``` `*`'s precedence ``` and ``` `2*20 °C` is `(2*20) °C` ```. A code span is
+taken first and holds its content literally, so the multiplication inside those
+spans is untouched.
+
+**Inline is read after the block join, not per source line.**
+`examples/conditions.nomo` wraps a code span across two comment lines, leaving
+each with an odd number of backticks and only the joined paragraph with an even
+one. A per-line reading would have rendered neither.
+
+**The module still hands back no markup.** `prose::inline` returns spans and the
+HTML renderer decides what a tag is, escaping each span separately — so the only
+tags in the output are the ones it wrote, and a worksheet writing `<script>`
+inside a code span gets a code span about scripts. That is the same rule §8.41
+set for blocks, and it is what makes inline safe to add at all: the renderer's
+output is assigned to `innerHTML` by the browser front end.
+
+Nineteen golden snapshots moved, all of them prose gaining `<code>` or
+`<strong>`, plus four lines of text output in the worksheets whose `*` became
+`**`. The 114 corpus baselines did not move: the importer emits the markers, it
+does not read them.
 
 ### 8.8 Strategy: corpus-driven
 

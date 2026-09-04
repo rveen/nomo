@@ -401,8 +401,16 @@ Nothing here is an oversight; each one is refused for a reason, and design note
   them are continuations of the line above. There is no nesting either, so an
   indented list marker is an item of the same flat list.
 - **No raw HTML.** Everything is escaped on its way into the document.
-- **No inline emphasis yet, and `_` never.** Worksheet prose is full of
-  identifiers like `V_drop`, and underscore emphasis would eat them.
+- **Two inline markers, and only two.** `` `code` `` sets a code span and
+  `**strong**` sets bold. `_` is not a marker and never will be — worksheet
+  prose is full of identifiers like `V_drop` and underscore emphasis would eat
+  them — and neither is a single `*`, because a single `*` is the
+  multiplication operator: across the corpora, every prose line with a matched
+  pair of them has arithmetic between them, not emphasis. `**` with a space
+  after the opening or before the closing pair is ordinary text, so a sentence
+  about `**` keeps it, and an unmatched marker of either kind stays as written.
+  Nothing inside a code span is a marker, which is what lets one be written
+  about.
 
 A comment is still an ordinary comment: nothing about parsing, evaluation or
 the dependency graph knows any of this, and a build that renders prose as flat

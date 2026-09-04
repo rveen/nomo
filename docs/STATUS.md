@@ -468,7 +468,7 @@ Rust that qemu never sees — but "should be" is an argument again, and the poin
 of this section is not to make those.
 
 The `arm64` job in CI closes it on real hardware, and it is written and
-committed. The repository now has a remote — `git@github.com:trukeio/nomo.git`
+committed. The repository now has a remote — `git@github.com:rveen/nomo.git`
 — so the job can run; whether it has, and what it said, is a question for the
 Actions tab rather than for this file, which cannot see it.
 

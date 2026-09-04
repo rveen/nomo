@@ -7,7 +7,7 @@ version = "0.2.0"
 edition = "2021"
 rust-version = "1.90"
 license = "MIT"
-repository = "https://github.com/trukeio/nomo-math"
+repository = "https://github.com/rveen/nomo"
 
 [workspace.dependencies]
 nomo-core = { path = "crates/nomo-core" }

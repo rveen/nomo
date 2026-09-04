@@ -1,7 +1,7 @@
 {
   "name": "nomo-web",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "description": "Browser front end for the Nomo engine. The engine itself is the WebAssembly module; nothing here computes.",
   "scripts": {

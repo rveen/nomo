@@ -1,6 +1,17 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — a worksheet set as a document
+
+Six commits that take the output from text with a bar drawn through it to
+typeset mathematics: names that spell Greek letters set as those letters, a math
+font shipped rather than hoped for, a text face for the prose around it, and the
+constructs that used to fall back to running text — a conversion, a substituted
+value, a conditional — drawn as what they are. The worked examples are published
+typeset, which is what all of it was for.
+
+No language changes: nothing a worksheet can say has changed, and the golden
+suite moved by one line, deliberately. Typesetting is still off by default
+outside the gallery and the editor's toggle.
 
 ### Changed
 

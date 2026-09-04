@@ -3282,6 +3282,66 @@ separate decision, and it is gated on the loose end §8.47 left: the constructs
 with no typeset form fall back to linear text that has no Greek table, so a
 gallery turned on today would show `λ` on one line and `lambda` on the next.
 
+### 8.49 A text face for the prose around the mathematics (2026-09-04)
+
+§8.48 ships the font the formulae are laid out with. This is the other half: a
+worksheet is a document, and a document whose prose is set in the machine's UI
+sans beside mathematics set in a book face looks like two things stapled
+together. STIX Two Text is the face STIX Two Math was drawn against, so the two
+share a design rather than merely coexisting.
+
+**The variable faces rather than static ones.** Three statics — Regular, Italic,
+SemiBold — come to 197 kB subset. The two variable faces come to **173 kB** and
+carry the whole 400–700 weight axis, so they also cover the 700 the verdict line
+asks for, which the three statics would not have. Two files rather than one
+because italic is a separate design and not a slant: no axis produces it.
+hb-subset has to be told to keep the axis, or it pins the font to its default
+instance and every heading quietly stops being bold.
+
+**A wider range list than the math font's, for the opposite reason.** Prose is
+never remapped into the Mathematical Alphanumeric Symbols block — that is what
+`math-auto` does inside `<math>` — so none of that is needed. But prose is
+written by a person, and a paragraph saying "where σ is the stress at the root"
+or "must be ≥ 100 MPa" is ordinary engineering writing. A Greek letter that fell
+back to another face in the middle of a sentence is exactly the defect this
+work exists to remove, so Greek, the arrows and the operators are in, at 36 kB.
+
+**Shipped to the editor, named for a standalone document, and the distinction is
+not arbitrary.** It is what each font does when it is missing. A font with no
+MATH table lays a fraction out from ordinary text metrics and the mathematics is
+*wrong*; a missing text face gives Georgia, which is a perfectly good book face.
+Layout-critical is worth carrying in every exported file; aesthetic is not. The
+editor serves its own assets and its service worker precaches them, so it costs
+one fetch there and pays for itself. `nomo html` therefore names
+`"STIX Two Text", Georgia, "Times New Roman", serif` and carries nothing. That
+also keeps `--embed-font` at 240 kB rather than 410 kB for a worksheet that was
+17 kB.
+
+**Looking at the result found something the markup tests could not.** With the
+fonts in place, a typeset line was set half in one design and half in another:
+the fraction, the names and the units came from the math font, while the result,
+the `=` between the columns and the words `check` and `pass` stayed in `.step`'s
+monospace, because they are ordinary spans rather than `<math>` elements. It was
+the loudest thing on an otherwise finished page and no assertion about markup
+would ever have caught it. The renderer now marks a typeset line
+`class="step typeset"` and the stylesheets set the whole line in the math stack.
+Monospace is still right for an *untypeset* line, which is linear text whose
+columns line up — that is what monospace is for.
+
+**Two defects this makes visible and does not fix**, both older than this step
+and both in the markup rather than the typography:
+
+- A quantity written directly sets as `50mm` with no space. `ImplicitMul` emits
+  U+2062 INVISIBLE TIMES, which is exactly zero wide, and ISO 80000-1 requires a
+  space between a numerical value and its unit symbol. The substituted column
+  escapes it only because it goes through `<mtext>`. The fix is a thin space
+  where the right operand is a `UnitRef`, and not where it is algebra — `2x` is
+  correctly tight.
+- A relation between substituted values sets as `160≥105.5`. The operands are
+  `<mtext>` and the `<mo>` between them is not getting a relation's spacing.
+
+Neither is a font question, which is why neither is fixed here.
+
 ### 8.8 Strategy: corpus-driven
 
 Build the importer as a separate crate emitting the Nomo document format, then run it across every

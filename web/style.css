@@ -174,6 +174,33 @@ footer p { margin: 0; }
    `swap` because the fallback stack below is a real math font on most
    machines: a reader should see the formula immediately in whatever they have
    and get the shipped face when it arrives, rather than looking at nothing. */
+/* The text companion to the math font, and the reason it is here: a worksheet
+   is a document, and a document whose prose is set in the machine's UI sans
+   beside mathematics set in a book face looks like two things stapled together.
+   STIX Two Text is the face STIX Two Math was drawn against, so the prose and
+   the formulae share a design rather than merely coexisting.
+
+   Two files, both *variable*: one carries the whole 400–700 weight axis, which
+   is smaller than shipping Regular and SemiBold separately and covers the 700
+   the verdict asks for. Italic is a second file because italic is a separate
+   design, not a slant — no axis produces it. `font-display: swap` for the same
+   reason as the math font: read the text now in whatever is at hand, and get
+   this when it arrives. */
+@font-face {
+  font-family: "STIX Two Text Subset";
+  src: url("fonts/stix-two-text-subset.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "STIX Two Text Subset";
+  src: url("fonts/stix-two-text-italic-subset.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 @font-face {
   font-family: "STIX Two Math Subset";
   src: url("fonts/stix-two-math-subset.woff2") format("woff2");
@@ -190,7 +217,28 @@ footer p { margin: 0; }
                "TeX Gyre Pagella Math", "Cambria Math", math;
 }
 
+/* The results pane is a document, so it is set as one. Everything around it —
+   the header, the buttons, the file name — is an application and stays in the
+   machine's own UI face, because a control that looks like prose is a control
+   that reads as prose. `.step` keeps its monospace: an untypeset line is linear
+   text whose columns line up, which is what monospace is for. */
+#output {
+  font-family: "STIX Two Text Subset", "STIX Two Text", Georgia,
+               "Times New Roman", serif;
+}
+
 #output .prose { margin: 1.1rem 0 0.4rem; color: #999; }
+/* Set by the engine when the mathematics is typeset, and it takes the whole
+   line rather than only the `<math>` in it — the result, the `=` between the
+   columns and the words `check` and `pass` are part of the same statement.
+   Leaving them in monospace beside a fraction in a book face is a line that
+   looks half converted. */
+#output .step.typeset {
+  font-family: "STIX Two Math Subset", "Latin Modern Math", "STIX Two Math",
+               "TeX Gyre Pagella Math", "Cambria Math", math;
+  font-size: 0.95rem;
+}
+
 #output .step {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
   font-size: 0.9rem;

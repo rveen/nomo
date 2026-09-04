@@ -1129,6 +1129,18 @@ the one that can: it costs the font's size in every file, and it embeds the
 licence file sitting beside the font along with it, because a document that
 carries a font redistributes it.
 
+Only the *math* font is ever embedded, and the difference is what each does when
+it is missing. A font with no MATH table lays a fraction out from ordinary text
+metrics and the mathematics comes out wrong; a missing text face gives Georgia,
+which is a perfectly good book face. So the prose of a standalone document names
+`"STIX Two Text", Georgia, "Times New Roman", serif` and carries nothing, while
+the editor — which serves its own assets — ships the face and uses it.
+
+**A typeset line is set whole.** The result, the `=` between the columns and the
+words `check` and `pass` are part of the same statement as the formula, so they
+take the same face. An *untypeset* line stays monospace, because it is linear
+text whose columns line up, and that is what monospace is for.
+
 Italic and upright follow ISO 80000-2, and you get them by writing the name the
 way you would say it: a single-letter symbol is italic, and a word is upright.
 That is why `sigma_allow` comes out as an italic σ with an upright `allow` —

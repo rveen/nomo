@@ -22,8 +22,22 @@ use crate::value::Value;
 
 const STYLE: &str = r#"
 :root { color-scheme: light dark; }
+/* A worksheet is a document, and it gets printed, signed and filed. So it is
+   set as a document: a book face for the prose, which is also the face the
+   mathematics above is drawn against — STIX Two Text is STIX Two Math's
+   companion, so the two share a design rather than merely coexisting. Prose in
+   the machine's UI sans beside formulae in a book face looks like two things
+   stapled together, and it is the difference a reader notices without being
+   able to name it.
+
+   Named rather than shipped, unlike the math font. The distinction is what
+   each does when it is missing: a font with no MATH table lays a fraction out
+   from text metrics and the mathematics is wrong, while a missing text face
+   gives Georgia, which is a perfectly good book face. Layout-critical is worth
+   carrying in every file; aesthetic is not. The editor, which serves its own
+   assets, does ship it — see `web/style.css`. */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-family: "STIX Two Text", Georgia, "Times New Roman", serif;
   max-width: 46rem; margin: 2rem auto; padding: 0 1.5rem; line-height: 1.6;
 }
 h1 { font-size: 1.4rem; font-weight: 600; margin: 0 0 1.5rem; }
@@ -45,6 +59,16 @@ ul.prose li, ol.prose li { margin: 0.2rem 0; }
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
   font-size: 0.95rem; margin: 0.15rem 0; padding: 0.15rem 0;
   overflow-x: auto;
+}
+/* Set by the renderer when the mathematics is typeset, and it takes the whole
+   line rather than only the `<math>` in it. The result, the `=` between the
+   columns and the words `check` and `pass` are all part of the same statement,
+   and leaving them in monospace beside a fraction in a book face is a page that
+   looks half converted. */
+.step.typeset {
+  font-family: "STIX Two Math Subset", "Latin Modern Math", "STIX Two Math",
+               "TeX Gyre Pagella Math", "Cambria Math", math;
+  font-size: 1rem;
 }
 /* Typeset mathematics needs a font with an OpenType MATH table: the fraction
    bar thickness, the axis height, the script shifts and the stretchy brackets
@@ -266,6 +290,14 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
 
     let mut body = String::new();
     let eq = r#"<span class="eq">=</span>"#;
+    // A worked line is monospace when it is linear text, because that is what
+    // monospace is for: columns of characters that line up. When it is typeset
+    // it is mathematics, and the parts of it that are *not* inside a `<math>`
+    // element — the result, the `=` between the columns, the words `check` and
+    // `pass` — must not stay in a face the rest of the line abandoned. Setting
+    // a result in monospace beside a formula in a book face is the loudest
+    // thing on an otherwise finished page.
+    let step = if opts.mathml { "step typeset" } else { "step" };
 
     // The prose run currently being collected, and where its last line ended.
     // Comments arrive one per line; a paragraph is a run of them, so they are
@@ -311,7 +343,7 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
             OutcomeKind::Assign { name, trace } => {
                 if let Ok(Value::Plot(p)) = &trace.value {
                     body.push_str(&format!(
-                        "<div class=\"step\"><span class=\"name\">{}</span>{eq}{}</div>\n",
+                        "<div class=\"{step}\"><span class=\"name\">{}</span>{eq}{}</div>\n",
                         r.name_markup(name),
                         r.symbolic_markup(trace)
                     ));
@@ -319,7 +351,7 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                     continue;
                 }
                 let mut line = format!(
-                    "<div class=\"step\"><span class=\"name\">{}</span>{eq}{}",
+                    "<div class=\"{step}\"><span class=\"name\">{}</span>{eq}{}",
                     r.name_markup(name),
                     r.symbolic_markup(trace)
                 );
@@ -383,7 +415,7 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                     None => ("not decided", "undecided"),
                 };
                 let mut line = format!(
-                    "<div class=\"step check {class}\"><span class=\"name\">check</span>{}",
+                    "<div class=\"{step} check {class}\"><span class=\"name\">check</span>{}",
                     r.symbolic_markup(trace)
                 );
                 if r.substitution_is_informative(trace) {
@@ -403,13 +435,13 @@ pub fn body(sheet: &Sheet, opts: &RenderOptions) -> String {
                 // make every other row that tall.
                 if let Ok(Value::Plot(p)) = &trace.value {
                     body.push_str(&format!(
-                        "<div class=\"step\">{}</div>\n",
+                        "<div class=\"{step}\">{}</div>\n",
                         r.symbolic_markup(trace)
                     ));
                     body.push_str(&plot::svg(p, r.units, &r.numbers));
                     continue;
                 }
-                let mut line = format!("<div class=\"step\">{}", r.symbolic_markup(trace));
+                let mut line = format!("<div class=\"{step}\">{}", r.symbolic_markup(trace));
                 if r.substitution_is_informative(trace) {
                     line.push_str(&format!(
                         "{eq}<span class=\"subst\">{}</span>",

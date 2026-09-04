@@ -43,7 +43,7 @@ trustworthy. A `file://` mirror built from corpora already on disk is also how
 the fetch path is tested without asking anything of the upstream sites; the
 recipe is in `docs/STATUS.md`.
 
-## The math font
+## The fonts
 
 Typeset output is laid out from a font's OpenType MATH table — the fraction bar
 thickness, the axis height, the script shifts, the stretchy bracket recipes.
@@ -59,27 +59,42 @@ until v0.3.0; `web/dist/` now ships a subset of **STIX Two Math**.
 each file comes from and its SHA-256, under `scripts/fonts/` — so the font a
 build is made from is provably the one this repository was built against.
 
+`web/dist/` also ships **STIX Two Text**, the face STIX Two Math was drawn
+against, for the prose around the mathematics — as the two *variable* faces,
+which carry the whole 400–700 weight axis in less room than three static ones.
+
 | File | Source | Terms |
 |---|---|---|
 | `STIXTwoMath-Regular.woff2` | <https://github.com/stipub/stixfonts> at tag `v2.13b171` | Copyright 2001-2021 The STIX Fonts Project Authors, with Reserved Font Name "TM Math". [SIL Open Font License 1.1](https://scripts.sil.org/OFL). STIX Fonts™ is a trademark of the IEEE. |
+| `STIXTwoText-Variable.woff2` | the same, `fonts/variable_ttf_woff2/STIXTwoText[wght].woff2` | the same |
+| `STIXTwoText-Italic-Variable.woff2` | the same, `STIXTwoText-Italic[wght].woff2` | the same |
 
 A raw blob at a *tag* rather than a release asset: stipub/stixfonts publishes no
 release assets, and its built fonts live only in the git tree. `v2.13b171` is the
 newest tag carrying them; later tags are source-only.
 
-**What ships is a subset, and it is renamed.** `web/font.mjs` reduces the face
-from 552 kB to 162 kB with the harfbuzz subsetter, and the result ships as
-`stix-two-math-subset.woff2` under the CSS family `STIX Two Math Subset`. A
-subset is a Modified Version under the OFL. The licence's Reserved Font Name is
+**What ships is a subset, and it is renamed.** `web/font.mjs` reduces the math
+face from 552 kB to 162 kB with the harfbuzz subsetter and the text pair from
+333 kB to 173 kB, and they ship as `stix-two-math-subset.woff2`,
+`stix-two-text-subset.woff2` and `stix-two-text-italic-subset.woff2` under the
+CSS families `STIX Two Math Subset` and `STIX Two Text Subset`. A subset is a
+Modified Version under the OFL. The licence's Reserved Font Name is
 "TM Math" rather than "STIX", so keeping the original name would have been
 permitted — but STIX Fonts is an IEEE trademark and the subset is not what that
 name refers to, so it says what it is instead. A reader whose machine has the
 full STIX Two Math keeps it as the next entry in the CSS stack, for any
 character the subset does not carry.
 
-**The licence travels with the font**, as the OFL requires: `OFL.txt` is fetched
-alongside it and copied into `web/dist/fonts/`, and `nomo html --embed-font`
-writes the same text into any document it embeds a font into.
+**The licence travels with the fonts**, as the OFL requires: `OFL.txt` is fetched
+alongside them and copied into `web/dist/fonts/` — one licence for all three,
+since they are one release of one project — and `nomo html --embed-font` writes
+the same text into any document it embeds a font into.
+
+**Only the math font is ever embedded in an exported document.** The difference
+is what each does when it is missing: a font with no MATH table lays a fraction
+out from ordinary text metrics and the mathematics is wrong, while a missing
+text face gives Georgia. A standalone `nomo html` therefore names the text face
+and carries nothing.
 
 ## Two industrial worksheets, no longer here
 

@@ -1,4 +1,5 @@
-// Subset the math font that `web/dist/` ships.
+// Subset the fonts that `web/dist/` ships: one for the mathematics, one for
+// the prose around it.
 //
 // # Why a font is shipped at all
 //
@@ -47,7 +48,7 @@ import subsetFont from "subset-font";
 const here = dirname(fileURLToPath(import.meta.url));
 
 /**
- * The name the subset ships under, in the file system and in CSS.
+ * The name each subset ships under, in the file system and in CSS.
  *
  * Not "STIX Two Math". A subset is a Modified Version under the OFL, and while
  * the licence's Reserved Font Name is "TM Math" rather than "STIX" — so keeping
@@ -58,6 +59,11 @@ const here = dirname(fileURLToPath(import.meta.url));
  */
 export const FONT_FILE = "stix-two-math-subset.woff2";
 export const FONT_FAMILY = "STIX Two Math Subset";
+export const TEXT_FILES = {
+  upright: "stix-two-text-subset.woff2",
+  italic: "stix-two-text-italic-subset.woff2",
+};
+export const TEXT_FAMILY = "STIX Two Text Subset";
 
 /**
  * Every code point the renderer can put inside a `<math>` element.
@@ -83,11 +89,77 @@ const RANGES = [
   [0x1d6e2, 0x1d71b], // italic Greek
 ];
 
-const text = RANGES.map(([a, b]) => {
-  let run = "";
-  for (let c = a; c <= b; c += 1) run += String.fromCodePoint(c);
-  return run;
-}).join("");
+/** A list of inclusive code-point ranges as the string hb-subset wants. */
+function codePoints(ranges) {
+  return ranges
+    .map(([a, b]) => {
+      let run = "";
+      for (let c = a; c <= b; c += 1) run += String.fromCodePoint(c);
+      return run;
+    })
+    .join("");
+}
+
+const mathText = codePoints(RANGES);
+
+/**
+ * Every code point a worksheet's *prose* can contain.
+ *
+ * Narrower than the math list in one way and wider in another. Narrower because
+ * prose is never remapped into the Mathematical Alphanumeric Symbols block —
+ * that is what `math-auto` does inside `<math>`, and prose is not inside it.
+ * Wider because prose is written by a person: a paragraph saying "where σ is
+ * the stress at the root" or "must be ≥ 100 MPa" is ordinary engineering
+ * writing, and a Greek letter that fell back to another face in the middle of a
+ * sentence is exactly the defect this font is here to remove. Greek, the
+ * arrows and the operators cost 36 kB between them and are worth it.
+ */
+const PROSE_RANGES = [
+  [0x0020, 0x007e], // ASCII
+  [0x00a0, 0x00ff], // Latin-1: accents, ° µ · × ÷ and the superscript digits
+  [0x0100, 0x017f], // Latin Extended-A, for a name or a word in most of Europe
+  [0x0370, 0x03ff], // Greek and Coptic — prose names the quantities too
+  [0x2000, 0x206f], // punctuation: dashes, quotes, the ellipsis
+  [0x2070, 0x209f], // superscripts and subscripts
+  [0x2100, 0x214f], // letterlike: ℃ ℉ Ω ℓ №
+  [0x2190, 0x21ff], // arrows
+  [0x2200, 0x22ff], // mathematical operators: ≤ ≥ ± √ ∞
+];
+
+const proseText = codePoints(PROSE_RANGES);
+
+/**
+ * Subset the text companion into `<dist>/fonts/`.
+ *
+ * The *variable* faces rather than three static ones. One file carries the whole
+ * 400–700 weight axis, which comes out smaller than Regular and SemiBold
+ * separately — 173 kB for the pair against 197 kB for three statics — and it
+ * covers the 700 the verdict line asks for, which three statics would not have.
+ * Two files rather than one because italic is a separate design, not a slant:
+ * there is no axis that produces it.
+ */
+async function buildText(vendor, fonts) {
+  let total = 0;
+  for (const [style, source] of [
+    ["upright", "STIXTwoText-Variable.woff2"],
+    ["italic", "STIXTwoText-Italic-Variable.woff2"],
+  ]) {
+    const subset = await subsetFont(
+      await readFile(join(vendor, source)),
+      proseText,
+      {
+        targetFormat: "woff2",
+        // Keeping the axis is the whole point; without this hb-subset would
+        // pin the font to its default instance and the headings would stop
+        // being bold.
+        variationAxes: { wght: { min: 400, max: 700 } },
+      },
+    );
+    await writeFile(join(fonts, TEXT_FILES[style]), subset);
+    total += subset.length;
+  }
+  return total;
+}
 
 /**
  * Subset `web/vendor/` into `<dist>/fonts/`, and carry the licence with it.
@@ -110,13 +182,15 @@ export async function buildFont(dist) {
     );
     process.exit(1);
   }
-  const subset = await subsetFont(source, text, { targetFormat: "woff2" });
+  const subset = await subsetFont(source, mathText, { targetFormat: "woff2" });
   const fonts = join(dist, "fonts");
   await mkdir(fonts, { recursive: true });
   await writeFile(join(fonts, FONT_FILE), subset);
+  const text = await buildText(vendor, fonts);
+  // One licence for both: they are one release of one project, under one OFL.
   await writeFile(
     join(fonts, "OFL.txt"),
     await readFile(join(vendor, "OFL.txt")),
   );
-  return subset.length;
+  return { math: subset.length, text };
 }

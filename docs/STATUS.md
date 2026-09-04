@@ -7,7 +7,7 @@ complex numbers, plots, several curves on one plot, a plot of a table of
 measured points, the importer's side of it, a definition that is really a
 function of `x`, prose as Markdown (§8.41), the v0.1.0 release, labelled axes,
 the v0.2.0 release, the v0.2.1 release, and Greek letters in the typeset
-columns (§8.47), and the math font the output is set in (§8.48).
+columns (§8.47), the math font the output is set in (§8.48), and the text face around it (§8.49).
 
 **A four-step plan for typographic quality is under way (2026-09-04).** It was
 costed against the alternative of shipping MathJax, which was measured and
@@ -29,18 +29,25 @@ of those three arrive. The steps, in order:
    ranges of U+1D400–1D7FF are unreachable and were dropped. hb-subset via the
    `subset-font` npm package rather than fontTools, so the build gains no third
    toolchain. `nomo html` gained `--font-url` and `--embed-font`.
-3. **A text face to match the mathematics** — STIX Two Text Regular, Italic and
-   SemiBold subset to **134 KB** together, measured on this machine. Prose and
-   mathematics from one design is most of what quality means on a page that gets
-   printed and signed. The fetch, hash and subset machinery step 2 built is what
-   this reuses.
+3. **A text face to match the mathematics** — **done**, §8.49. STIX Two Text as
+   the two *variable* faces rather than three statics: **173 KB** for the pair
+   against 197 KB, and it carries the whole 400–700 axis so the verdict line's
+   700 works. Shipped to the editor; a standalone `nomo html` names the face and
+   carries nothing, because a missing text face gives Georgia while a missing
+   *math* font gives wrong mathematics. Looking at the result also found that a
+   typeset line was set half in the math face and half in `.step`'s monospace;
+   it is now marked `step typeset` and set whole.
 4. **No MathJax.**
 
 **Where the last session stopped, and what it left.** Everything below is
 committed and pushed, and every gate named here is green. Three things are
 pending, in the order they are worth doing:
 
-1. **Step 3 of the plan above**, and the loose end step 1 left: the constructs
+1. **Two typographic defects the shipped fonts made visible** (§8.49), both in
+   the markup rather than the typography, and neither fixed: a quantity written
+   directly sets as `50mm` because `ImplicitMul` emits a zero-width U+2062 where
+   ISO 80000-1 wants a space, and a relation between substituted values sets as
+   `160≥105.5`. And the loose end step 1 left: the constructs
    with no typeset form fall back to linear text that has no Greek table, so a
    worksheet draws `λ` on the lines that typeset and `lambda` inside the
    `<mtext>` of the lines that do not. Closing it means either giving those
@@ -105,7 +112,7 @@ self-contained file. **Second phase:** a name that spells a Greek letter is set 
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Prose as Markdown | **block level done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline formatting is not built and `_` emphasis never will be. Design note §8.41, `examples/prose.nomo` |
 
-658 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+659 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -120,7 +127,7 @@ does not survive it, and then:
    they are the fastest way to learn what this repository considers true. The
    corpora are third-party and are not in git — run `./scripts/fetch-corpora.sh`
    once and the `check-corpus.sh` lines work from a clean checkout; set
-   `CORPUS_ROOT` if the worksheets are somewhere else. The math font is the same
+   `CORPUS_ROOT` if the worksheets are somewhere else. The fonts are the same
    arrangement — `./scripts/fetch-font.sh`, which `build-web.sh` runs for you.
    See THIRD-PARTY.md.
 2. **The next piece of work is named** under "What is worth doing next". The
@@ -142,7 +149,7 @@ does not survive it, and then:
 
 ```bash
 cd /files/work/nomo
-cargo test --workspace                                  # 658 tests
+cargo test --workspace                                  # 659 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ./scripts/check-no-host-math.sh                         # determinism guard
@@ -165,7 +172,7 @@ cargo run --release -p nomo-cli -- bench               # timings; a report, exit
                                                         # check-recovery.mjs, which assert
                                                         # what only a browser can see
 
-./scripts/fetch-font.sh                                 # the math font, likewise; run by
+./scripts/fetch-font.sh                                 # the fonts, likewise; run by
                                                         # build-web.sh
 ./scripts/fetch-corpora.sh                              # the corpora are third-party and
                                                         # are not committed; this brings
@@ -284,7 +291,7 @@ The whole tag run took under two minutes: 26–50 s per binary and 29 s for the
 module, so the cost of releasing is not a reason to release less often.
 
 Before it was cut, every gate that can run on a development machine was run
-here: 658 tests, 29 snapshots, native and WebAssembly byte-identical, 114 corpus
+here: 659 tests, 29 snapshots, native and WebAssembly byte-identical, 114 corpus
 worksheets unmoved, nine browser checks. `compare-arch.sh` was not among them —
 `qemu-user` is not installed here — and CI's `arm64` job is what covers it.
 

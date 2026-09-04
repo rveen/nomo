@@ -151,6 +151,39 @@ try {
   if (!output.includes("0.942478")) {
     failures.push("the rest of the worksheet stopped computing");
   }
+
+  // The text companion to the math font. It is requested on first paint, so
+  // unlike the math font there is no toggle to reach it — which is exactly why
+  // it needs asserting: a stack that resolved to nothing would report the same
+  // family string as one that resolved to the shipped face, and the page would
+  // simply look like Georgia to anyone who did not know better.
+  //
+  // The upright face is asked for `loaded`, because the pane is full of prose
+  // that uses it. The italic is asked for by *name*: a browser fetches a face
+  // only when something on the page needs it, and this page happens to have no
+  // italic prose, so an unfetched italic is correct behaviour rather than a
+  // fault. `fonts.load` fetches it on purpose, which is the stronger check
+  // anyway — it proves the file is reachable and is a font, not merely that a
+  // rule mentions it.
+  const faces = JSON.parse(
+    await browser.evaluate(`
+      (async () => {
+        await document.fonts.ready;
+        await document.fonts.load('italic 16px "STIX Two Text Subset"');
+        return JSON.stringify([...document.fonts]
+          .filter((f) => f.family === "STIX Two Text Subset" && f.status === "loaded")
+          .map((f) => f.style));
+      })()
+    `),
+  );
+  for (const style of ["normal", "italic"]) {
+    if (!faces.includes(style)) {
+      failures.push(
+        `the shipped ${style} text face did not load — the results pane then ` +
+          "falls back to whatever serif the machine has, or to none",
+      );
+    }
+  }
 } catch (error) {
   failures.push(`could not drive the browser: ${error.message}`);
 } finally {
@@ -164,7 +197,10 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log("ok: the page loads, evaluates and highlights correctly in Chrome");
+console.log(
+  "ok: the page loads, evaluates, highlights, and sets its prose in the " +
+    "shipped text face, in Chrome",
+);
 
 async function waitFor(browser, expression, what) {
   for (let attempt = 0; attempt < 200; attempt += 1) {

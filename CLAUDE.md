@@ -47,7 +47,7 @@ cargo run -p nomo-cli -- test           # golden-file suite; --write to accept
 ./scripts/compare-targets.sh             # native vs WebAssembly, byte-exact
 ./scripts/compare-arch.sh                # x86-64 vs aarch64 (needs qemu-user)
 ./scripts/fetch-corpora.sh               # obtain the SMath corpora; --verify to check only
-./scripts/fetch-font.sh                  # obtain the math font; --verify to check only
+./scripts/fetch-font.sh                  # obtain the fonts; --verify to check only
 ./scripts/check-corpus.sh                # SMath import regression gate; --write to accept
 ./scripts/build-web.sh                   # front end
 ```

@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Fetch the math font web/dist/ ships a subset of.
+# Fetch the fonts web/dist/ ships subsets of.
 #
 # Typeset output needs a font with an OpenType MATH table: the fraction bar
 # thickness, the axis height, the script shifts and the stretchy bracket recipes
 # are all read from it, and a font without one leaves the browser guessing them
 # from ordinary text metrics. Until now the stylesheets *named* such fonts and
 # hoped the reader's machine had one. This obtains one so the question does not
-# arise.
+# arise — and its text companion, so the prose around the mathematics is set in
+# the face the mathematics was drawn against rather than the machine's UI sans.
 #
-# The font is third-party and is **not** committed. What is committed is the
+# The fonts are third-party and are **not** committed. What is committed is the
 # provenance — the URL each file comes from and its SHA-256 — so what lands here
 # is provably the file this repository was built against. Same rule as the
 # corpora, same reason. See THIRD-PARTY.md.

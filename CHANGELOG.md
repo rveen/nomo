@@ -48,11 +48,24 @@
   `--embed-font` also embeds the licence file sitting beside the font, because a
   document that carries a font redistributes it.
 
+- **A text face for the prose.** A worksheet is a document, and prose set in the
+  machine's UI sans beside mathematics set in a book face looks like two things
+  stapled together. The editor now ships STIX Two Text — the face STIX Two Math
+  was drawn against — as its two variable faces, 173 kB carrying the whole
+  400–700 weight axis. A standalone `nomo html` *names* it rather than carrying
+  it: a missing text face gives Georgia, while a missing math font gives wrong
+  mathematics, and only the second is worth the weight in every exported file.
+- **A typeset line is set whole.** The result, the `=` between the columns and
+  the words `check` and `pass` sit outside the `<math>` elements and were staying
+  in monospace while the formula beside them was a book face. Typeset lines are
+  now marked `step typeset` and set in the math face throughout. An untypeset
+  line keeps its monospace, which is right for linear text whose columns line up.
+
 MathJax was measured and declined: 850 kB of script plus 1.8 MB of fonts fetched
 at run time, which ends `nomo html`'s self-containment and makes typesetting
 asynchronous where printing is synchronous — to buy cross-browser consistency
 that MathML Core already provides for the repertoire this renderer emits. Design
-note §8.47 and §8.48.
+note §8.47, §8.48 and §8.49.
 
 ## 0.2.1 — a font that can set the mathematics
 

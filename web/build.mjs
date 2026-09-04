@@ -11,7 +11,7 @@
 //   node build.mjs --serve   build, watch, and serve on :8000
 
 import * as esbuild from "esbuild";
-import { buildFont, FONT_FILE } from "./font.mjs";
+import { buildFont, FONT_FILE, TEXT_FILES } from "./font.mjs";
 import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -50,8 +50,8 @@ try {
 await cp(join(here, "index.html"), join(dist, "index.html"));
 await cp(join(here, "style.css"), join(dist, "style.css"));
 
-// The math font, subset here rather than committed. `dist/` is emptied above,
-// so this has to run on every build rather than only when the file is missing.
+// The fonts, subset here rather than committed. `dist/` is emptied above, so
+// this has to run on every build rather than only when the files are missing.
 const fontBytes = await buildFont(dist);
 
 const options = {
@@ -84,11 +84,13 @@ async function shellVersion() {
     "style.css",
     "bundle.js",
     "nomo_wasm.wasm",
-    // The font is part of the shell the worker precaches, so a change to it has
-    // to change the cache name like anything else. Leaving it out would be the
-    // same fault the literal `"nomo-v1"` above was: new bytes on the server
-    // that a returning browser never asks for.
+    // The fonts are part of the shell the worker precaches, so a change to one
+    // has to change the cache name like anything else. Leaving them out would
+    // be the same fault the literal `"nomo-v1"` above was: new bytes on the
+    // server that a returning browser never asks for.
     `fonts/${FONT_FILE}`,
+    `fonts/${TEXT_FILES.upright}`,
+    `fonts/${TEXT_FILES.italic}`,
   ]) {
     hash.update(await readFile(join(dist, name)));
   }
@@ -119,7 +121,8 @@ if (!serve) {
   }));
   console.log(
     `built dist/ — bundle ${(size / 1024).toFixed(0)} kB, ` +
-      `math font ${(fontBytes / 1024).toFixed(0)} kB`,
+      `math font ${(fontBytes.math / 1024).toFixed(0)} kB, ` +
+      `text font ${(fontBytes.text / 1024).toFixed(0)} kB`,
   );
   process.exit(0);
 }

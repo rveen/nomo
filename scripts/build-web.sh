@@ -27,10 +27,11 @@ echo "==> engine"
 cargo build -p nomo-wasm --release --target wasm32-unknown-unknown
 node scripts/check-wasm.mjs
 
-echo "==> math font"
+echo "==> fonts"
 # Fetched and hash-verified rather than committed, and subset by the front-end
 # build that follows. Typeset output needs a font with an OpenType MATH table;
-# naming one and hoping the reader has it is what this replaces.
+# naming one and hoping the reader has it is what this replaces. The text
+# companion comes with it, for the prose around the mathematics.
 ./scripts/fetch-font.sh
 
 echo "==> front end"

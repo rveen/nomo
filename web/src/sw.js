@@ -33,6 +33,12 @@ const SHELL = [
   // who goes offline and *then* turns it on would otherwise get a fraction laid
   // out by a font with no MATH table, which is the case this font exists to end.
   "./fonts/stix-two-math-subset.woff2",
+  // The text companion. These two *are* requested on first paint, so the
+  // runtime cache would hold them anyway — but only after a load that had the
+  // network. Precaching means the first thing a reader ever does can be to go
+  // offline.
+  "./fonts/stix-two-text-subset.woff2",
+  "./fonts/stix-two-text-italic-subset.woff2",
 ];
 
 self.addEventListener("install", (event) => {

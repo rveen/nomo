@@ -419,6 +419,25 @@ fn what_has_no_typeset_form_falls_back_rather_than_leaving_a_hole() {
 }
 
 #[test]
+fn a_typeset_line_is_set_whole_rather_than_half() {
+    // The result, the `=` between the columns and the words `check` and `pass`
+    // sit outside the `<math>` elements, so without this they keep `.step`'s
+    // monospace while the formula beside them is a book face. A line set half
+    // in one design and half in another is the loudest thing on the page.
+    let out = typeset("M = 1 J\nx = M*2\n");
+    assert!(
+        out.contains("<div class=\"step typeset\">"),
+        "a typeset line should say so: {out}"
+    );
+    let sheet = nomo_core::Sheet::new("M = 1 J\n");
+    let plain = nomo_core::render::html::body(&sheet, &RenderOptions::default());
+    assert!(
+        plain.contains("<div class=\"step\">") && !plain.contains("typeset"),
+        "an untypeset line is linear text and stays monospace: {plain}"
+    );
+}
+
+#[test]
 fn typesetting_is_off_unless_asked_for() {
     let plain = render("M = 2 kN*3 m\n");
     assert!(

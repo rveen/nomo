@@ -24,19 +24,25 @@ produce the math font below. Not linked into the output.
   Copyright (C) Andreas Lind
   BSD-3-Clause — https://github.com/papandreou/subset-font
 
-web/dist/fonts/stix-two-math-subset.woff2 is a **subset** of STIX Two Math,
-built at release time from the file scripts/fetch-font.sh obtains and verifies.
-Renamed because a subset is a Modified Version under the licence, and because
-STIX Fonts is a trademark of the IEEE and this file is not what that name
-refers to. The licence's Reserved Font Name, "TM Math", is not used.
+web/dist/fonts/ carries **subsets** of STIX Two Math and STIX Two Text, built at
+release time from the files scripts/fetch-font.sh obtains and verifies:
+
+  stix-two-math-subset.woff2         the mathematics
+  stix-two-text-subset.woff2         the prose
+  stix-two-text-italic-subset.woff2  the prose, italic
+
+Each is renamed, because a subset is a Modified Version under the licence and
+because STIX Fonts is a trademark of the IEEE and these files are not what that
+name refers to. The licence's Reserved Font Name, "TM Math", is not used.
 
   Copyright 2001-2021 The STIX Fonts Project Authors
   (https://github.com/stipub/stixfonts), with Reserved Font Name "TM Math".
   SIL Open Font License 1.1 — https://scripts.sil.org/OFL
 
-  The licence text ships beside the font as web/dist/fonts/OFL.txt, because the
-  OFL requires it to travel with the bytes. `nomo html --embed-font` writes the
-  same text into the document it embeds a font into, for the same reason.
+  The licence text ships beside them as web/dist/fonts/OFL.txt — one licence for
+  all three, since they are one release of one project — because the OFL
+  requires it to travel with the bytes. `nomo html --embed-font` writes the same
+  text into the document it embeds a font into, for the same reason.
 
 The Rust crates compiled into the engine — libm and roxmltree — are each
 MIT OR Apache-2.0. `cargo tree` lists them in full.

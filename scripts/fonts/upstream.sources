@@ -12,3 +12,11 @@
 
 STIXTwoMath-Regular.woff2  https://raw.githubusercontent.com/stipub/stixfonts/v2.13b171/fonts/static_otf_woff2/STIXTwoMath-Regular.woff2
 OFL.txt                    https://raw.githubusercontent.com/stipub/stixfonts/v2.13b171/OFL.txt
+
+# The text companion, as the two *variable* faces rather than three static ones:
+# one file covers the whole 400–700 weight axis, which is smaller than Regular
+# and SemiBold separately and also covers the 700 the verdict line asks for.
+# The brackets in the upstream file names are percent-encoded in the URL and
+# dropped from the local name, which is why these two columns differ here.
+STIXTwoText-Variable.woff2         https://raw.githubusercontent.com/stipub/stixfonts/v2.13b171/fonts/variable_ttf_woff2/STIXTwoText%5Bwght%5D.woff2
+STIXTwoText-Italic-Variable.woff2  https://raw.githubusercontent.com/stipub/stixfonts/v2.13b171/fonts/variable_ttf_woff2/STIXTwoText-Italic%5Bwght%5D.woff2

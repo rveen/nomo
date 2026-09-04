@@ -249,6 +249,14 @@ footer p { margin: 0; }
   font-size: 0.95rem;
 }
 
+/* No card round a worked line. Each one used to sit in a bordered, rounded,
+   grey-backgrounded box with a blue rule down its left edge, and
+   `render/html.rs` never drew one — so the editor and the standalone document
+   disagreed about what a worksheet looks like, which is the thing the two
+   comments further down this file say they must not do. A box also reads as a
+   *code block* now that the prose around it is a book face and the mathematics
+   is typeset, and a worked line is neither code nor an aside: it is the
+   document. */
 #output .step {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
   font-size: 0.9rem;
@@ -286,8 +294,11 @@ footer p { margin: 0; }
 #output .check.pass .verdict { color: #1a7f37; }
 #output .check.fail .verdict { color: var(--error); }
 #output .check.undecided .verdict { color: #8a6d00; }
-#output .check.pass { border-left-color: #1a7f37; }
-#output .check.fail { border-left-color: var(--error); background: #fff4f4; }
+/* Only the tint, now that a worked line has no left rule to colour. The
+   standalone document has drawn a failed check this way and no other all along
+   — `render/html.rs` has `.check.fail { background }` and never had a border —
+   so this is the two panes agreeing again rather than a second decision. */
+#output .check.fail { background: #fff4f4; }
 #output .note   { opacity: 0.6; font-style: italic; }
 /* A figure carries the browser's default 40px side margin, which would inset
    every image relative to the mathematics it belongs to. The standalone render

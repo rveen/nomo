@@ -12,6 +12,7 @@
 
 import * as esbuild from "esbuild";
 import { buildFont, FONT_FILE, TEXT_FILES } from "./font.mjs";
+import { buildNotice, NOTICE_FILE } from "../scripts/notice.mjs";
 import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -60,6 +61,8 @@ const options = {
   format: "esm",
   target: ["es2022"],
   outfile: join(dist, "bundle.js"),
+  // For notice.mjs: which third-party packages actually ended up in the output.
+  metafile: true,
   sourcemap: serve,
   minify: !serve,
   logLevel: "info",
@@ -107,6 +110,7 @@ const workerOptions = (version) => ({
   format: "iife",
   target: ["es2022"],
   outfile: join(dist, "sw.js"),
+  metafile: true,
   minify: !serve,
   logLevel: "warning",
   define: { __SHELL_VERSION__: JSON.stringify(version) },
@@ -114,20 +118,32 @@ const workerOptions = (version) => ({
 
 if (!serve) {
   // The bundle first: the worker is named after a digest that covers it.
-  await esbuild.build(options);
-  await esbuild.build(workerOptions(await shellVersion()));
+  const bundle = await esbuild.build(options);
+  const worker = await esbuild.build(workerOptions(await shellVersion()));
+  // Both metafiles, so a third-party package that enters either script is
+  // attributed whether or not anybody remembers it did. NOTICE.txt is
+  // deliberately *not* in the digest above — the digest is taken before the
+  // worker exists, so covering the notice would be circular, and what the
+  // notice says changes only when the bundle or the engine changes, which moves
+  // the digest anyway.
+  const notice = await buildNotice(dist, [bundle.metafile, worker.metafile]);
   const { size } = await readFile(join(dist, "bundle.js")).then((b) => ({
     size: b.length,
   }));
   console.log(
     `built dist/ — bundle ${(size / 1024).toFixed(0)} kB, ` +
       `math font ${(fontBytes.math / 1024).toFixed(0)} kB, ` +
-      `text font ${(fontBytes.text / 1024).toFixed(0)} kB`,
+      `text font ${(fontBytes.text / 1024).toFixed(0)} kB, ` +
+      `${NOTICE_FILE} ${notice.packages} packages + ${notice.crates} crates`,
   );
   process.exit(0);
 }
 
 const context = await esbuild.context(options);
+// One build before watching, for its metafile: the notice is written in watch
+// mode too, so that what a developer sees on :8000 is the directory a
+// deployment would publish rather than one file short of it.
+const first = await context.rebuild();
 await context.watch();
 // Watch mode stamps the moment the server started rather than a digest: the
 // bundle changes under it as you edit, so a digest taken now would be a claim
@@ -137,6 +153,7 @@ const workerContext = await esbuild.context(
   workerOptions(`dev-${Date.now().toString(36)}`),
 );
 await workerContext.watch();
+await buildNotice(dist, [first.metafile, (await workerContext.rebuild()).metafile]);
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",

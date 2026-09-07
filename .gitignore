@@ -33,3 +33,7 @@ web/vendor/
 # Python bytecode from scripts/
 __pycache__/
 *.pyc
+
+# Where the release workflow assembles the CLI tarball — the binary, LICENSE and
+# the generated NOTICE.txt. Built rather than kept, like web/dist/.
+/staging/

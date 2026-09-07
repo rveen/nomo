@@ -10,10 +10,29 @@ Bundled third-party software
 The browser front end built by scripts/build-web.sh links the following into
 web/dist/. Each is used unmodified and under its own licence.
 
-CodeMirror 6 — @codemirror/state, @codemirror/view, @codemirror/language,
-@codemirror/commands, @codemirror/lint, and their @lezer dependencies.
+CodeMirror 6 — the @codemirror and @lezer packages and their dependencies.
   Copyright (C) by Marijn Haverbeke and others
   MIT licence — https://codemirror.net/
+
+The packages are not enumerated here, because a bundle's contents are not
+something a hand-kept list stays right about: this one named five while the
+bundle contained twelve, four of them transitive. scripts/notice.mjs writes the
+exact list, with every licence text verbatim, from esbuild's own metafile and
+cargo's resolve graph.
+
+It writes one notice per released artifact, and those are the authoritative
+ones — MIT requires its notice to accompany the code, exactly as the OFL
+requires fonts/OFL.txt to accompany the fonts:
+
+  web/dist/NOTICE.txt   written by the front-end build. The npm packages in
+                        bundle.js, and libm from nomo_wasm.wasm.
+  NOTICE.txt in the     written by the release workflow, beside a copy of
+  nomo tarball          LICENSE. Nomo's own terms and libm's.
+  nomo_wasm-<tag>-      written by the release workflow, published beside the
+  NOTICE.txt            module. The same two, with Nomo's licence text inside
+                        it: a single-file asset has no archive for a LICENSE.
+
+roxmltree is in none of them, because nomo-smath's binaries are not released.
 
 esbuild is a build-time tool only and is not linked into the output.
   Copyright (C) Evan Wallace
@@ -44,8 +63,11 @@ name refers to. The licence's Reserved Font Name, "TM Math", is not used.
   requires it to travel with the bytes. `nomo html --embed-font` writes the same
   text into the document it embeds a font into, for the same reason.
 
-The Rust crates compiled into the engine — libm and roxmltree — are each
-MIT OR Apache-2.0. `cargo tree` lists them in full.
+Both released binaries — web/dist/nomo_wasm.wasm and the nomo command-line
+tool — have one third-party crate between them, libm (MIT), whose licence text
+travels in each artifact's own NOTICE.txt. roxmltree (MIT OR Apache-2.0) is
+nomo-smath's, and nomo-smath's binaries (smath-import, smath-coverage) are not
+released, so it is in neither.
 
 --------------------------------------------------------------------------------
 Third-party material this project uses but does not redistribute — the SMath

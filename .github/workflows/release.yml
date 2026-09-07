@@ -85,11 +85,23 @@ jobs:
       - name: The golden suite, on this machine
         run: cargo run --release -p nomo-cli -- test
 
+      # The tarball was the binary alone, which shipped MIT code — Nomo's own and
+      # libm's — with the notice both licences require stripped off it. The
+      # notice is generated from cargo's resolve graph rather than written by
+      # hand, so it describes this binary rather than a remembered one; see
+      # scripts/notice.mjs. Node is preinstalled on every GitHub-hosted runner,
+      # and no npm install is involved.
+      - name: Licence and notice
+        run: |
+          mkdir -p staging
+          cp target/release/nomo staging/
+          node scripts/notice.mjs --cli staging
+
       - name: Package
         run: |
           mkdir -p dist
           tar -czf "dist/nomo-${{ github.ref_name }}-${{ matrix.name }}.tar.gz" \
-              -C target/release nomo
+              -C staging nomo LICENSE NOTICE.txt
           # Portable rather than pretty: Linux runners have `sha256sum` and
           # macOS has `shasum`, and neither has the other.
           sums() { if command -v sha256sum >/dev/null; then sha256sum "$@"; else shasum -a 256 "$@"; fi; }
@@ -127,7 +139,15 @@ jobs:
           mkdir -p dist
           cp target/wasm32-unknown-unknown/release/nomo_wasm.wasm \
              "dist/nomo_wasm-${{ github.ref_name }}.wasm"
-          cd dist && sha256sum ./*.wasm > SHA256SUMS-wasm.txt
+          # The module is MIT code — Nomo's own and libm's — and both require
+          # their notice to travel with it. A single-file asset has no archive
+          # to carry a LICENSE, so the notice carries the licence texts itself.
+          node scripts/notice.mjs --wasm \
+             "dist/nomo_wasm-${{ github.ref_name }}-NOTICE.txt"
+          # The notice is hashed with the module, because the release notes say
+          # SHA256SUMS.txt covers everything in the release and that has to stay
+          # literally true.
+          cd dist && sha256sum ./*.wasm ./*NOTICE.txt > SHA256SUMS-wasm.txt
           cat SHA256SUMS-wasm.txt
 
       - uses: actions/upload-artifact@v7

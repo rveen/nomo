@@ -130,10 +130,31 @@ test.
 
 | Dependency | Used by | Licence |
 |---|---|---|
-| [`libm`](https://crates.io/crates/libm) | `nomo-core` | MIT OR Apache-2.0 |
+| [`libm`](https://crates.io/crates/libm) | `nomo-core` | MIT |
 | [`roxmltree`](https://crates.io/crates/roxmltree) | `nomo-smath` | MIT OR Apache-2.0 |
 | [CodeMirror 6](https://codemirror.net/) (`@codemirror/*`) | `web/` | MIT |
 | [esbuild](https://esbuild.github.io/) | `web/` build only | MIT |
 
-`web/dist/` bundles the CodeMirror packages; see `NOTICE` for the attribution
-that ships with it.
+Everything released is MIT, which permits redistribution on the condition that
+the notices travel with the code. `scripts/notice.mjs` writes one notice per
+artifact at build time, with every licence text verbatim, listing what the
+bundler and cargo actually linked rather than what a hand-kept list remembered:
+
+| Artifact | Notice | Covers |
+|---|---|---|
+| `web/dist/`, and the `nomo-web-<tag>.zip` that packages it | `NOTICE.txt`, written by `web/build.mjs`, alongside `fonts/OFL.txt` | the twelve npm packages in `bundle.js`, and `libm` from `nomo_wasm.wasm` |
+| the `nomo` tarball | `NOTICE.txt` beside a copy of `LICENSE` | Nomo's own terms and `libm` |
+| `nomo_wasm-<tag>.wasm` | `nomo_wasm-<tag>-NOTICE.txt`, published beside it | Nomo's own terms and `libm` |
+
+The last two are written by `.github/workflows/release.yml`. The module's notice
+carries Nomo's licence text inside it rather than beside it, because a
+single-file asset has no archive to put a `LICENSE` in; it is hashed into
+`SHA256SUMS.txt` with everything else, so the release notes' claim that the file
+covers the whole release stays literally true.
+
+Ship those files with those artifacts. The root `NOTICE` describes the
+repository, and is not a substitute for any of them.
+
+`roxmltree` is in neither, because it is `nomo-smath`'s and `nomo-smath`'s
+binaries are not released. The walk in `notice.mjs` follows normal dependencies
+only, which is what keeps that true without anybody checking.

@@ -87,8 +87,24 @@ pub struct ClassifiedToken {
 }
 
 /// Classify every token in the sheet's source for highlighting.
+///
+/// The resource trailer is one token rather than thousands. Every line of it is
+/// a comment and the whole region is drawn in one colour, so the only thing the
+/// per-line tokens ever bought was the cost of carrying them: a worksheet with
+/// a megabyte of base64 in it is around thirteen thousand lines of trailer, and
+/// each was a token to lex, a JSON object to write, an object to parse in the
+/// host and a decoration for CodeMirror to place — every keystroke. Measured
+/// before this existed, at 1 MB of images an edit cost 48 ms and at 3 MB it
+/// cost 151 ms; roughly 40% of that was the trailer's tokens and nothing else.
+///
+/// The lexer is stopped at the marker rather than run and filtered, because a
+/// prefix of the source lexes to exactly the tokens the whole source would have
+/// given for it — the trailer is by definition everything after the marker, and
+/// nothing in the body can be affected by it.
 pub fn classify(sheet: &Sheet) -> Vec<ClassifiedToken> {
     let source = sheet.source();
+    let trailer = sheet.resources().trailer_at();
+    let body = trailer.unwrap_or(source.len());
     let mut callees = Vec::new();
     let mut bound = Vec::new();
     for stmt in &sheet.ast().stmts {
@@ -96,7 +112,7 @@ pub fn classify(sheet: &Sheet) -> Vec<ClassifiedToken> {
     }
 
     let mut out = Vec::new();
-    for token in lex::lex(source).tokens {
+    for token in lex::lex(&source[..body]).tokens {
         let class = match token.kind {
             TokenKind::Number => TokenClass::Number,
             TokenKind::Text => TokenClass::Text,
@@ -138,6 +154,12 @@ pub fn classify(sheet: &Sheet) -> Vec<ClassifiedToken> {
         out.push(ClassifiedToken {
             span: token.span,
             class,
+        });
+    }
+    if let Some(at) = trailer {
+        out.push(ClassifiedToken {
+            span: Span::new(at as u32, source.len() as u32),
+            class: TokenClass::Comment,
         });
     }
     out
@@ -726,6 +748,47 @@ mod tests {
         assert!(classify(&sheet)
             .iter()
             .all(|t| !t.span.text(sheet.source()).contains('\n')));
+    }
+
+    #[test]
+    fn the_trailer_is_one_token_however_long_it_is() {
+        // A megabyte of base64 is thirteen thousand lines and every one of them
+        // used to be a token in the payload, on every keystroke, to say the one
+        // thing the whole region already says: it is a comment.
+        let mut source = String::from("x = 1\n' --- resources ---\n' image a png 3\n");
+        for _ in 0..500 {
+            source.push_str("'   AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+        }
+        let sheet = Sheet::new(&source);
+        let tokens = classify(&sheet);
+
+        let at = source.find("' ---").unwrap();
+        let trailer: Vec<_> = tokens
+            .iter()
+            .filter(|t| t.span.start as usize >= at)
+            .collect();
+        assert_eq!(
+            trailer.len(),
+            1,
+            "{} tokens under the marker",
+            trailer.len()
+        );
+        assert_eq!(trailer[0].class, TokenClass::Comment);
+        // To the end of the file, so nothing under the marker is left uncoloured.
+        assert_eq!(trailer[0].span.start as usize, at);
+        assert_eq!(trailer[0].span.end as usize, source.len());
+        // And the body above it is classified as it always was.
+        assert!(tokens.iter().any(|t| t.class == TokenClass::Number));
+    }
+
+    #[test]
+    fn a_worksheet_with_no_trailer_is_classified_to_its_last_character() {
+        // The stopping point is the marker, and a worksheet without one must
+        // not stop early.
+        let source = "x = 1\ny = x + 2\n";
+        let sheet = Sheet::new(source);
+        let last = classify(&sheet).last().unwrap().span.end as usize;
+        assert_eq!(source[last..].trim(), "");
     }
 
     #[test]

@@ -82,6 +82,14 @@ Two things a server can get wrong:
 examples/ holds the worked examples as pre-rendered pages; open examples/ for
 the index. index.html is the editor.
 
+IMAGES
+
+Paste a picture into the editor and it becomes a figure in the worksheet: the
+reference goes where the cursor is and the image itself, base64, at the end of
+the file. A .nomo file carries its figures inside itself, so there is nothing
+beside it to lose. Anything wider than 700 pixels is scaled to that before it is
+carried.
+
 SMATH WORKSHEETS
 
 Open handles SMath Studio .sm files as well as .nomo ones. The translation runs

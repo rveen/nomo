@@ -64,7 +64,7 @@ determinism claim is then checkable by whoever downloads it rather than only by
 whoever built it.
 
 ```bash
-tar -xzf nomo-v0.5.0-linux-x86_64.tar.gz
+tar -xzf nomo-v0.6.0-linux-x86_64.tar.gz
 ./nomo version
 ./nomo check my-worksheet.nomo
 ```
@@ -75,7 +75,7 @@ of the server but the files. Every path inside the site is relative, so it works
 at a document root or in a subdirectory:
 
 ```bash
-unzip nomo-web-v0.5.0.zip -d /var/www/html
+unzip nomo-web-v0.6.0.zip -d /var/www/html
 ```
 
 Building from source is the section below, and needs nothing but a Rust

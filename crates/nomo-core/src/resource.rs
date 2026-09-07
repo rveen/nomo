@@ -53,6 +53,21 @@
 //! evidence, not a result — and if it ever stops being right, the reference line
 //! is what becomes a real statement.
 //!
+//! # Reading and writing are one description
+//!
+//! [`attach`] writes what [`Resources::scan`] reads, and it lives here for that
+//! reason. The marker's spelling, the 76-column wrap, the four words of a block
+//! header and the two of a body reference are all *format*, and a second
+//! description of a format is a second thing to keep in step: the SMath emitter
+//! had its own copy of the wrap and its own byte count until this existed, and
+//! either could have drifted from the reader that has to accept them.
+//!
+//! It also decides where a figure may go, which is not obvious. An image pasted
+//! with the cursor somewhere in the trailer cannot be referred to from there —
+//! everything below the marker is data — so the reference goes to the last line
+//! of the body instead. That is the nearest place the figure can actually
+//! appear, and the alternative is a worksheet that swallowed a paste.
+//!
 //! # No I/O, no decoding
 //!
 //! The engine may not read a file (`check-no-host-math.sh` enforces it), which
@@ -76,6 +91,13 @@ pub const TRAILER: &str = "--- resources ---";
 /// every comment: `'   AAAA` arrives here as `  AAAA`.
 const CONTINUATION: &str = "  ";
 
+/// How many base64 characters a line of a block carries.
+///
+/// 76 is the MIME line length, and with the comment marker and the indent the
+/// line lands on 80 columns. The reader strips whitespace and does not care, so
+/// this is a choice about how the file reads to a person.
+const WRAP: usize = 76;
+
 /// One image, as the worksheet stores it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Image {
@@ -86,16 +108,23 @@ pub struct Image {
     pub data: String,
 }
 
+/// How many bytes `base64` decodes to, without decoding it.
+///
+/// The size of the image rather than of its transport, which is what a block
+/// header states and what a person reading a coverage report means. Four
+/// characters carry three bytes, and the padding says how many of the last three
+/// are real. Input that is not a whole number of quartets is not valid base64;
+/// this is a report rather than a decoder, so it rounds down instead of failing,
+/// and [`Image::is_well_formed`] is what refuses.
+pub fn decoded_len(base64: &str) -> usize {
+    let padding = base64.bytes().rev().take_while(|&b| b == b'=').count();
+    (base64.len() / 4 * 3).saturating_sub(padding)
+}
+
 impl Image {
     /// The size of the image itself, rather than of its transport.
-    ///
-    /// Four characters carry three bytes, and the padding says how many of the
-    /// last three are real. Input that is not a whole number of quartets is not
-    /// valid base64; this is a report rather than a decoder, so it rounds down
-    /// instead of failing, and [`Image::is_well_formed`] is what refuses.
     pub fn bytes(&self) -> usize {
-        let padding = self.data.bytes().rev().take_while(|&b| b == b'=').count();
-        (self.data.len() / 4 * 3).saturating_sub(padding)
+        decoded_len(&self.data)
     }
 
     /// The media type for a `data:` URI, if this is a format we can name.
@@ -137,6 +166,14 @@ pub struct Resources {
     /// Statements that are part of the trailer, by index into the statement
     /// list. Parallel to the outcome list, which is how a renderer skips them.
     hidden: BTreeSet<usize>,
+    /// Byte offset of the marker line, when the worksheet has a trailer.
+    ///
+    /// Not derivable from `images`: a worksheet can carry a marker and no blocks
+    /// — one whose last figure was deleted — and writing a second marker under
+    /// the first would be the reader's problem for ever after. It is also what
+    /// says which offsets are body and which are data, which is how [`attach`]
+    /// keeps a reference out of the region that would hide it.
+    trailer: Option<usize>,
 }
 
 impl Resources {
@@ -155,6 +192,7 @@ impl Resources {
         // A trailer that is malformed is still not prose, and printing it at the
         // reader is the one outcome worth ruling out entirely.
         r.hidden.extend(start..ast.stmts.len());
+        r.trailer = Some(ast.stmts[start].span().start as usize);
 
         let mut open: Option<(String, Image)> = None;
         for stmt in &ast.stmts[start + 1..] {
@@ -192,6 +230,11 @@ impl Resources {
 
     pub fn is_empty(&self) -> bool {
         self.images.is_empty()
+    }
+
+    /// Where the trailer starts, in bytes, if the worksheet has one.
+    pub fn trailer_at(&self) -> Option<usize> {
+        self.trailer
     }
 
     /// Every image, by name, in name order.
@@ -290,6 +333,165 @@ fn header(comment: &str) -> Option<(String, Image)> {
         }
         _ => None,
     }
+}
+
+/// One image, ready to be written into a worksheet.
+///
+/// The size is the one the *reference* carries — how large the figure is drawn —
+/// and not the image's own. They are different facts and only the caller knows
+/// the second, so nothing here infers one from the other.
+#[derive(Debug, Clone, Copy)]
+pub struct Attachment<'a> {
+    /// `png`, `jpeg`: what a block header will state and what
+    /// [`Image::media_type`] must be able to name.
+    pub format: &'a str,
+    /// The image, already base64. Nothing here decodes or re-encodes it.
+    pub data: &'a str,
+    pub size: Size,
+}
+
+/// Text to insert at a byte offset in the source it was computed against.
+///
+/// Byte offsets, like every [`Span`](crate::span::Span) in this crate. A host
+/// that counts in UTF-16 translates them where it translates every other offset.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Splice {
+    pub at: usize,
+    pub text: String,
+}
+
+/// What adding an image to a worksheet does to its text.
+///
+/// Two insertions rather than a new document, because a worksheet carrying
+/// figures is measured in megabytes and rewriting all of it to add one line
+/// would cost the editor its undo history and its scroll position for no reason.
+///
+/// **`reference` is applied before `trailer`.** The two can land on the same
+/// offset — the end of a worksheet whose last line is where the cursor was — and
+/// then the order is what puts the figure above its data rather than inside it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Attached {
+    /// What the worksheet now calls this figure: `figure1`, `figure2`, …
+    pub name: String,
+    /// The `' image <name> <width>x<height>` line, in the body.
+    pub reference: Splice,
+    /// The block, at the end of the file, with a trailer around it if the
+    /// worksheet did not already have one.
+    pub trailer: Splice,
+}
+
+/// Add an image to `source`: a reference near `cursor`, and its data at the end.
+///
+/// `existing` is `source`'s own resources — what names are taken, and whether
+/// there is already a trailer. Passing another worksheet's would name the figure
+/// after the wrong file's images and write a second marker.
+///
+/// The reference goes on a line of its own, because that is the only thing it
+/// can be: it is a whole comment line, so inserting it where a cursor happens to
+/// sit would split whatever line the cursor was in. It lands on the cursor's own
+/// line when that line is blank, which is where a person putting the cursor on a
+/// blank line meant it to go, and after that line otherwise.
+pub fn attach(source: &str, existing: &Resources, cursor: usize, image: &Attachment) -> Attached {
+    let name = free_name(existing);
+    let at = reference_at(source, existing, cursor);
+
+    let Size { width, height } = image.size;
+    let mut reference = format!("' image {name} {width}x{height}\n");
+    // Every other insertion point is the first byte of a line by construction.
+    // This one need not be: a worksheet whose last line has no newline ends
+    // mid-line, and appending there would weld the reference onto it.
+    if at > 0 && !source[..at].ends_with('\n') {
+        reference.insert(0, '\n');
+    }
+
+    let mut trailer = String::new();
+    // The same unterminated last line, seen from the other splice — but only
+    // when the reference is not already the thing that terminated it.
+    if !source.is_empty() && !source.ends_with('\n') && at < source.len() {
+        trailer.push('\n');
+    }
+    if existing.trailer_at().is_none() {
+        // A blank line above the marker, as `examples/figures.nomo` has it: the
+        // trailer is a different kind of thing from the body and reads as one.
+        if !source.is_empty() {
+            trailer.push('\n');
+        }
+        trailer.push_str(&format!("' {TRAILER}\n"));
+        trailer.push_str("' Images the worksheet carries, base64, one block each.\n");
+        trailer.push_str("' A block is `' image <name> <format> <bytes>` followed by the\n");
+        trailer
+            .push_str("' indented lines under it, up to the next block or the end of the file.\n");
+    }
+    trailer.push_str(&block(&name, image.format, image.data));
+
+    Attached {
+        name,
+        reference: Splice {
+            at,
+            text: reference,
+        },
+        trailer: Splice {
+            at: source.len(),
+            text: trailer,
+        },
+    }
+}
+
+/// One resource block: the header, and the data wrapped under it.
+///
+/// Public because the SMath emitter writes trailers too, and a second
+/// implementation of this is a second thing that can drift from the reader.
+pub fn block(name: &str, format: &str, data: &str) -> String {
+    let mut out = format!("' image {name} {format} {}\n", decoded_len(data));
+    let mut rest = data;
+    while !rest.is_empty() {
+        // Base64 is ASCII and every piece is `WRAP` bytes in practice. Cutting
+        // on a character boundary anyway, because a `.nomo` file may have been
+        // written by the SMath importer out of a third-party worksheet, and the
+        // failure mode of assuming otherwise is a panic rather than a report.
+        let cut = rest.char_indices().nth(WRAP).map_or(rest.len(), |(i, _)| i);
+        let (head, tail) = rest.split_at(cut);
+        out.push_str("'   ");
+        out.push_str(head);
+        out.push('\n');
+        rest = tail;
+    }
+    out
+}
+
+/// The first `figureN` the worksheet is not already using.
+///
+/// Numbered from one and never reusing a gap: a worksheet whose `figure1` was
+/// deleted gets `figure1` back, which is what a person counting figures expects.
+/// The names a person wrote by hand are what this walks around — it is why the
+/// question is "what is taken" rather than "how many are there".
+fn free_name(existing: &Resources) -> String {
+    (1..)
+        .map(|n| format!("figure{n}"))
+        .find(|name| existing.image(name).is_none())
+        .expect("an unbounded sequence has a first free name")
+}
+
+/// Where the reference line goes, in bytes.
+fn reference_at(source: &str, existing: &Resources, cursor: usize) -> usize {
+    let body = existing.trailer_at().unwrap_or(source.len());
+    let cursor = cursor.min(source.len());
+    if cursor >= body {
+        // The cursor is in the trailer, where a reference would be data and the
+        // figure would never appear. The last line of the body is the nearest
+        // place it can, so the reference goes immediately above the marker.
+        return body;
+    }
+
+    let start = source[..cursor].rfind('\n').map_or(0, |i| i + 1);
+    let end = source[cursor..]
+        .find('\n')
+        .map_or(source.len(), |i| cursor + i);
+    if source[start..end].trim().is_empty() {
+        return start;
+    }
+    // After the cursor's line, which is `end + 1` unless the file ends there.
+    (end + 1).min(body)
 }
 
 #[cfg(test)]
@@ -410,6 +612,195 @@ mod tests {
             data: "SGVsbG8h".into()
         }
         .is_well_formed());
+    }
+
+    // ---- writing --------------------------------------------------------
+
+    /// Both splices applied, back to front so the first does not move the
+    /// second. Equivalent to a host applying them in order against the offsets
+    /// it was given, which is what CodeMirror does with one transaction.
+    fn apply(source: &str, a: &Attached) -> String {
+        let mut out = source.to_string();
+        out.insert_str(a.trailer.at, &a.trailer.text);
+        out.insert_str(a.reference.at, &a.reference.text);
+        out
+    }
+
+    const DOT: Attachment = Attachment {
+        format: "png",
+        data: "SGVsbG8h",
+        size: Size {
+            width: 700,
+            height: 394,
+        },
+    };
+
+    fn attached(source: &str, cursor: usize) -> (String, Attached) {
+        let a = attach(source, &scan(source), cursor, &DOT);
+        (apply(source, &a), a)
+    }
+
+    #[test]
+    fn what_attach_writes_is_what_scan_reads() {
+        // The one test the whole module is for: the writer and the reader are
+        // two halves of one format, and nothing else here would notice them
+        // disagreeing.
+        let (out, a) = attached("' A worksheet\nx = 1\n", 0);
+        assert_eq!(a.name, "figure1");
+        let r = scan(&out);
+        let image = r.image("figure1").expect("figure1");
+        assert_eq!(image.format, "png");
+        assert_eq!(image.data, "SGVsbG8h");
+        assert!(image.is_well_formed());
+        assert!(out.contains("' image figure1 700x394\n"), "{out}");
+    }
+
+    #[test]
+    fn the_reference_the_body_gets_is_one_the_body_can_read() {
+        let (out, _) = attached("x = 1\n", 0);
+        let line = out
+            .lines()
+            .find_map(|l| reference(l.trim_start_matches("' ")))
+            .expect("a body reference");
+        assert_eq!(line.name, "figure1");
+        assert_eq!(
+            line.size,
+            Some(Size {
+                width: 700,
+                height: 394
+            })
+        );
+    }
+
+    #[test]
+    fn a_name_already_taken_is_walked_around() {
+        let (out, a) = attached(ONE, 0);
+        assert_eq!(a.name, "figure2");
+        let r = scan(&out);
+        assert_eq!(r.image("figure1").unwrap().bytes(), 6);
+        assert_eq!(r.image("figure2").unwrap().data, "SGVsbG8h");
+    }
+
+    #[test]
+    fn a_worksheet_with_no_trailer_gets_one() {
+        let (out, _) = attached("x = 1\n", 0);
+        assert_eq!(out.matches(TRAILER).count(), 1, "{out}");
+        assert!(scan(&out).trailer_at().is_some());
+    }
+
+    #[test]
+    fn a_worksheet_that_already_has_one_does_not_get_a_second() {
+        // Including the case `images` cannot answer: a marker whose last block
+        // was deleted. A second marker under the first is data for ever after.
+        let empty = "x = 1\n\n' --- resources ---\n";
+        let a = attach(empty, &scan(empty), 0, &DOT);
+        let out = apply(empty, &a);
+        assert_eq!(out.matches(TRAILER).count(), 1, "{out}");
+        assert_eq!(scan(&out).image("figure1").unwrap().data, "SGVsbG8h");
+    }
+
+    #[test]
+    fn the_reference_lands_on_the_cursors_own_line_when_it_is_blank() {
+        // Where a person who put the cursor on a blank line meant it to go.
+        // The blank line survives below it, so the gap the author left between
+        // two blocks is still a gap.
+        let source = "' A worksheet\n\nx = 1\n";
+        let (out, _) = attached(source, 14);
+        assert_eq!(
+            out.lines().take(4).collect::<Vec<_>>(),
+            ["' A worksheet", "' image figure1 700x394", "", "x = 1"],
+            "{out}"
+        );
+    }
+
+    #[test]
+    fn the_reference_lands_after_the_cursors_line_when_it_is_not() {
+        // Mid-word in `x = 1`. The reference is a whole line, so the only other
+        // option is splitting the statement the cursor was in.
+        let (out, _) = attached("' A worksheet\nx = 1\ny = 2\n", 16);
+        assert_eq!(
+            out.lines().take(3).collect::<Vec<_>>(),
+            ["' A worksheet", "x = 1", "' image figure1 700x394"],
+            "{out}"
+        );
+    }
+
+    #[test]
+    fn a_cursor_in_the_trailer_puts_the_reference_in_the_body() {
+        // Everything below the marker is data, so a reference written there
+        // would be a figure that never appears — the paste would be swallowed.
+        let source = "x = 1\n\n' --- resources ---\n' image figure1 png 6\n'   SGVsbG8h\n";
+        let cursor = source.find("SGVs").unwrap();
+        let a = attach(source, &scan(source), cursor, &DOT);
+        let out = apply(source, &a);
+        let marker = out.find(TRAILER).unwrap();
+        let placed = out.find("' image figure2 700x394").expect("the reference");
+        assert!(
+            placed < marker,
+            "the reference is inside the trailer:\n{out}"
+        );
+        assert_eq!(scan(&out).image("figure2").unwrap().data, "SGVsbG8h");
+    }
+
+    #[test]
+    fn a_last_line_with_no_newline_is_terminated_rather_than_welded_to() {
+        let (out, _) = attached("x = 1", 5);
+        assert_eq!(
+            out.lines().take(2).collect::<Vec<_>>(),
+            ["x = 1", "' image figure1 700x394"],
+            "{out}"
+        );
+        assert_eq!(scan(&out).image("figure1").unwrap().data, "SGVsbG8h");
+    }
+
+    #[test]
+    fn an_empty_worksheet_is_a_worksheet() {
+        let (out, _) = attached("", 0);
+        assert!(out.starts_with("' image figure1 700x394\n"), "{out}");
+        assert_eq!(scan(&out).image("figure1").unwrap().data, "SGVsbG8h");
+    }
+
+    #[test]
+    fn a_cursor_past_the_end_is_the_end() {
+        // The host's offset and the engine's source can disagree by a keystroke.
+        let (out, _) = attached("x = 1\n", 9_000);
+        assert_eq!(scan(&out).image("figure1").unwrap().data, "SGVsbG8h");
+    }
+
+    #[test]
+    fn a_size_is_reported_in_bytes_not_in_base64() {
+        // What a report means by the size of an image is the image, not its
+        // transport. Four characters carry three bytes; padding says how many
+        // of the last three are real.
+        assert_eq!(decoded_len("SGVsbG8h"), 6);
+        assert_eq!(decoded_len("aGk="), 2);
+        assert_eq!(decoded_len("aQ=="), 1);
+        assert_eq!(decoded_len(""), 0);
+    }
+
+    #[test]
+    fn a_block_states_the_size_of_the_image_and_not_of_its_transport() {
+        let written = block("f", "png", "SGVsbG8h");
+        assert!(written.starts_with("' image f png 6\n"), "{written}");
+    }
+
+    #[test]
+    fn a_blob_is_wrapped_and_comes_back_whole() {
+        // 200 characters is three lines and a short one, which is where an
+        // off-by-one in the wrap would show.
+        let data = "A".repeat(200);
+        let written = block("f", "png", &data);
+        let lines: Vec<&str> = written.lines().skip(1).collect();
+        assert_eq!(lines.len(), 3);
+        assert!(lines[0].starts_with("'   ") && lines[0].len() == 80);
+        assert_eq!(lines[2].len(), 4 + 200 - 2 * WRAP);
+        assert_eq!(
+            scan(&format!("' --- resources ---\n{written}"))
+                .image("f")
+                .unwrap()
+                .data,
+            data
+        );
     }
 
     #[test]

@@ -38,7 +38,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use nomo_core::math;
 
 use crate::expr::{Assign, Expr, Statement};
-use crate::read::{decoded_len, Math, Payload, PlotView, ResultKind, Worksheet};
+use crate::read::{Math, Payload, PlotView, ResultKind, Worksheet};
 
 /// A Nomo worksheet, plus everything a reviewer needs to know about how it got
 /// that way.
@@ -2117,7 +2117,7 @@ impl Emitter {
             NoteKind::Carried,
             format!(
                 "an embedded {format} image ({} bytes), carried as `{name}`",
-                decoded_len(data)
+                nomo_core::resource::decoded_len(data)
             ),
         );
         self.resources.push(Resource {
@@ -2202,21 +2202,16 @@ impl Emitter {
             return;
         }
         self.push("");
-        self.push("' --- resources ---");
+        self.push(&format!("' {}", nomo_core::resource::TRAILER));
         self.push("' Images from the SMath worksheet, base64, in reading order.");
         self.push("' A block is `' image <name> <format> <bytes>` followed by the");
         self.push("' indented lines under it, up to the next block or end of file.");
         for r in core::mem::take(&mut self.resources) {
-            self.push(&format!(
-                "' image {} {} {}",
-                r.name,
-                r.format,
-                decoded_len(&r.data)
-            ));
-            // 76 is the MIME line length, and with the marker and indent the
-            // line lands on 80 columns.
-            for chunk in wrapped(&r.data, 76) {
-                self.push(&format!("'   {chunk}"));
+            // The block itself is the engine's to write. The marker's spelling,
+            // the wrap and the byte count are format rather than translation,
+            // and the reader that has to accept them lives there too.
+            for line in nomo_core::resource::block(&r.name, &r.format, &r.data).lines() {
+                self.push(line);
             }
         }
     }
@@ -2243,26 +2238,6 @@ impl Emitter {
             detail,
         });
     }
-}
-
-/// `s` in pieces of at most `width` characters.
-fn wrapped(s: &str, width: usize) -> Vec<&str> {
-    let mut out = Vec::new();
-    let mut rest = s;
-    while !rest.is_empty() {
-        // Base64 is ASCII and the reader strips whitespace, so every piece is
-        // `width` bytes in practice. Cutting on a character boundary anyway
-        // because this is third-party input, and the failure mode of assuming
-        // otherwise is a panic rather than a report of a bad file.
-        let cut = rest
-            .char_indices()
-            .nth(width)
-            .map_or(rest.len(), |(i, _)| i);
-        let (head, tail) = rest.split_at(cut);
-        out.push(head);
-        rest = tail;
-    }
-    out
 }
 
 /// Binding powers, matching `docs/language.md`'s table so that what is emitted

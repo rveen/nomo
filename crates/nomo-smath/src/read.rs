@@ -656,7 +656,7 @@ fn read_payload(node: roxmltree::Node) -> Payload {
                 // XML is free to wrap the text of an element, and no corpus
                 // region does; stripping is what makes that a fact about this
                 // corpus rather than an assumption the length arithmetic in
-                // `decoded_len` depends on.
+                // `nomo_core::resource::decoded_len` depends on.
                 data: raw
                     .and_then(|n| n.text())
                     .map(|t| t.split_whitespace().collect())
@@ -701,20 +701,6 @@ fn box_of(node: roxmltree::Node) -> Option<(u32, u32)> {
     let width: u32 = node.attribute("width")?.parse().ok()?;
     let height: u32 = node.attribute("height")?.parse().ok()?;
     (width > 0 && height > 0).then_some((width, height))
-}
-
-/// How many bytes `base64` decodes to, without decoding it.
-///
-/// Reported rather than the encoded length because the encoded length is an
-/// artefact of the transport: a reader comparing two worksheets' figures, or a
-/// person reading a coverage report, means the size of the image. Four
-/// characters carry three bytes and the padding says how many of the last three
-/// are real. Input that is not a whole number of quartets is not valid base64,
-/// and the size is a report rather than a decoder, so it rounds down instead of
-/// failing.
-pub fn decoded_len(base64: &str) -> usize {
-    let padding = base64.bytes().rev().take_while(|&b| b == b'=').count();
-    (base64.len() / 4 * 3).saturating_sub(padding)
 }
 
 fn read_math(node: roxmltree::Node) -> Math {
@@ -1136,17 +1122,6 @@ mod tests {
         let w = worksheet(NESTED.as_bytes()).unwrap();
         assert_eq!(w.flat().len(), 3);
         assert!(w.furniture.is_empty());
-    }
-
-    #[test]
-    fn a_size_is_reported_in_bytes_not_in_base64() {
-        // What a report means by the size of an image is the image, not its
-        // transport. Four characters carry three bytes; padding says how many
-        // of the last three are real.
-        assert_eq!(decoded_len("SGVsbG8h"), 6);
-        assert_eq!(decoded_len("aGk="), 2);
-        assert_eq!(decoded_len("aQ=="), 1);
-        assert_eq!(decoded_len(""), 0);
     }
 
     #[test]

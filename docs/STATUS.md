@@ -79,7 +79,7 @@ installed on this machine. CI's `arm64` job covers it.
 | 9 Local persistence, offline | **done** | Open/save with a cross-browser fallback, draft in IndexedDB, service worker |
 | — SMath importer | **seven phases in** | `nomo-smath`: reads **both** corpora — 54 wiki worksheets (0.82–0.98) and 60 mechanics worksheets (1.3–1.5) — emits `.nomo`, and checks itself against 1179 stored answers. Agreement: 312/344 wiki, 283/283 mechanics. Design note §8.13–§8.39 |
 | — A second batch of builtins | **done** | `mod` `hypot` `nthroot` `log(x, b)` `cot` `sec` `csc` `asinh` `acosh` `atanh` `product` `mean` `median` `sort` `reverse` `trace` `submatrix`. Conventions read from SMath where it has one — `mod`'s sign, `submatrix`'s inclusive one-based bounds. `stdev` and `rank` are deliberately absent; `docs/language.md` says why. Took the wiki corpus from 304/337 to **312/344** |
-| — Releasing | **run five times** | A tag builds a binary per architecture with no cross-compilation, each published only after passing the golden suite on the machine that built it; the wasm module goes out with its hash after agreeing with native byte for byte; the editor and gallery deploy to Pages from `main`. `v0.1.0` proved the shell on real runners and found the tag-versus-branch fault in the `pages` job; `v0.2.0` is the first tag cut with that split already in place, and `v0.2.1` is a patch carrying the math-font fix; `v0.3.0` is the first tag whose `pages` job publishes a *typeset* gallery, and the first whose build fetches something from the network — the fonts, hash-verified; `v0.4.0` carries inline prose |
+| — Releasing | **run six times** | A tag builds a binary per architecture with no cross-compilation, each published only after passing the golden suite on the machine that built it; the wasm module goes out with its hash after agreeing with native byte for byte; the editor and gallery deploy to Pages from `main`. `v0.1.0` proved the shell on real runners and found the tag-versus-branch fault in the `pages` job; `v0.2.0` is the first tag cut with that split already in place, and `v0.2.1` is a patch carrying the math-font fix; `v0.3.0` is the first tag whose `pages` job publishes a *typeset* gallery, and the first whose build fetches something from the network — the fonts, hash-verified; `v0.4.0` carries inline prose; `v0.4.1` is the first tag about the release itself — every artifact now carries the licences it ships under, the editor is published as a zip to drop onto a server, and the published module was downloaded and shown to give the same 29 snapshots, which is the determinism claim checked from outside the machine that made it |
 | — The gallery, and migration shown | **done** | `build-gallery.sh` renders every example into a browsable set of pages, typeset since §8.52 and sharing one math font file, and `docs/smath.md` finally *shows* an import: an SMath worksheet written here — ours to publish, unlike the corpora — beside what Nomo makes of it and what it computes. That fixture is also the only importer test that runs without the corpora |
 | — How-to worksheets | **six of six** | `bolt`, `shaft`, `column`, `bearing`, `spring`, `vessel` — a bolted joint, a shaft in combined bending and torsion, a column across the buckling transition, bearing life, a compression spring against six constraints, and a pressure vessel worked thin-wall and thick-wall side by side. The first worksheets written *for* the language rather than to exercise it; their acceptance is an engineer agreeing with the method rather than a green gate. Each says what it leaves out |
 | — The editor assists | **done** | Completion offering a name with what it holds and a unit with its dimension, hover saying what a name is, F12 to its definition, and a Typeset toggle that puts §18's MathML where a reader actually looks. All from the engine's own symbol table — no second parser in the front end. **Multiple open documents is the one piece not built**; the boundary already supports it and the reason is below |
@@ -396,6 +396,75 @@ here: 681 tests, 29 snapshots with 20 deliberately updated, 114 corpus
 worksheets unmoved, native and WebAssembly byte-identical, and all ten browser
 checks. `compare-arch.sh` was not among them — `qemu-user` is not installed here
 — and CI's `arm64` job is what covers it.
+
+**What the sixth tag settled.** `v0.4.1` is the first tag about the release
+rather than about what the release computes. Nothing a worksheet computes moved:
+29 snapshots and 114 corpus baselines unchanged. What moved is what a download
+contains.
+
+It found a breach and closed it. Everything published is MIT, which permits
+redistribution *on the condition* that the notice accompanies the code, and only
+the fonts were meeting that condition — `web/font.mjs` had stated the principle
+in general terms and nothing had applied it to code. `bundle.js` was twelve MIT
+packages with no copyright line among them, because none writes an `@license`
+comment and esbuild's `legalComments` faithfully preserved nothing; `NOTICE` was
+never copied into `web/dist/`, which is exactly how the `pages` job publishes it;
+the tarball was the binary alone and the module a bare file. The published
+artifacts now carry it: each of the three tarballs holds `nomo`, `LICENSE` and
+`NOTICE.txt`, and the module goes out beside a notice hashed into
+`SHA256SUMS.txt` with everything else.
+
+The notice is generated rather than written, and the tag is what showed that was
+worth doing. The hand-written list named five CodeMirror packages; the bundle
+contains twelve, four of them transitive and never going to be noticed by hand.
+`scripts/notice.mjs` reads the list from esbuild's metafile and cargo's resolve
+graph and every licence text verbatim from the package that ships it.
+
+**The determinism claim was checked from the downloader's side for the first
+time.** Every tag so far proved it on the machine that built the artifact; the
+release notes have always said the published hash is what lets somebody else
+check. That invitation was taken up here: the published
+`nomo_wasm-v0.4.1.wasm` was downloaded, passed `check-wasm.mjs` — imports
+nothing, same feature set — and produced **29 worksheets byte-identical** to the
+native build under `compare-targets.mjs`. The claim now has evidence from
+outside the machine that made it.
+
+That check also settled something worth writing down before it is mistaken for a
+fault: the published module's SHA-256 is **not** a local build's — `2c4d99e0…`
+against `8b503bc5…` here. The claim is that *results* are bit-reproducible, not
+that the `.wasm` is byte-reproducible, and the binaries differ for ordinary
+reasons, the build path baked in among them. Byte-identical binaries would need
+`--remap-path-prefix` and a pinned build environment, and are not promised.
+
+What *is* reproducible across machines, newly measured: the generated notice.
+The runner's `nomo_wasm-v0.4.1-NOTICE.txt` hashes `12a4fe2d…`, byte-identical to
+one generated on this machine before the tag existed. Same class of evidence as
+§8.48's font subset, for a file whose whole purpose is to be accurate.
+
+And §8.48 repeated a third time. The fonts inside `nomo-web-v0.4.1.zip` are
+**162116, 82300 and 90256** bytes — the same three as `v0.3.0` and `v0.4.0`, and
+the first time those bytes are in a file anybody can download rather than only
+on a deployed page.
+
+The new artifact is that zip: the editor as a directory to drop onto a server,
+built by a `web` job that had never run on a runner. It passed in 78 s including
+all ten browser checks, among them `check-package.mjs`, which unpacks the
+archive and drives it under a nested prefix — the one check that would notice an
+absolute path, because every other one serves from a document root. The macOS
+leg ran `node scripts/notice.mjs` for the first time on that image and found
+Node where it was assumed to be.
+
+The branch-versus-tag split held for the sixth time, and macOS agreed again. The
+whole run took 3 min 18 s, against the under-two-minutes of the tags before it:
+28–36 s per binary and 31 s for the module, but 78 s for the web build, which
+runs a browser ten times and is now the long pole. Still not a reason to release
+less often.
+
+Before it was cut, every gate that can run on a development machine was run
+here: 681 tests, clippy, fmt, the determinism guard, 29 snapshots, 114 corpus
+worksheets across both corpora, native and WebAssembly byte-identical, and all
+ten browser checks. `compare-arch.sh` was not among them — `qemu-user` is not
+installed here — and CI's `arm64` job is what covers it.
 
 ## Timings
 

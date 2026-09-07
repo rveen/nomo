@@ -134,6 +134,7 @@ test.
 | [`roxmltree`](https://crates.io/crates/roxmltree) | `nomo-smath` | MIT OR Apache-2.0 |
 | [CodeMirror 6](https://codemirror.net/) (`@codemirror/*`) | `web/` | MIT |
 | [esbuild](https://esbuild.github.io/) | `web/` build only | MIT |
+| [markdown-it](https://github.com/markdown-it/markdown-it) | `web/` build only — renders the language reference | MIT |
 
 Everything released is MIT, which permits redistribution on the condition that
 the notices travel with the code. `scripts/notice.mjs` writes one notice per

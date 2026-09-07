@@ -13,6 +13,7 @@
 import * as esbuild from "esbuild";
 import { buildFont, FONT_FILE, TEXT_FILES } from "./font.mjs";
 import { buildNotice, NOTICE_FILE } from "../scripts/notice.mjs";
+import { buildReference } from "./reference.mjs";
 import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -54,6 +55,11 @@ await cp(join(here, "style.css"), join(dist, "style.css"));
 // The fonts, subset here rather than committed. `dist/` is emptied above, so
 // this has to run on every build rather than only when the files are missing.
 const fontBytes = await buildFont(dist);
+
+// The language reference, rendered from docs/language.md. The one document a
+// person using the editor reaches for, and until now it was only in the
+// repository.
+const reference = await buildReference(dist);
 
 const options = {
   entryPoints: [join(here, "src/main.js")],
@@ -134,7 +140,8 @@ if (!serve) {
     `built dist/ — bundle ${(size / 1024).toFixed(0)} kB, ` +
       `math font ${(fontBytes.math / 1024).toFixed(0)} kB, ` +
       `text font ${(fontBytes.text / 1024).toFixed(0)} kB, ` +
-      `${NOTICE_FILE} ${notice.packages} packages + ${notice.crates} crates`,
+      `${NOTICE_FILE} ${notice.packages} packages + ${notice.crates} crates, ` +
+      `reference ${reference.sections} sections`,
   );
   process.exit(0);
 }

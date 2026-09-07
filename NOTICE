@@ -43,6 +43,11 @@ produce the math font below. Not linked into the output.
   Copyright (C) Andreas Lind
   BSD-3-Clause — https://github.com/papandreou/subset-font
 
+markdown-it — renders docs/language.md into the site's language reference at
+build time. Not linked into the output: the browser is served static HTML.
+  Copyright (C) Vitaly Puzrin, Alex Kocharin
+  MIT licence — https://github.com/markdown-it/markdown-it
+
 web/dist/fonts/ carries **subsets** of STIX Two Math and STIX Two Text, built at
 release time from the files scripts/fetch-font.sh obtains and verifies:
 

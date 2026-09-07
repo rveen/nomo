@@ -141,6 +141,22 @@ try {
     "examples/index.html did not load from the packaged directory",
   );
 
+  // The language reference, which reaches one directory *up* for its fonts —
+  // the only page on the site that does, and so the one most able to break a
+  // deployment that is not at a document root.
+  await browser.goto(`${base}language/`);
+  const reference = await browser.evaluate(`document.body.textContent`);
+  check(
+    typeof reference === "string" && reference.includes("A worksheet"),
+    "language/index.html did not load from the packaged directory",
+  );
+  check(
+    (await browser.evaluate(
+      `document.fonts.check('1rem "STIX Two Text Subset"')`,
+    )) === true,
+    "the reference did not get the shipped text face; its ../fonts/ path missed",
+  );
+
   check(
     missing.length === 0,
     `${missing.length} request(s) missed the deployment: ${[...new Set(missing)]

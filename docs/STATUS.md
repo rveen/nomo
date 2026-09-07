@@ -743,6 +743,16 @@ build.mjs --serve` watches and serves on :8000.
 Static files and nothing else: the page is HTML, CSS, one bundle and one `.wasm`.
 No backend, no network traffic after load, and no worksheet leaves the tab.
 
+The site is three things: the editor at `/`, the worked examples at `/examples/`,
+and the language reference at `/language/`. The reference is `docs/language.md`
+rendered by `web/reference.mjs` at build time — markdown-it, build-time only like
+esbuild and subset-font, never linked into the bundle. It is *not* rendered by
+the engine's own prose renderer, and must not be: `prose.rs` is a closed subset
+by §8.41's measurements, and the reference needs tables, fenced code and `---`
+rules, the last of which that subset refuses because `' --- resources ---` is the
+trailer sentinel. Widening the worksheet language to build a documentation page
+would change what worksheets mean.
+
 ### Highlighting comes from the engine, not from a grammar
 
 There is no CodeMirror language mode. `nomo_core::api::classify` walks the

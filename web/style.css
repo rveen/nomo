@@ -373,3 +373,11 @@ footer p { margin: 0; }
   #output .step, #output .prose { break-inside: avoid; }
   #output .error { color: #000; text-decoration: underline; }
 }
+
+/* The footer's links out of the editor — the language reference and the worked
+   examples. They are the only links on the page, so they need to look like
+   links rather than inherit the footer's muted prose. */
+footer a {
+  margin-right: 1.2rem;
+  color: inherit;
+}

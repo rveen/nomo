@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.4.1 — what a release has to carry
+
+No language changes, and nothing a worksheet computes has moved: 29 golden
+snapshots and 114 corpus baselines are unchanged. This is a release about what
+gets published rather than what it computes.
+
+### Fixed
+
+- **The licences travel with what is published.** Everything released is MIT,
+  which permits redistribution on the condition that the notice accompanies the
+  code, and only the fonts were meeting the equivalent condition. `bundle.js`
+  was twelve MIT packages with no copyright line among them — none writes an
+  `@license` comment, so esbuild's `legalComments` had nothing to preserve —
+  and `NOTICE` was never copied into `web/dist/`, which is how the Pages job
+  publishes it. The tarball was the binary alone; the `.wasm` a bare file.
+- `scripts/notice.mjs` writes one notice per artifact with every licence text
+  read verbatim from the package that ships it. A package that ships none stops
+  the build rather than getting an invented attribution.
+- The list is derived, not written: npm packages from esbuild's metafile, crates
+  from cargo's resolve graph. `NOTICE` named five CodeMirror packages; the
+  bundle contains twelve, four of them transitive. Following normal dependencies
+  only is also what keeps `roxmltree` out of both binaries — it is
+  `nomo-smath`'s, and `nomo-smath`'s binaries are not released.
+- The CLI tarball now carries `LICENSE` and `NOTICE.txt` beside the binary, and
+  the module is published with `nomo_wasm-<tag>-NOTICE.txt` hashed into
+  `SHA256SUMS.txt` — the release notes say that file covers everything, and that
+  has to stay literally true.
+- `libm` is MIT, not MIT OR Apache-2.0 as `NOTICE` claimed.
+
+### Added
+
+- **The editor as a zip to drop onto a web server**, `nomo-web-<tag>.zip`,
+  published by a new `web` job. The application is static files and nothing
+  else, so hosting it is copying a directory — asking for two toolchains first
+  to obtain bytes CI already built and checked was an odd thing to ask.
+- `scripts/package-web.sh` builds it; `scripts/check-package.mjs` proves it
+  works where it says it does. Every other browser check serves `web/dist/` from
+  a document root, so an absolute path anywhere in the front end would pass all
+  of them and break only the zip. This one unpacks the archive and drives it
+  under a nested prefix, and asserts no request escaped it.
+
 ## 0.4.0 — the two markers the corpora allow
 
 One feature: inline formatting in a worksheet's prose. It is here because

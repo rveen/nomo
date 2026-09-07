@@ -10,8 +10,9 @@ the v0.2.0 release, the v0.2.1 release, Greek letters in the typeset columns
 (§8.47), the math font the output is set in (§8.48), the text face around it
 (§8.49), the space a unit stands off its number by (§8.50), the substituted
 column becoming mathematics (§8.51), the conditional drawn as cases with the
-gallery turned on (§8.52), the v0.3.0 release, inline prose (§8.53), and the
-v0.4.0 release.
+gallery turned on (§8.52), the v0.3.0 release, inline prose (§8.53), the
+v0.4.0 release, the v0.5.0 release, and an image pasted into the editor
+becoming a figure in the worksheet (§8.54).
 
 **A four-step plan for typographic quality is under way (2026-09-04).** It was
 costed against the alternative of shipping MathJax, which was measured and
@@ -117,9 +118,10 @@ self-contained file. **Second phase:** a name that spells a Greek letter is set 
 | — Root finding | **done** | `root(f, a, b)` bisects a bracket; `roots(f, a, b)` scans a window — 200 intervals, every sign change bisected — and answers with one root or a vector of them. The second exists because SMath's `solve` is a search rather than a bracket, which was settled by reading `SpecialFunctions.dll` (design note §8.24) |
 | — Strings | **first phase done** | A literal, bindable, choosable by `if`, comparable with `==`. No arithmetic, no order, none inside a collection — which is what the 41 corpus markers for them needed and no more (§8.32) |
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
+| — Figures, pasted | **done** | Ctrl-V with an image on the clipboard writes the reference at the cursor and the base64 block in the trailer, in one transaction, so one undo takes both back. `resource::attach` writes what `Resources::scan` reads — one description of the format, which the SMath emitter now shares — and it decides *where* a reference may go, since everything under the marker is data. Wider than 700 px is scaled to 700 and the file carries the scaled bytes; below that they are carried byte for byte, which is what keeps an animated GIF animated. A clipboard holding a link and no bytes is refused in words rather than fetched. Design note §8.54, `scripts/check-paste.mjs` |
 | — Prose as Markdown | **done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline is `` ` `` and `**`, and nothing else: `_` would eat identifiers and a single `*` is the multiplication operator — 61 corpus prose lines pair one and every pair encloses arithmetic. Design note §8.41 and §8.53, `examples/prose.nomo` |
 
-685 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+708 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -172,9 +174,10 @@ cargo run --release -p nomo-cli -- bench               # timings; a report, exit
 ./scripts/compare-arch.sh                               # x86-64 vs aarch64 (needs qemu-user)
 ./scripts/build-gallery.sh                              # the worked examples as a
                                                         # browsable set of pages
-./scripts/build-web.sh                                  # front end; also runs the eleven
+./scripts/build-web.sh                                  # front end; also runs the twelve
                                                         # browser checks, including
                                                         # check-figures.mjs,
+                                                        # check-paste.mjs,
                                                         # check-plots.mjs,
                                                         # check-recovery.mjs and
                                                         # check-import.mjs, which assert
@@ -976,6 +979,18 @@ it fail, which was checked.
   MathML draws `<mfrac>` as a run of characters rather than failing, so the
   worksheet would read `w · L 2 8` and every markup assertion would still pass.
   Confirmed to fail against output rendered without the flag.
+- `check-paste.mjs` — dispatches a real `ClipboardEvent` carrying a `File` the
+  page drew on a canvas, because no Rust test and no Node script can make one.
+  The engine's half is tested in Rust and proven identical on both targets, but
+  what it is *given* comes out of that event, and where its two insertions end
+  up is CodeMirror's answer rather than the engine's. It asserts the reference
+  lands on the line after the cursor and not above it, that a 1400 px image is
+  placed at 700 and the file carries the shrunk pixels — `naturalWidth` is 700,
+  not 1400 — that one undo removes both halves, that a second paste is a second
+  figure under the same single marker, that a clipboard holding a link and no
+  bytes is refused in words and changes nothing, and that ordinary text still
+  pastes, since the handler sees every paste in the application. Confirmed to
+  fail when the 700 px limit is changed.
 - `check-recovery.mjs` — sabotages the engine so that one `update` throws, as a
   trap would, and asserts the editor replaces the instance and carries on with
   the buffer intact. It exists because the failure it guards against was

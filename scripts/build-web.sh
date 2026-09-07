@@ -52,6 +52,7 @@ node scripts/check-print.mjs
 node scripts/check-files.mjs
 node scripts/check-recovery.mjs
 node scripts/check-figures.mjs
+node scripts/check-paste.mjs
 node scripts/check-plots.mjs
 node scripts/check-mathml.mjs
 node scripts/check-assist.mjs

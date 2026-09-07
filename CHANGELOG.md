@@ -1,5 +1,73 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **An image pasted into the editor becomes a figure in the worksheet.** Ctrl-V
+  with a picture on the clipboard writes the `' image <name> <w>x<h>` reference
+  on the line after the cursor and the base64 block in the trailer at the end of
+  the file, in one transaction, so one undo takes both back. The marker is added
+  if the worksheet has none, and the name is the first `figure1`, `figure2`, …
+  it has not used.
+
+  Before this, getting a figure into a worksheet meant base64-encoding a file by
+  hand, wrapping it at 76 columns and typing a header — which is why no
+  worksheet in this repository had a figure a person put there.
+
+  An image **wider than 700 px is scaled to 700** and the file carries the
+  scaled bytes. A screenshot off a modern display is 2560 px across and a
+  worksheet column is nowhere near that: carried whole it would cost several
+  megabytes of base64 to be drawn at a quarter of its size. Below that width the
+  bytes are carried exactly as they came, which is what keeps an animated GIF
+  animated and a screenshot's pixels exact; a JPEG that is scaled stays a JPEG,
+  because a PNG of the same photograph is ten times the size. The editor says
+  what it did and what size it came from, since an image that changed size
+  without being asked is not something an engineering document should do
+  quietly.
+
+  Handing an image to the browser's PNG encoder is consistent with the
+  determinism rule rather than a hole in it: the promise is that a *worksheet
+  computes* the same answer everywhere, and a photograph's bytes are an input
+  the author supplied, like a number typed on a line. Two pastes of one
+  screenshot in two browsers make two files; each of them then computes
+  identically on every machine.
+
+  A clipboard carrying only a *link* to a picture — HTML with an `<img src>` and
+  no bytes, which is what copying an image off a web page usually gives — is
+  refused in words rather than fetched. A worksheet's content never crosses the
+  network, and that includes fetching something to put in one. Design note
+  §8.54.
+
+- `resource::attach` writes what `Resources::scan` reads, in the same module.
+  The marker's spelling, the 76-column wrap and the words of a block header are
+  *format*, and there had been two descriptions of them: the SMath emitter
+  carried its own copy of the wrap and its own byte count, either of which could
+  have drifted from the reader that has to accept what it wrote. It now calls
+  `resource::block`. Where a reference may go is decided here too — everything
+  under the marker is data, so a paste with the cursor in the trailer puts its
+  reference at the end of the body instead of somewhere it could never be seen.
+
+- `scripts/check-paste.mjs`, the twelfth browser check: a real `ClipboardEvent`
+  carrying a `File` the page drew on a canvas, which no Rust test and no Node
+  script can produce. It asserts where the reference lands, that a 1400 px image
+  is placed at 700 with the shrunk pixels actually in the file, that one undo
+  removes both halves, that a second paste is a second figure under the same
+  single marker, that a link with no bytes is refused and changes nothing, and
+  that ordinary text still pastes.
+
+### Changed
+
+- **The resource trailer is one syntax token rather than one per line.** Every
+  line of it is a comment and the whole region is drawn in one colour, so the
+  per-line tokens only ever bought the cost of carrying them: a worksheet with a
+  megabyte of images is about thirteen thousand trailer lines, and each was a
+  token to lex, a JSON object to write, an object for the editor to parse and a
+  decoration to place — on every keystroke. Measured through the WebAssembly
+  build, one keystroke on a worksheet carrying 1 MB of images cost 33.0 ms and
+  now costs 22.4 ms; at 3 MB, 98.3 ms and now 67.6 ms. That is the engine's half
+  alone; the decorations the editor no longer builds are not in those numbers.
+
 ## 0.5.0 — the importer moves into the editor
 
 ### Added

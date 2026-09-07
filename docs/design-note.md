@@ -3573,6 +3573,146 @@ Nineteen golden snapshots moved, all of them prose gaining `<code>` or
 `**`. The 114 corpus baselines did not move: the importer emits the markers, it
 does not read them.
 
+### 8.54 A picture pasted becomes a figure (2026-09-07)
+
+§8.19 built the half that reads a trailer. This builds the half that writes one,
+and the thing that made it worth building: **Ctrl-V with an image on the
+clipboard**. Getting a figure into a worksheet before this meant base64-encoding
+a file by hand, wrapping it at 76 columns and typing a header — which is why
+`scripts/make-example-figures.py` exists and why no worksheet in this repository
+has a figure that a person put there.
+
+**The format is described once.** `resource::attach` writes what
+`Resources::scan` reads, in the same module, because the marker's spelling, the
+76-column wrap, the four words of a block header and the two of a body reference
+are *format*, and a second description of a format is a second thing to keep in
+step. The SMath emitter had its own copy of the wrap and its own byte count
+until this existed; either could have drifted from the reader that has to accept
+what it wrote. It now calls `resource::block`.
+
+**Where a reference may go is a question about the format, not about the
+editor.** Everything below the marker is data, so an image pasted with the
+cursor in the trailer cannot be referred to from where the cursor is; the
+reference goes to the end of the body instead, which is the nearest place the
+figure can actually appear. The alternative is a worksheet that swallowed a
+paste. This lives in Rust with the format, and the browser is told two
+insertions and their offsets.
+
+**Two insertions, not a rewritten document.** A worksheet carrying a few figures
+is megabytes of text; replacing all of it to add two lines would throw away the
+undo history and the scroll position, and make Rust build a second copy of the
+source. They go in one CodeMirror transaction, so one undo takes the whole paste
+back — checked, because a paste that took two undos would leave an orphaned
+block behind and the file would grow every time.
+
+**The format sniffs the bytes and does not believe the clipboard.** The same
+screenshot arrives as `image/png` from one application and
+`application/octet-stream` from another. `resource::sniff` reads the signature,
+and a test asserts its list of formats is the same list `Image::media_type`
+will emit — a format accepted and then denied a media type would be an image the
+worksheet carried and could not show.
+
+#### Why 700 px, and why re-encoding is legitimate here
+
+A screenshot off a modern display is 2560 px across. A worksheet column is
+nowhere near that, so carried untouched it costs several megabytes of base64 —
+which is *text the editor re-analyses on every keystroke* — to be drawn at a
+quarter of its size. 700 is a fixed number rather than something derived from
+the window, for the reason every other limit in this project is (§ the working
+rules): the size goes into the file, and a worksheet whose figures came out at
+whatever width the author's browser happened to be would place them differently
+on the next machine that opened it.
+
+Below 700 the bytes are carried exactly as they came. That is not only thrift:
+it is the only path that keeps what the source format was good at — an animated
+GIF goes on animating, a screenshot keeps its exact pixels — so the re-encode is
+a lossy step taken only when not taking it is worse. A JPEG stays a JPEG,
+because a PNG of the same photograph is ten times the size; everything else
+becomes a PNG, because most of what anyone pastes is a screenshot or a diagram
+and JPEG puts ringing around text.
+
+**This hands an image to the host's PNG encoder, which is not the same program
+in two browsers, and that is consistent with the determinism rule rather than a
+hole in it.** The promise is that a *worksheet computes* the same answer
+everywhere. A photograph's bytes are an input the author supplied, like a number
+typed on a line — nothing computes them and no result depends on them. Two
+pastes of one screenshot in two browsers make two different files; each of those
+files then computes identically on every machine, which is the whole of the
+claim. The engine's own half stays inside the guard: `check-no-host-math.sh`
+covers `nomo_attach_image`, and the base64 is written by the engine's encoder.
+
+#### What a clipboard cannot give
+
+Two limits are the clipboard's, and both are reported rather than papered over.
+
+`getAsFile` works only while the paste event is being dispatched — the data is
+gone by the first `await` — so the blob comes out synchronously and every slow
+step happens after. An image read after a decode is an image that is not there.
+
+And copying a picture off a web page frequently puts no picture on the
+clipboard at all: `text/html` with an `<img src>` pointing at a URL, no bytes,
+and no plain text either, so an editor that pasted the text would paste nothing.
+Fetching the URL is the obvious repair and is refused: it would be this
+application's first network request for a document's content, and the reason
+nothing a worksheet contains leaves the browser is that nothing is ever fetched
+for it. The paste says so instead. The detection is deliberately narrow — a
+selection with an image *and* text still pastes the text.
+
+#### The trailer stopped being thousands of tokens
+
+Building this made a cost visible that had been there since §8.19 and had never
+had a worksheet big enough to show it. `api::classify` lexed the whole source,
+so every line of a trailer was a token to lex, a JSON object to write, an object
+for the host to parse and a decoration for CodeMirror to place — on every
+keystroke, to say the one thing the marker already says. A megabyte of images is
+about thirteen thousand such lines.
+
+It now stops the lexer at the marker and emits one `Comment` token to the end of
+the file. Stopping is sound rather than a filter over the output: the trailer is
+by definition everything after the marker, so a prefix of the source lexes to
+exactly what the whole source would have given for it. Measured through the
+WebAssembly build, one keystroke in the body:
+
+| trailer | lines | before | after | tokens |
+|---|---|---|---|---|
+| 0.5 MB | 6 899 | 16.0 ms | 11.0 ms | 6916 → 16 |
+| 1 MB | 13 797 | 33.0 ms | 22.4 ms | 13814 → 16 |
+| 3 MB | 41 391 | 98.3 ms | 67.6 ms | 41408 → 16 |
+
+About a third, and only the engine's half — the decorations the host no longer
+builds are not in these numbers. What is left is the cost of the lines existing
+at all, since the document graph still holds one statement per line. That is a
+different problem and it is not solved here.
+
+#### What only a browser could say
+
+`scripts/check-paste.mjs` dispatches a real `ClipboardEvent` carrying a `File`
+the page drew on a canvas, because no Rust test and no Node script can make one.
+It asserts the reference lands on the line after the cursor and not above it,
+that a 1400 px image is placed at 700 and the *file carries the shrunk pixels*
+(`naturalWidth` is 700, not 1400), that one undo removes both halves, that a
+second paste is a second figure under the same single marker, that a
+link-with-no-bytes is refused in words and changes nothing, and that ordinary
+text still pastes — the handler sees every paste in the application, so that
+last one is not optional. Confirmed to fail when `PLACED` is changed.
+
+The status line grew a hold in the process. The message naming the figure and
+its size is a fact about that one paste, and the analysis the paste triggers was
+60 ms behind it with an `ok` that wiped it off the screen unread. Only the
+analysis defers; anything a person just did is said immediately, and an error is
+never held back. The first cut held back every non-error message and promptly
+swallowed the next refusal a user needed to read.
+
+#### Two gaps, named rather than fixed
+
+A reference line deleted from the body leaves its block in the trailer, and
+nothing says so. The natural home is a `check`-style warning — the engine can
+already see both halves — and it is deferred rather than forgotten.
+
+An animated GIF *wider* than 700 px loses its animation, because the canvas
+re-encode writes one frame. Below 700 it is carried whole and animates. This is
+a consequence of the shrink rather than a decision about GIFs.
+
 ### 8.8 Strategy: corpus-driven
 
 Build the importer as a separate crate emitting the Nomo document format, then run it across every

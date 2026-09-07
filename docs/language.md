@@ -1326,6 +1326,29 @@ of them — the two are the same picture to within a pixel.
 A third word that is not a size is not a reference at all: the line stays the
 comment it is, rather than becoming a figure drawn at a size nobody wrote.
 
+**A picture pasted into the editor writes both halves.** Ctrl-V with an image on
+the clipboard puts the reference on the line after the cursor and the block at
+the end of the file, under the marker, adding the marker if the worksheet has
+none. The name is the first `figure1`, `figure2`, … the worksheet has not used.
+A cursor inside the trailer would be asking for a figure from a region that is
+data, so the reference goes to the end of the body instead — the nearest place
+the figure can actually appear.
+
+An image **wider than 700 px is scaled to 700** on the way in, and the file
+carries the scaled bytes. A screenshot off a modern display is 2560 px across
+and a worksheet column is nowhere near that: carried whole it would cost several
+megabytes of base64 to be drawn at a quarter of its size. Below that width the
+bytes are carried exactly as they came, which is what keeps an animated GIF
+animated and a screenshot's pixels exact; a JPEG that is scaled stays a JPEG and
+everything else becomes a PNG. The editor says what it did, including the size
+it came from, because an image that changed size without being asked is not
+something an engineering document should do quietly.
+
+Not everything on a clipboard is an image. Copying a picture off a web page
+often puts only a *link* to it there — HTML with an `<img src>` and no bytes —
+and that is refused in words rather than fetched: a worksheet's content never
+crosses the network, and the reader is told to copy the image itself.
+
 **Every line of this is an ordinary comment**, which is what the version pragma
 above already is. That is the point: a worksheet carrying figures opens in a
 build that has never heard of them, and shows its trailer as the comments it is

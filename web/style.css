@@ -49,13 +49,18 @@ body {
   margin: 0;
   height: 100dvh;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  /* Four rows, and every child is placed explicitly, because the import panel
+     is `hidden` most of the time. A hidden element is not a grid item at all,
+     so an implicit placement would slide `main` up a row and give the editor
+     `auto` height whenever the panel was absent. */
+  grid-template-rows: auto auto 1fr auto;
   background: var(--paper);
   color: var(--ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 
 header {
+  grid-row: 1;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -97,7 +102,88 @@ header button[hidden] { display: none; }
 #status.warn { color: var(--warning); }
 #status.bad  { color: var(--error); }
 
+/* The import report.
+
+   It is capped and scrolls rather than growing with the worksheet: a large
+   import can produce a hundred notes, and a panel that pushed the editor off
+   the screen would be reporting a translation nobody could then look at. */
+#import {
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem 1rem;
+  align-items: start;
+  max-height: 30vh;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--rule);
+  background: var(--chrome);
+  font-size: 0.82rem;
+  overflow: auto;
+}
+#import[hidden] { display: none; }
+
+#import-summary { margin: 0; font-weight: 600; }
+#import-summary.clean { color: var(--good); }
+
+#import-dismiss {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.15rem 0.6rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 0.3rem;
+  cursor: pointer;
+  grid-row: 1;
+  grid-column: 2;
+}
+#import-dismiss:hover { border-color: var(--muted); }
+
+#import-list {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.15rem;
+}
+#import-list:empty { display: none; }
+
+#import-list li {
+  display: grid;
+  grid-template-columns: max-content max-content minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+/* The line number is a button because it does something: it takes the reader to
+   the marker in the source. A marker nobody is pointed at is only half of the
+   rule that nothing is ever silently dropped. */
+.import-line {
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 0.78rem;
+  padding: 0;
+  color: var(--function);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.import-kind { color: var(--muted); }
+.import-detail { color: var(--ink); min-width: 0; }
+
+/* Only two kinds are coloured, and they are the two that mean something is
+   wrong with the *result*: a construct that did not come across, and an answer
+   that came across differently from SMath's. Everything else — a rename, a
+   figure carried without being drawn — is information, not a warning. */
+.import-unsupported .import-kind { color: var(--warning); }
+.import-disagreed .import-kind { color: var(--error); }
+
 main {
+  grid-row: 3;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   min-height: 0;
@@ -107,6 +193,7 @@ main {
 #pane-output { min-width: 0; overflow: auto; padding: 1rem 1.5rem; }
 
 footer {
+  grid-row: 4;
   padding: 0.5rem 1rem;
   border-top: 1px solid var(--rule);
   background: var(--chrome);
@@ -120,6 +207,11 @@ footer p { margin: 0; }
 @media (max-width: 46rem) {
   main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   #pane-editor { border-right: 0; border-bottom: 1px solid var(--rule); }
+  /* A phone has no room for three columns of note, so each one stacks. The
+     panel also takes less of the screen here, where there is less of it. */
+  #import { max-height: 40vh; }
+  #import-list li { grid-template-columns: 1fr; gap: 0; }
+  #import-list li + li { margin-top: 0.4rem; }
 }
 
 /* ---- the editor ------------------------------------------------------- */
@@ -355,7 +447,7 @@ footer p { margin: 0; }
 @media print {
   /* The worksheet is the document. The editor is a tool for making it, and has
      no business on paper. */
-  header, footer, #pane-editor { display: none; }
+  header, footer, #pane-editor, #import { display: none; }
 
   body { height: auto; display: block; background: #fff; color: #000; }
   main { display: block; }

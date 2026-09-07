@@ -33,7 +33,7 @@
 //! demanding bit equality of it would be demanding that SMath had stored more
 //! digits than it displayed.
 
-use nomo_core::{OutcomeKind, Value};
+use nomo_core::{math, OutcomeKind, Value};
 
 use crate::emit::{self, Emitted};
 use crate::read::Worksheet;
@@ -267,7 +267,11 @@ fn tolerance_for(expected: f64, mantissa: &str) -> Option<f64> {
     if m == 0.0 {
         return None;
     }
-    let half_ulp = 0.5 * 10f64.powi(-(decimals_of(mantissa) as i32));
+    // `powf` rather than `powi`: this crate is in the WebAssembly build, and
+    // `powi` lowers to whatever the target thinks is fastest. A tolerance that
+    // differed by a bit between targets would let a corpus check pass natively
+    // and fail in the browser.
+    let half_ulp = 0.5 * math::powf(10.0, -(decimals_of(mantissa) as f64));
     Some(half_ulp * (expected / m).abs())
 }
 

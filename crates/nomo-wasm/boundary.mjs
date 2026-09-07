@@ -32,6 +32,8 @@ export function bind(exports) {
     nomo_document_update_as,
     nomo_document_free,
     nomo_for_saving,
+    nomo_smath_import,
+    nomo_smath_format,
   } = exports;
 
   const encoder = new TextEncoder();
@@ -48,6 +50,15 @@ export function bind(exports) {
     if (ptr === 0) throw new Error("nomo_alloc returned null");
     bytes().set(encoded, ptr);
     return { ptr, len: encoded.length };
+  }
+
+  /** The same, for bytes that are not text — an `.sm` file arrives as one. */
+  function writeBytes(data) {
+    if (data.length === 0) return { ptr: 0, len: 0 };
+    const ptr = nomo_alloc(data.length);
+    if (ptr === 0) throw new Error("nomo_alloc returned null");
+    bytes().set(data, ptr);
+    return { ptr, len: data.length };
   }
 
   function read(out) {
@@ -72,6 +83,40 @@ export function bind(exports) {
   return {
     /** The snapshot format the module speaks. */
     format: () => nomo_snapshot_format(),
+
+    /** The import report's format version. */
+    smathFormat: () => nomo_smath_format(),
+
+    /**
+     * Translate an SMath `.sm` worksheet, and check it against its own answers.
+     *
+     * Takes the file's **bytes**, not its text. SMath writes a BOM and CRLF
+     * endings and the reader strips them itself, so decoding first would do its
+     * job worse — and a file that is not UTF-8 at all should come back with a
+     * reason rather than as a decoding failure in the host.
+     *
+     * Resolves to `{source, notes, checks}`, or `{error}` when the file could
+     * not be read. The error is a *worksheet* problem — the wrong file, a
+     * truncated download — and is reported rather than thrown, because the
+     * caller has something to show the user either way.
+     */
+    importSmath(data, { language = null } = {}) {
+      const file = writeBytes(data);
+      const lang = write(language ?? "");
+      try {
+        const json = read(
+          nomo_smath_import(file.ptr, file.len, lang.ptr, lang.len),
+        );
+        const report = JSON.parse(json);
+        if (report.format !== nomo_smath_format()) {
+          throw new Error(`unknown import format ${report.format}`);
+        }
+        return report;
+      } finally {
+        if (file.ptr) nomo_free(file.ptr, file.len);
+        if (lang.ptr) nomo_free(lang.ptr, lang.len);
+      }
+    },
 
     /**
      * What the engine knows about independent of any worksheet: units with

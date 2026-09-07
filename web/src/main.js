@@ -48,6 +48,12 @@ const statusLine = document.querySelector("#status");
 const editorHost = document.querySelector("#editor");
 const fileName = document.querySelector("#file-name");
 const typeset = document.querySelector("#typeset");
+const importPanel = {
+  root: document.querySelector("#import"),
+  summary: document.querySelector("#import-summary"),
+  list: document.querySelector("#import-list"),
+  dismiss: document.querySelector("#import-dismiss"),
+};
 const buttons = {
   open: document.querySelector("#open"),
   save: document.querySelector("#save"),
@@ -226,11 +232,17 @@ async function restartEngine(cause) {
   analyse();
 }
 
-/** Replace the buffer wholesale, as opening a file does. */
-function setDocument(text, name, handle) {
+/**
+ * Replace the buffer wholesale, as opening a file does.
+ *
+ * `dirty` is a parameter rather than always false because an import is not an
+ * open: what lands in the buffer is a translation that exists nowhere on disk,
+ * and calling that clean would invite closing the tab on it.
+ */
+function setDocument(text, name, handle, dirty = false) {
   current.name = name;
   current.handle = handle;
-  current.dirty = false;
+  current.dirty = dirty;
   showFileName();
 
   view.dispatch({
@@ -251,10 +263,177 @@ async function commandOpen() {
   }
   if (!opened) return;
 
+  if (opened.bytes) {
+    await importSmath(opened.bytes, opened.name);
+    return;
+  }
+
+  hideImportReport();
   setDocument(opened.text, opened.name, opened.handle);
   // Opening replaces the draft: the draft is a safety net for unsaved work, and
   // what was just loaded from disk is not unsaved.
   await saveDraft(opened.text, opened.name);
+}
+
+// ---- importing an SMath worksheet ----------------------------------------
+//
+// The translation runs here, in this tab, in the same WebAssembly module as the
+// engine. That is the whole design: the files this feature exists to accept are
+// an engineer's existing work, and uploading them to a server to be translated
+// would break the one promise the application makes about them.
+
+/**
+ * Translate a `.sm` file into the editor, and report what the translation did.
+ *
+ * The report is not decoration. The importer's rule is that nothing is ever
+ * silently dropped — an untranslatable construct becomes a marker comment in the
+ * output — and a marker nobody is pointed at is only half of that. So every note
+ * gets a line a reader can click, and the stored answers SMath itself saved are
+ * checked against what Nomo computes, which is the only evidence available that
+ * the translation is faithful.
+ */
+async function importSmath(bytes, name) {
+  let report;
+  try {
+    report = engine.importSmath(bytes);
+  } catch (error) {
+    // A throw here is the module failing, not the file being bad — a bad file
+    // comes back as `report.error`. So the engine has to be replaced, exactly
+    // as a failed analysis does it.
+    void restartEngine(error);
+    return;
+  }
+
+  if (report.error) {
+    hideImportReport();
+    status(`${name} could not be read: ${report.error}`, "bad");
+    return;
+  }
+
+  // `.sm` becomes `.nomo`, and the handle is deliberately dropped in
+  // `openWorksheet`: Save must never write Nomo source over the original.
+  const imported = name.replace(/\.sm$/i, "") + ".nomo";
+  setDocument(report.source, imported, null, true);
+  // The draft matters more here than after an ordinary open. There is no file
+  // on disk holding this text — losing the tab would mean importing again.
+  await saveDraft(report.source, imported);
+  showImportReport(report, name);
+}
+
+/** Move the cursor to a line and put it in view. */
+function goToLine(number) {
+  const total = view.state.doc.lines;
+  const line = view.state.doc.line(Math.min(Math.max(number, 1), total));
+  view.dispatch({
+    selection: { anchor: line.from },
+    scrollIntoView: true,
+  });
+  view.focus();
+}
+
+/** Prose for a note kind. The wire names are stable; these are not. */
+const NOTE_LABELS = {
+  unsupported: "not translated",
+  carried: "carried but not shown",
+  renamed: "renamed",
+  collision: "name collision",
+  "scope-flattened": "scope flattened",
+};
+
+/** Prose for the verdicts worth showing. `agreed` is counted, never listed. */
+const VERDICT_LABELS = {
+  disagreed: "answer differs from SMath's",
+  "line-failed": "line did not evaluate",
+  "answer-unreadable": "SMath's stored answer could not be read",
+  "shape-differs": "answer is a different shape",
+};
+
+function hideImportReport() {
+  importPanel.root.hidden = true;
+  importPanel.list.replaceChildren();
+}
+
+function showImportReport(report, name) {
+  const agreed = report.checks.filter((c) => c.verdict === "agreed").length;
+  const unsupported = report.notes.filter((n) => n.kind === "unsupported").length;
+
+  // Two numbers, in the order a reader needs them: how much of the worksheet
+  // came across, and whether what came across is right. They are deliberately
+  // not averaged into one score — "how much was translated" and "is the
+  // translation correct" are different questions and a single figure hides both.
+  const parts = [];
+  parts.push(
+    unsupported === 0
+      ? `${name}: every construct translated`
+      : `${name}: ${unsupported} construct${unsupported === 1 ? "" : "s"} not translated`,
+  );
+  if (report.checks.length > 0) {
+    parts.push(
+      `${agreed} of ${report.checks.length} answer${report.checks.length === 1 ? "" : "s"} SMath stored agree${agreed === 1 ? "s" : ""} with Nomo`,
+    );
+  } else {
+    parts.push("this worksheet stored no answers to check against");
+  }
+  importPanel.summary.textContent = parts.join(" — ");
+  importPanel.summary.className =
+    unsupported === 0 && agreed === report.checks.length ? "clean" : "";
+
+  // Every note, then every check that is not an agreement, in line order. A
+  // clean check is a number in the summary and nothing more; a reader needs the
+  // list for what they have to look at.
+  const rows = [
+    ...report.notes.map((n) => ({
+      line: n.line,
+      kind: n.kind,
+      label: NOTE_LABELS[n.kind] ?? n.kind,
+      detail: n.detail,
+    })),
+    ...report.checks
+      .filter((c) => c.verdict !== "agreed")
+      .map((c) => ({
+        line: c.line,
+        kind: c.verdict,
+        label: VERDICT_LABELS[c.verdict] ?? c.verdict,
+        detail: detailOf(c),
+      })),
+  ].sort((a, b) => a.line - b.line);
+
+  importPanel.list.replaceChildren(
+    ...rows.map((row) => {
+      const item = document.createElement("li");
+      item.className = `import-${row.kind}`;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "import-line";
+      button.textContent = `line ${row.line}`;
+      button.addEventListener("click", () => goToLine(row.line));
+      const label = document.createElement("span");
+      label.className = "import-kind";
+      label.textContent = row.label;
+      const detail = document.createElement("span");
+      detail.className = "import-detail";
+      detail.textContent = row.detail;
+      item.append(button, label, detail);
+      return item;
+    }),
+  );
+
+  importPanel.root.hidden = false;
+  status(`imported ${name}`, unsupported === 0 ? "good" : "");
+}
+
+/**
+ * What to say about a check that did not agree.
+ *
+ * A disagreement is the one case where the two numbers are the message, so they
+ * are shown rather than described. Both are in base SI, which is what the oracle
+ * compares.
+ */
+function detailOf(check) {
+  if (check.verdict === "disagreed" && check.computed !== null) {
+    return `Nomo ${check.computed}, SMath ${check.expected}`;
+  }
+  return check.detail;
 }
 
 async function commandSave() {
@@ -315,6 +494,7 @@ function afterWrite(text) {
 }
 
 async function commandNew() {
+  hideImportReport();
   setDocument(STARTING_WORKSHEET, "untitled.nomo", null);
   await clearDraft();
 }
@@ -431,6 +611,7 @@ async function main() {
   buttons.save.addEventListener("click", () => void commandSave());
   buttons.saveAs.addEventListener("click", () => void commandSaveAs());
   buttons.new.addEventListener("click", () => void commandNew());
+  importPanel.dismiss.addEventListener("click", hideImportReport);
   // Re-render rather than recompute: typesetting changes how the answer is
   // drawn and not what it is.
   typeset.addEventListener("change", analyse);

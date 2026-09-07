@@ -22,6 +22,17 @@
   <p id="status">loading…</p>
 </header>
 
+<!--
+  The import report. Hidden until there is one, and dismissible, because it is
+  about an event rather than about the document: it describes what a translation
+  did, and once it has been read it should stop taking space from the worksheet.
+-->
+<section id="import" hidden aria-label="Import report">
+  <p id="import-summary"></p>
+  <ul id="import-list"></ul>
+  <button type="button" id="import-dismiss">Dismiss</button>
+</section>
+
 <main>
   <section id="pane-editor" aria-label="Worksheet source">
     <div id="editor"></div>

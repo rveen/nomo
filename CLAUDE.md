@@ -28,7 +28,7 @@ ranking.
 |---|---|
 | `crates/nomo-core/` | The engine: lexer, parser, dimensions and units, values, evaluation to a trace, document graph, renderers. No I/O, no host math — see the determinism guard below. |
 | `crates/nomo-cli/` | `nomo render`, `html`, `check`, `test`. |
-| `crates/nomo-wasm/` | The C-ABI wrapper the browser build loads. |
+| `crates/nomo-wasm/` | The C-ABI wrapper the browser build loads. It links `nomo-smath` too, so the editor imports `.sm` files in the tab. |
 | `crates/nomo-smath/` | The SMath `.sm` importer: reader, expression reduction, emitter, coverage report, and the stored-answer oracle. |
 | `web/` | The browser editor (CodeMirror 6), and `font.mjs`, which subsets the math font `dist/` ships. |
 | `tests/golden/` | Byte-exact snapshots of every worksheet under `examples/`. |
@@ -49,6 +49,7 @@ cargo run -p nomo-cli -- test           # golden-file suite; --write to accept
 ./scripts/fetch-corpora.sh               # obtain the SMath corpora; --verify to check only
 ./scripts/fetch-font.sh                  # obtain the fonts; --verify to check only
 ./scripts/check-corpus.sh                # SMath import regression gate; --write to accept
+node scripts/compare-import.mjs          # the importer, native vs WebAssembly
 ./scripts/build-web.sh                   # front end
 ./scripts/package-web.sh <version>       # the front end as a drop-in zip
 ```
@@ -58,8 +59,13 @@ check binaries.
 
 ## Working rules, learned rather than assumed
 
-- **Determinism is the product.** `nomo-core` and `nomo-wasm` must not call
-  host math or do I/O; `check-no-host-math.sh` enforces it. Reduction order is
+- **Determinism is the product.** `nomo-core`, `nomo-wasm` and `nomo-smath`'s
+  library half must not call host math or do I/O; `check-no-host-math.sh`
+  enforces it. `nomo-smath` joined them when the importer went into the browser
+  build: the number of decimals an emitted literal gets is chosen by `log10`, so
+  a host call there would give one worksheet two translations —
+  `compare-import.mjs` is the gate for that, and it is separate from
+  `compare-targets.mjs` because no snapshot would move. Reduction order is
   part of the language, not an implementation detail: nodes are computed as
   `a + i*step` rather than by repeated addition, and an iteration applies one
   step at a time because reassociating would show in the last bits.

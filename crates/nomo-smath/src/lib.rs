@@ -58,6 +58,7 @@ pub mod emit;
 pub mod expr;
 pub mod oracle;
 pub mod read;
+pub mod report;
 pub mod resolve;
 
 pub use coverage::{Coverage, Issue, IssueKind};
@@ -65,6 +66,7 @@ pub use emit::{emit, emit_in, Assertion, Emitted, Note, NoteKind};
 pub use expr::{Assign, Expr};
 pub use oracle::{check, Checked, Verdict};
 pub use read::{Dependency, Era, Math, Payload, Region, ResultKind, Settings, Worksheet};
+pub use report::import_json;
 
 /// Read a worksheet from the bytes of a `.sm` file.
 ///

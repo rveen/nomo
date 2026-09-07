@@ -32,24 +32,65 @@ export const canWriteFiles =
   typeof window.showOpenFilePicker === "function" &&
   typeof window.showSaveFilePicker === "function";
 
-const FILE_TYPES = [
+// What Save offers. Only Nomo's own format: the application writes `.nomo` and
+// nothing else, and an importer does not change that.
+const SAVE_TYPES = [
   {
     description: "Nomo worksheet",
     accept: { "text/plain": [".nomo"] },
   },
 ];
 
+// What Open accepts, which is a wider set. An SMath worksheet is not a document
+// this application can edit — it is one it can *translate* — but the place a
+// user looks for it is the Open command, not a separate importer they have to
+// know exists.
+const OPEN_TYPES = [
+  ...SAVE_TYPES,
+  {
+    description: "SMath Studio worksheet",
+    accept: { "application/xml": [".sm"] },
+  },
+];
+
+/** Whether a file name is an SMath worksheet, which has to be imported. */
+function isSmath(name) {
+  return name.toLowerCase().endsWith(".sm");
+}
+
+/** An SMath worksheet, as the bytes the importer wants and no handle. */
+async function asSmath(file) {
+  return {
+    name: file.name,
+    bytes: new Uint8Array(await file.arrayBuffer()),
+    handle: null,
+  };
+}
+
 /**
  * Ask the user for a worksheet.
  *
- * Resolves to `{name, text, handle}`, or null if the user cancelled. `handle` is
- * null when the browser cannot write back.
+ * Resolves to null if the user cancelled, otherwise to one of two shapes:
+ *
+ *   * `{name, text, handle}` for a Nomo worksheet;
+ *   * `{name, bytes, handle: null}` for an SMath one, which the caller has to
+ *     import before there is any text at all.
+ *
+ * The `.sm` branch reads **bytes** deliberately. SMath writes a BOM and CRLF
+ * endings, and the importer's reader strips them itself; decoding here with
+ * `file.text()` would do that job worse and would turn a file that is not UTF-8
+ * into a silent mess of replacement characters instead of a reported error.
+ *
+ * Its handle is dropped just as deliberately. What the user opened is a `.sm`;
+ * what they now have in the editor is a translation of it, and Save must not
+ * write Nomo source back over the original. With no handle Save is disabled and
+ * Save as asks where the `.nomo` should go — see `commandSave`.
  */
 export async function openWorksheet() {
   if (canWriteFiles) {
     let handles;
     try {
-      handles = await window.showOpenFilePicker({ types: FILE_TYPES });
+      handles = await window.showOpenFilePicker({ types: OPEN_TYPES });
     } catch (error) {
       // The picker rejects with AbortError when dismissed, which is not a
       // failure and must not surface as one.
@@ -58,11 +99,13 @@ export async function openWorksheet() {
     }
     const [handle] = handles;
     const file = await handle.getFile();
+    if (isSmath(file.name)) return asSmath(file);
     return { name: file.name, text: await file.text(), handle };
   }
 
   const file = await pickWithInput();
   if (!file) return null;
+  if (isSmath(file.name)) return asSmath(file);
   return { name: file.name, text: await file.text(), handle: null };
 }
 
@@ -71,7 +114,7 @@ function pickWithInput() {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".nomo,text/plain";
+    input.accept = ".nomo,.sm,text/plain";
     input.style.display = "none";
     document.body.append(input);
 
@@ -122,7 +165,7 @@ export async function saveWorksheetAs(text, suggestedName) {
   try {
     handle = await window.showSaveFilePicker({
       suggestedName,
-      types: FILE_TYPES,
+      types: SAVE_TYPES,
     });
   } catch (error) {
     if (error.name === "AbortError") return null;

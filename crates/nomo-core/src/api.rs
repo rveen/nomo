@@ -539,7 +539,12 @@ pub fn analysis_json_with(sheet: &Sheet, opts: &RenderOptions) -> String {
 }
 
 /// Append a JSON string literal, escaped per RFC 8259.
-fn push_string(out: &mut String, text: &str) {
+///
+/// Public because `nomo-smath` writes an import report across the same boundary
+/// and to the same convention. Two hand-written escapers that could disagree
+/// about a control character is precisely the drift `boundary.mjs` exists to
+/// prevent on the other side of the wire.
+pub fn push_string(out: &mut String, text: &str) {
     out.push('"');
     for c in text.chars() {
         match c {

@@ -2,15 +2,22 @@
 # Prove that the engine gives the same answers natively and under WebAssembly.
 #
 # This is the verification the numeric model exists for (design note §3). It runs
-# four gates in order, each of which localises a different failure:
+# five gates in order, each of which localises a different failure:
 #
 #   1. Build the engine for wasm32-unknown-unknown.
 #   2. check-wasm.mjs   — the artifact imports nothing and enables no SIMD.
 #   3. nomo test       — the native build matches the committed snapshots.
 #   4. compare-targets  — the WebAssembly build matches those same snapshots.
+#   5. compare-import   — an SMath worksheet translates identically on both.
 #
 # Native == snapshots and WebAssembly == snapshots together mean native ==
 # WebAssembly, byte for byte, across the whole corpus.
+#
+# The fifth gate arrived with the importer, which now ships inside the same
+# module. It is a separate gate because it can fail on its own: the emitted text
+# of a translation is chosen partly by arithmetic — how many decimals a literal
+# gets — so a host maths call in the importer would give one worksheet two
+# translations while leaving every snapshot above untouched.
 #
 # Needs Node for its WebAssembly engine; nothing is installed and no package is
 # fetched. Everything under scripts/ is dependency-free on purpose, because these
@@ -37,3 +44,7 @@ cargo run --quiet -p nomo-cli -- test
 
 echo "==> WebAssembly against the same snapshots"
 node scripts/compare-targets.mjs
+
+echo "==> the SMath importer on both targets"
+cargo build --quiet --release -p nomo-smath --bin smath-import
+node scripts/compare-import.mjs

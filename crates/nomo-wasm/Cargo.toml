@@ -12,3 +12,10 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 nomo-core.workspace = true
+
+# The SMath importer ships in the browser build. It is pure translation over
+# bytes with no I/O of its own, it costs about 110 kB gzipped, and putting it
+# here is what keeps the promise the packaged site makes: no worksheet leaves
+# the machine it is opened on. An import endpoint would have broken that for
+# the one file class most likely to be confidential — the user's existing work.
+nomo-smath.workspace = true

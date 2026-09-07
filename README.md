@@ -121,7 +121,11 @@ exactly the last-bit drift the suite exists to catch.
 
 The first renders the corpus through the native build and through the
 WebAssembly build and requires the two to be **byte-identical**, transcendentals
-included. This is the verification the numeric model exists for.
+included. This is the verification the numeric model exists for. It ends by
+asking the same question of the SMath importer, which is compiled into the same
+module: 115 worksheets must translate identically on both targets, because how
+many decimals an emitted literal gets is chosen by arithmetic and one worksheet
+must not have two translations.
 
 The second asks the same question across instruction sets: it cross-builds to
 aarch64 and renders the corpus under emulation, against the snapshots committed
@@ -188,6 +192,7 @@ checked in CI, in a real browser, rather than assumed.
 | `crates/nomo-core` | The engine. No I/O, no clock, no threads — compiles to `wasm32` unchanged. |
 | `crates/nomo-cli` | Command-line front end. All filesystem access lives here. |
 | `crates/nomo-wasm` | The WebAssembly boundary. A plain C ABI, so the artifact imports nothing. |
+| `crates/nomo-smath` | The SMath `.sm` importer. Ships in the CLI and in the browser build. |
 | `web/` | The browser editor. Static files; it decides nothing about the language. |
 | `scripts/` | Determinism and browser gates. Dependency-free on purpose; they are the evidence. |
 | `docs/design-note.md` | Architecture, decisions, and the evidence for them. |

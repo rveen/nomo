@@ -172,11 +172,12 @@ cargo run --release -p nomo-cli -- bench               # timings; a report, exit
 ./scripts/compare-arch.sh                               # x86-64 vs aarch64 (needs qemu-user)
 ./scripts/build-gallery.sh                              # the worked examples as a
                                                         # browsable set of pages
-./scripts/build-web.sh                                  # front end; also runs the ten
+./scripts/build-web.sh                                  # front end; also runs the eleven
                                                         # browser checks, including
                                                         # check-figures.mjs,
-                                                        # check-plots.mjs and
-                                                        # check-recovery.mjs, which assert
+                                                        # check-plots.mjs,
+                                                        # check-recovery.mjs and
+                                                        # check-import.mjs, which assert
                                                         # what only a browser can see
 ./scripts/package-web.sh <version> [dir]                # web/dist/ as a zip to drop onto
                                                         # a server; run by build-web.sh's
@@ -201,10 +202,24 @@ cargo run -p nomo-smath --bin smath-import -- x.sm     # write one worksheet as 
                                                         # drew them (docs/language.md,
                                                         # "Figures"); nomo html embeds them
 cargo run -p nomo-smath --bin smath-import -- --lang eng x.sm   # pick a language
+cargo run -p nomo-smath --bin smath-import -- --json x.sm       # the report as data:
+                                                        # source, notes and checked answers.
+                                                        # The same payload the browser build
+                                                        # returns, which is what
+                                                        # compare-import.mjs compares
 
 ./scripts/check-corpus.sh                               # corpus regression gate
 ./scripts/check-corpus.sh --write                       # accept an intended change
+node scripts/compare-import.mjs                         # the importer, native vs
+                                                        # WebAssembly; run by
+                                                        # compare-targets.sh
 ```
+
+The importer also runs **in the editor**: opening a `.sm` translates it in the
+tab and reports what it did against the lines it did it on. `nomo-smath` is
+linked into `nomo_wasm.wasm`, which is why `check-no-host-math.sh` guards it and
+why `compare-import.mjs` exists — see "The browser editor" and
+`docs/smath.md`.
 
 `check-corpus.sh` is to the importer what `nomo test` is to the renderer: a
 committed per-worksheet baseline in `tests/corpus/`, compared exactly, so any
@@ -608,16 +623,28 @@ direction:
 ## Cross-target determinism
 
 `./scripts/compare-targets.sh` is the verification the numeric model exists for.
-Four gates, each localising a different failure:
+Five gates, each localising a different failure:
 
 1. Build `nomo-wasm` for `wasm32-unknown-unknown`.
 2. `scripts/check-wasm.mjs` — the artifact imports nothing and enables no SIMD.
 3. `nomo test` — the native build matches the committed snapshots.
 4. `scripts/compare-targets.mjs` — the WASM build matches those same snapshots.
+5. `scripts/compare-import.mjs` — an SMath worksheet translates identically on
+   both targets: the emitted source, every note, and every stored answer the
+   oracle checked. **115 worksheets currently agree** — the 114 fetched corpora
+   plus a fixture written into the script, so the gate still runs on a machine
+   that has never fetched them.
 
 Native == snapshots and WASM == snapshots together give native == WASM byte for
 byte. **All 9 worksheets currently agree**, transcendentals and float residue
 included.
+
+The fifth gate is not covered by the four above it, which is why it is separate.
+How many decimals an emitted literal gets is chosen by arithmetic — `six_figures`
+in `emit.rs` calls `log10` — so a host maths call in the importer would give one
+worksheet two translations while leaving every snapshot untouched. That call, and
+a `powi` in the oracle's tolerance, are why `check-no-host-math.sh` now guards
+`nomo-smath` as well.
 
 Node is the WebAssembly engine and nothing more. No package is installed, and
 everything under `scripts/` is dependency-free, because these scripts are part of
@@ -742,6 +769,43 @@ build.mjs --serve` watches and serves on :8000.
 
 Static files and nothing else: the page is HTML, CSS, one bundle and one `.wasm`.
 No backend, no network traffic after load, and no worksheet leaves the tab.
+
+### The SMath importer is in the module, not behind an endpoint
+
+Opening a `.sm` from the editor's Open command translates it in the tab.
+`nomo-smath` is linked into `nomo_wasm.wasm`, and `nomo_smath_import` returns the
+whole report — the emitted source, every note, and every stored answer checked
+against what Nomo computed — as one JSON payload built by
+`nomo_smath::report::import_json`.
+
+The alternative considered was a small server: an upload endpoint over the
+existing `smath-import` binary. It was refused on the promise the packaged site
+already makes, that no worksheet leaves the machine it is opened on. The files
+this feature exists to accept are an engineer's *existing* work, which is the
+most confidential category the application will ever touch.
+
+Three measurements decided the shape rather than the argument alone. The module
+grows from 254 kB gzipped to 363 kB. A separate, lazily-loaded importer module
+would be 113 kB — but only while it does not run the oracle; with the oracle it
+pulls the whole evaluator in and reaches 334 kB, so two modules would ship two
+copies of the engine to save 109 kB on a cold start. The oracle is not optional:
+it is the only evidence a reader has that a translation is faithful, and it is
+what the panel's "23 of 25 answers agree" is counted from. One module. Importing
+the largest corpus worksheet — 969 kB of XML — takes 38 ms.
+
+Two things had to be true before it could go in, and neither was free. The
+artifact must still import nothing, which `check-wasm.mjs` confirms with
+`roxmltree` linked in. And the importer must not call host math, which it did in
+two places until `check-no-host-math.sh` was extended to cover it —
+`scripts/compare-import.mjs` is the gate that would catch a regression there.
+
+What reaches the buffer is a translation with no file behind it: named `.nomo`,
+dirty from the moment it appears, and handle-less so that Save cannot write over
+the original `.sm`. Every note gets a row in a dismissible panel with a line
+number that moves the cursor — the importer's rule is that nothing is ever
+silently dropped, and a marker nobody is pointed at is only half of that.
+`scripts/check-import.mjs` drives the whole path in Chrome against a fixture
+written into the script, so it runs without the corpora.
 
 The site is three things: the editor at `/`, the worked examples at `/examples/`,
 and the language reference at `/language/`. The reference is `docs/language.md`

@@ -31,6 +31,12 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+// The same deterministic transcendentals the engine uses, for the same reason.
+// This crate is linked into the WebAssembly build now, so a host `log10` here
+// would decide the emitted text's decimal places on the browser's libm and the
+// CLI's separately — two importers wearing one name. See scripts/check-no-host-math.sh.
+use nomo_core::math;
+
 use crate::expr::{Assign, Expr, Statement};
 use crate::read::{decoded_len, Math, Payload, PlotView, ResultKind, Worksheet};
 
@@ -2545,7 +2551,7 @@ fn six_figures(x: f64) -> String {
     if x == 0.0 || !x.is_finite() {
         return format!("{x}");
     }
-    let magnitude = x.abs().log10().floor() as i32;
+    let magnitude = math::floor(math::log10(math::abs(x))) as i32;
     let places = (5 - magnitude).max(0) as usize;
     let text = format!("{x:.places$}");
     // Trim the zeros the fixed format leaves behind, and the point with them.

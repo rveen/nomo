@@ -1,5 +1,58 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **The SMath importer runs in the editor.** Open a `.sm` from the editor's Open
+  command and it is translated in the tab: `nomo-smath` is linked into
+  `nomo_wasm.wasm` alongside the engine, so a worksheet is never uploaded
+  anywhere, and it works offline like everything else in the shell. A panel above
+  the editor lists every construct the importer refused, each against a line
+  number that moves the cursor to the marker, and reports how many of the answers
+  SMath itself stored agree with what Nomo computed.
+
+  A server was the obvious alternative and was refused on the promise the
+  packaged site already makes — that no worksheet leaves the machine it is opened
+  on. The files this feature exists to accept are engineers' *existing* work.
+
+  The shape was decided by measurement rather than by the argument alone. One
+  module takes the engine from 254 kB gzipped to 363 kB. A separate, lazily
+  loaded importer would be 113 kB — but only without the oracle; with it, it
+  pulls the whole evaluator in and reaches 334 kB, so two modules would ship two
+  copies of the engine to save 109 kB on a cold start. The oracle stays, because
+  it is the only evidence a reader has that a translation is faithful. Importing
+  the largest corpus worksheet, 969 kB of XML, takes 38 ms.
+
+- `smath-import --json` writes the report as data — the emitted source, every
+  note, and every checked answer — which is the same payload the browser build
+  returns. Both targets call one function, so there are not two spellings of the
+  report that could drift apart.
+
+- `scripts/compare-import.mjs`, run by `compare-targets.sh` as its fifth gate:
+  115 worksheets — the 114 fetched corpora and a fixture written into the script
+  so it runs without them — must translate identically native and under
+  WebAssembly. `scripts/check-import.mjs` drives the whole browser path in
+  Chrome, likewise against its own fixture.
+
+### Fixed
+
+- **`nomo-smath` was calling host math**, and it now goes through
+  `nomo_core::math` like everything else in the artifact. `six_figures` used
+  `log10` to choose a plot span's decimal places and the oracle used `powi` to
+  derive a tolerance; harmless while the importer was a native binary, and a
+  cross-target divergence the moment it shipped in `nomo_wasm.wasm` — one
+  worksheet with two translations, and no snapshot moving to show it.
+  `check-no-host-math.sh` now guards the crate's library half, excluding
+  `src/bin/`, which are programs that legitimately read files. No result moved:
+  114 corpus baselines and 29 golden snapshots are unchanged.
+
+- `NOTICE.txt` picked up `roxmltree` and `memchr` on its own. 0.4.1's note said
+  following normal dependencies is what kept `roxmltree` out of the released
+  artifacts; it is in `nomo_wasm.wasm` now, and because the list is derived from
+  cargo's resolve graph rather than written by hand, the licence obligation was
+  met by the build rather than by remembering.
+
 ## 0.4.1 — what a release has to carry
 
 No language changes, and nothing a worksheet computes has moved: 29 golden

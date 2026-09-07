@@ -18,9 +18,31 @@ it cannot tell.
 
 ## Importing a worksheet
 
-Import is a command-line tool. It is not in `nomo` itself and not in the browser
-editor: the importer needs the whole corpus-checking apparatus behind it, and a
-migration is a thing you do once and review, not a file type the editor opens.
+There are two ways in, and they run the same importer.
+
+### In the editor
+
+Open a `.sm` from the editor's **Open** command, exactly as you would a `.nomo`.
+The translation appears in the buffer and a panel above it reports what the
+import did: what could not be translated, with a line number you can click, and
+how many of the answers SMath itself stored agree with what Nomo computes.
+
+The translation happens in the tab. The importer is compiled into
+`nomo_wasm.wasm` alongside the engine, so a `.sm` is never uploaded anywhere —
+which matters more here than anywhere else in the application, because the files
+this feature exists to accept are an engineer's existing work. It is precached
+with the rest of the shell, so it works with the network off.
+
+What lands in the editor is a *translation*, not the file that was opened. It is
+named `worksheet.nomo`, it counts as unsaved from the moment it appears, and it
+has no file behind it: **Save** cannot write Nomo source back over the `.sm`,
+and **Save as** is how it reaches the disk. Review it before you keep it —
+"[Reviewing an import](#reviewing-an-import)" below is what to look at.
+
+### On the command line
+
+The command line is what a *migration* wants: it takes directories, it reports
+across a whole corpus, and it is what the regression gate runs.
 
 ```bash
 cargo run -p nomo-smath --bin smath-import -- worksheet.sm > worksheet.nomo
@@ -56,6 +78,12 @@ check report, which works on one file as well as on a directory:
 ```bash
 cargo run -p nomo-smath --bin smath-import -- --check worksheet.sm
 ```
+
+`--json` writes the same report as data — the emitted source, every note, and
+every checked answer. It is what the editor's panel is drawn from, and both
+targets call the same function to produce it, which is what lets
+`scripts/compare-import.mjs` require the browser and the command line to
+translate a worksheet identically, byte for byte.
 
 ```
 1 worksheets, 0 unreadable

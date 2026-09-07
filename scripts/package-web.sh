@@ -82,6 +82,16 @@ Two things a server can get wrong:
 examples/ holds the worked examples as pre-rendered pages; open examples/ for
 the index. index.html is the editor.
 
+SMATH WORKSHEETS
+
+Open handles SMath Studio .sm files as well as .nomo ones. The translation runs
+in the browser, in the same engine module, so a worksheet is never uploaded
+anywhere — and it works offline like everything else here. What lands in the
+editor is a translation with no file behind it: review it, then Save as. A panel
+above the editor lists every construct that could not be translated, against the
+line it belongs to, and checks the answers the worksheet already stored against
+what Nomo computes.
+
 LICENCES
 
 NOTICE.txt carries every licence this directory ships under — Nomo's own MIT

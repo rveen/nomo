@@ -18,9 +18,17 @@ cd "$(dirname "$0")/.."
 
 # nomo-wasm is held to the same rules. It is the boundary crate, so it is the
 # one place where a "just this once" call into the host would look reasonable.
+#
+# nomo-smath joined them when the importer went into the browser build. Until
+# then it was a native binary and a host `log10` in it cost nothing; linked into
+# nomo_wasm.wasm, the same call decides how many decimals an emitted literal gets
+# on the browser's libm and on the CLI's *separately*, and the import stops being
+# one importer. Its `src/bin/` is excluded: those are real programs that read
+# files and exit, and the rule here is about the library that ships.
 CORE=crates/nomo-core/src
 WASM=crates/nomo-wasm/src
-GUARDED="$CORE $WASM"
+SMATH=crates/nomo-smath/src
+GUARDED="$CORE $WASM $SMATH"
 
 # Transcendentals and anything fused. `sqrt`, `abs`, `floor`, `ceil`, `round`
 # and `trunc` are deliberately absent: they are exactly specified.
@@ -38,16 +46,16 @@ while IFS= read -r file; do
         echo "    -> route it through crate::math instead" >&2
         fail=1
     fi
-done < <(find $GUARDED -name '*.rs')
+done < <(find $GUARDED -name '*.rs' -not -path '*/bin/*')
 
 # The engine must not reach outside itself for anything, either.
-if matches=$(grep -rnE '\b(std::fs|std::net|std::time::(SystemTime|Instant)|std::thread|std::process)\b' $GUARDED); then
+if matches=$(grep -rnE --exclude-dir=bin '\b(std::fs|std::net|std::time::(SystemTime|Instant)|std::thread|std::process)\b' $GUARDED); then
     echo "error: the engine must stay free of I/O, clocks and threads" >&2
     echo "$matches" | sed 's/^/    /' >&2
     fail=1
 fi
 
 if [ "$fail" -eq 0 ]; then
-    echo "ok: no host math, no I/O in nomo-core or nomo-wasm"
+    echo "ok: no host math, no I/O in nomo-core, nomo-wasm or nomo-smath"
 fi
 exit "$fail"

@@ -42,6 +42,12 @@ fn main() -> ExitCode {
         }
         args.remove(i);
     }
+    // `--json` writes the same payload the browser build returns, which is what
+    // makes a cross-target comparison possible: both sides call
+    // `nomo_smath::import_json`, so a difference between them is a difference in
+    // the *target* and cannot be a difference between two spellings of the same
+    // report. See scripts/compare-import.mjs.
+    let json = args.iter().any(|a| a == "--json");
     let checking = args.iter().any(|a| a == "--check");
     let paths: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
 
@@ -50,6 +56,7 @@ fn main() -> ExitCode {
             "smath-import — turn SMath worksheets into Nomo\n\n\
              USAGE:\n    \
              smath-import <file.sm>              write Nomo source to stdout\n    \
+             smath-import --json <file.sm>       write the import report as JSON\n    \
              smath-import --check <file|dir>...  check every stored answer\n"
         );
         return ExitCode::FAILURE;
@@ -71,6 +78,26 @@ fn main() -> ExitCode {
         }
     }
     files.sort();
+
+    if json {
+        if files.len() != 1 {
+            eprintln!("smath-import: --json takes one file");
+            return ExitCode::FAILURE;
+        }
+        // Bytes, not a parsed worksheet: `import_json` does its own reading so
+        // that a file it cannot read is reported inside the payload rather than
+        // as an exit code the browser has no equivalent of.
+        return match std::fs::read(&files[0]) {
+            Ok(bytes) => {
+                println!("{}", nomo_smath::import_json(&bytes, language.as_deref()));
+                ExitCode::SUCCESS
+            }
+            Err(e) => {
+                eprintln!("smath-import: {}: {e}", files[0].display());
+                ExitCode::FAILURE
+            }
+        };
+    }
 
     if !checking {
         if files.len() != 1 {

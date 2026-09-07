@@ -55,6 +55,7 @@ node scripts/check-figures.mjs
 node scripts/check-plots.mjs
 node scripts/check-mathml.mjs
 node scripts/check-assist.mjs
+node scripts/check-import.mjs
 node scripts/check-offline.mjs
 # Last, because it packages what everything above just checked. It is also the
 # only check that serves the site from somewhere other than a document root,

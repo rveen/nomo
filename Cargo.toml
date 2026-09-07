@@ -11,6 +11,7 @@ repository = "https://github.com/rveen/nomo"
 
 [workspace.dependencies]
 nomo-core = { path = "crates/nomo-core" }
+nomo-smath = { path = "crates/nomo-smath" }
 
 # Deterministic transcendentals compiled into the artifact. Never call the host's
 # libm or JS Math.* — that is the one remaining source of cross-machine float

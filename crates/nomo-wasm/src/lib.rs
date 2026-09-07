@@ -217,6 +217,74 @@ pub unsafe extern "C" fn nomo_document_free(handle: *mut nomo_core::Sheet) {
     }
 }
 
+// ---- importing an SMath worksheet ---------------------------------------
+//
+// The alternative considered was a small server: an upload endpoint, the
+// existing `smath-import` binary behind it, and a page of its own. It was
+// refused on what the packaged site already promises its readers — that no
+// worksheet leaves the machine it is opened on. The files this feature exists
+// to accept are engineers' *existing* work, which is the most confidential
+// category the application will ever touch, so asking for them to be uploaded
+// would be asking the wrong thing of exactly the people it is meant to win.
+//
+// The importer had to earn its place in the module rather than be assumed into
+// it: it must not import anything (`check-wasm.mjs` still reports an empty
+// import section with it linked), and it must not call host math, which it did
+// in two places until `nomo-smath` joined `check-no-host-math.sh`.
+
+/// Translate the bytes of a `.sm` file, and check it against its own answers.
+///
+/// Bytes rather than a string, unlike every other entry point here. SMath writes
+/// a BOM and CRLF line endings and `nomo_smath::read` strips them itself, so a
+/// host that decoded the file to text first would be doing the reader's job
+/// worse — and `str_from` would reject a file whose declared encoding is not
+/// UTF-8 before the reader could report *why* it could not be read.
+///
+/// `lang_ptr`/`lang_len` name the translation to keep from a multilingual
+/// worksheet; pass a null pointer or a zero length for "the first one in each
+/// region", which is what the CLI does without `--lang`.
+///
+/// Returns a length-prefixed JSON payload — see `nomo_smath::report`. A file
+/// that cannot be read comes back as a payload carrying `error`, not as null:
+/// null here would mean the *caller* passed something impossible, and the two
+/// must stay distinguishable.
+///
+/// # Safety
+///
+/// `ptr` must address at least `len` readable bytes, and `lang_ptr` at least
+/// `lang_len`.
+#[no_mangle]
+pub unsafe extern "C" fn nomo_smath_import(
+    ptr: *const u8,
+    len: usize,
+    lang_ptr: *const u8,
+    lang_len: usize,
+) -> *mut u8 {
+    if ptr.is_null() && len != 0 {
+        return std::ptr::null_mut();
+    }
+    let bytes = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(ptr, len)
+    };
+    let language = if lang_ptr.is_null() || lang_len == 0 {
+        None
+    } else {
+        match str_from(lang_ptr, lang_len) {
+            Some(s) => Some(s),
+            None => return std::ptr::null_mut(),
+        }
+    };
+    into_buffer(nomo_smath::import_json(bytes, language))
+}
+
+/// The import report's format version, so a host can refuse one it cannot read.
+#[no_mangle]
+pub extern "C" fn nomo_smath_format() -> u32 {
+    nomo_smath::report::FORMAT
+}
+
 /// The text to write to disk for `source`: the worksheet with a version pragma.
 ///
 /// The front end asks rather than composing the line itself. The version number

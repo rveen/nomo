@@ -16,6 +16,7 @@ import { lintGutter, setDiagnostics } from "@codemirror/lint";
 import { assist, goToDefinition, setSymbols, setVocabulary } from "./assist.js";
 import { loadEngine } from "./engine.js";
 import { highlighting, setTokens } from "./highlight.js";
+import { imagePaste } from "./image.js";
 import {
   canWriteFiles,
   clearDraft,
@@ -42,6 +43,9 @@ const SETTLE = 60;
 
 /** Milliseconds of quiet before writing the draft to IndexedDB. */
 const DRAFT_SETTLE = 800;
+
+/** How long a message that asks to stay put gets the status line for. */
+const STATUS_HOLD = 4000;
 
 const output = document.querySelector("#output");
 const statusLine = document.querySelector("#status");
@@ -94,9 +98,35 @@ const current = {
   dirty: false,
 };
 
-function status(text, kind = "") {
+/** When the message on the status line stops asking to be left alone. */
+let heldUntil = 0;
+
+/**
+ * Say something on the status line.
+ *
+ * `hold` is for a message the next analysis cannot say again. Pasting a figure
+ * is the case that needed it: how big the image came out and whether it was
+ * shrunk are facts about that one paste, and the analysis it triggers is 60 ms
+ * behind it with an `ok` that would wipe them off the screen unread.
+ *
+ * Anything a person just did is said immediately either way. Only `analysed`
+ * below defers, because only it can repeat itself.
+ */
+function status(text, kind = "", hold = false) {
+  heldUntil = hold ? Date.now() + STATUS_HOLD : 0;
   statusLine.textContent = text;
   statusLine.className = kind;
+}
+
+/**
+ * What the analysis has to say, which a held message outranks for a moment.
+ *
+ * An error is never held back: a worksheet that stopped computing matters more
+ * than anything a message has to say about a picture.
+ */
+function analysed(text, kind = "") {
+  if (kind !== "bad" && Date.now() < heldUntil) return;
+  status(text, kind);
 }
 
 function showFileName() {
@@ -158,19 +188,19 @@ function analyse() {
   const warnings = result.diagnostics.length - errors;
   const checks = result.checks ?? { total: 0, failed: 0 };
   if (errors > 0) {
-    status(`${errors} error${errors === 1 ? "" : "s"}`, "bad");
+    analysed(`${errors} error${errors === 1 ? "" : "s"}`, "bad");
   } else if (checks.failed > 0) {
     // Amber rather than red, and said before anything else that is not an
     // error: the worksheet is correct and the design does not hold, which is a
     // result the engineer has to see rather than a fault to fix.
-    status(
+    analysed(
       `${checks.failed} of ${checks.total} check${checks.total === 1 ? "" : "s"} failed`,
       "warn",
     );
   } else if (warnings > 0) {
-    status(`${warnings} warning${warnings === 1 ? "" : "s"}`, "warn");
+    analysed(`${warnings} warning${warnings === 1 ? "" : "s"}`, "warn");
   } else if (checks.total > 0) {
-    status(
+    analysed(
       `ok — ${checks.total} check${checks.total === 1 ? "" : "s"} passed`,
       "good",
     );
@@ -178,7 +208,7 @@ function analyse() {
     // `recalculated` is how many statements the dependency graph actually
     // re-evaluated. Surfaced because it is the visible proof that editing one
     // line does not recompute the worksheet.
-    status(
+    analysed(
       result.recalculated > 0 ? `ok — recalculated ${result.recalculated}` : "ok",
       "good",
     );
@@ -601,6 +631,13 @@ async function main() {
         ]),
         highlighting,
         assist,
+        imagePaste({
+          // Read at call time, never captured: a restart replaces the engine.
+          ready: () => engine !== null && !restarting,
+          attach: (source, cursor, image) => engine.attachImage(source, cursor, image),
+          failed: (error) => void restartEngine(error),
+          status,
+        }),
         EditorView.lineWrapping,
         onChange,
       ],

@@ -172,12 +172,17 @@ cargo run --release -p nomo-cli -- bench               # timings; a report, exit
 ./scripts/compare-arch.sh                               # x86-64 vs aarch64 (needs qemu-user)
 ./scripts/build-gallery.sh                              # the worked examples as a
                                                         # browsable set of pages
-./scripts/build-web.sh                                  # front end; also runs the nine
+./scripts/build-web.sh                                  # front end; also runs the ten
                                                         # browser checks, including
                                                         # check-figures.mjs,
                                                         # check-plots.mjs and
                                                         # check-recovery.mjs, which assert
                                                         # what only a browser can see
+./scripts/package-web.sh <version> [dir]                # web/dist/ as a zip to drop onto
+                                                        # a server; run by build-web.sh's
+                                                        # check-package.mjs, which is the
+                                                        # only check that serves the site
+                                                        # from outside a document root
 
 ./scripts/fetch-font.sh                                 # the fonts, likewise; run by
                                                         # build-web.sh
@@ -654,6 +659,13 @@ by IEEE 754, so collapsing them would hide real differences;
 `examples/nonfinite.nomo` pins every route the language offers to each.
 
 ## The browser editor
+
+A tagged release publishes that directory as `nomo-web-<tag>.zip`, built and
+checked by the same script — see the `web` job in `.github/workflows/release.yml`.
+Every path inside the site is relative, so it serves from any URL;
+`check-package.mjs` unpacks the archive and drives it under a nested prefix to
+prove that, because every other browser check serves from a document root and
+would not notice an absolute path.
 
 `./scripts/build-web.sh` builds the engine, bundles the front end into
 `web/dist/`, and then checks the result in headless Chrome. `cd web && node

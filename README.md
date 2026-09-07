@@ -51,9 +51,10 @@ These are the decisions that are expensive to reverse, so they are settled first
 ## Getting it
 
 A tagged release publishes a command-line binary for linux-x86_64,
-linux-aarch64 and macos-aarch64, the WebAssembly module, and `SHA256SUMS.txt`
-covering all of them. The editor and the worked examples deploy to GitHub Pages
-from the same workflow.
+linux-aarch64 and macos-aarch64, the WebAssembly module, the editor as a zip to
+unzip onto any web server, and `SHA256SUMS.txt` covering all of them. Every
+artifact carries the licences it ships under. The editor also deploys to GitHub
+Pages from the same workflow.
 
 Each binary is built on a runner that owns its architecture — no
 cross-compilation — and **published only after passing the golden suite on the
@@ -66,6 +67,15 @@ whoever built it.
 tar -xzf nomo-v0.4.0-linux-x86_64.tar.gz
 ./nomo version
 ./nomo check my-worksheet.nomo
+```
+
+The editor needs no installation beyond a web server that can read a directory
+— there is no backend, and the engine runs in the browser, so nothing is asked
+of the server but the files. Every path inside the site is relative, so it works
+at a document root or in a subdirectory:
+
+```bash
+unzip nomo-web-v0.4.0.zip -d /var/www/html
 ```
 
 Building from source is the section below, and needs nothing but a Rust

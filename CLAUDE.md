@@ -50,6 +50,7 @@ cargo run -p nomo-cli -- test           # golden-file suite; --write to accept
 ./scripts/fetch-font.sh                  # obtain the fonts; --verify to check only
 ./scripts/check-corpus.sh                # SMath import regression gate; --write to accept
 ./scripts/build-web.sh                   # front end
+./scripts/package-web.sh <version>       # the front end as a drop-in zip
 ```
 
 `docs/STATUS.md` carries the full list, including the importer's coverage and

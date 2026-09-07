@@ -79,7 +79,7 @@ installed on this machine. CI's `arm64` job covers it.
 | 9 Local persistence, offline | **done** | Open/save with a cross-browser fallback, draft in IndexedDB, service worker |
 | — SMath importer | **seven phases in** | `nomo-smath`: reads **both** corpora — 54 wiki worksheets (0.82–0.98) and 60 mechanics worksheets (1.3–1.5) — emits `.nomo`, and checks itself against 1179 stored answers. Agreement: 312/344 wiki, 283/283 mechanics. Design note §8.13–§8.39 |
 | — A second batch of builtins | **done** | `mod` `hypot` `nthroot` `log(x, b)` `cot` `sec` `csc` `asinh` `acosh` `atanh` `product` `mean` `median` `sort` `reverse` `trace` `submatrix`. Conventions read from SMath where it has one — `mod`'s sign, `submatrix`'s inclusive one-based bounds. `stdev` and `rank` are deliberately absent; `docs/language.md` says why. Took the wiki corpus from 304/337 to **312/344** |
-| — Releasing | **run six times** | A tag builds a binary per architecture with no cross-compilation, each published only after passing the golden suite on the machine that built it; the wasm module goes out with its hash after agreeing with native byte for byte; the editor and gallery deploy to Pages from `main`. `v0.1.0` proved the shell on real runners and found the tag-versus-branch fault in the `pages` job; `v0.2.0` is the first tag cut with that split already in place, and `v0.2.1` is a patch carrying the math-font fix; `v0.3.0` is the first tag whose `pages` job publishes a *typeset* gallery, and the first whose build fetches something from the network — the fonts, hash-verified; `v0.4.0` carries inline prose; `v0.4.1` is the first tag about the release itself — every artifact now carries the licences it ships under, the editor is published as a zip to drop onto a server, and the published module was downloaded and shown to give the same 29 snapshots, which is the determinism claim checked from outside the machine that made it |
+| — Releasing | **run seven times** | A tag builds a binary per architecture with no cross-compilation, each published only after passing the golden suite on the machine that built it; the wasm module goes out with its hash after agreeing with native byte for byte; the editor and gallery deploy to Pages from `main`. `v0.1.0` proved the shell on real runners and found the tag-versus-branch fault in the `pages` job; `v0.2.0` is the first tag cut with that split already in place, and `v0.2.1` is a patch carrying the math-font fix; `v0.3.0` is the first tag whose `pages` job publishes a *typeset* gallery, and the first whose build fetches something from the network — the fonts, hash-verified; `v0.4.0` carries inline prose; `v0.4.1` is the first tag about the release itself — every artifact now carries the licences it ships under, the editor is published as a zip to drop onto a server, and the published module was downloaded and shown to give the same 29 snapshots, which is the determinism claim checked from outside the machine that made it; `v0.5.0` puts the SMath importer in the editor, and is the first tag whose published module was checked from outside for what it *translates* as well as what it computes — 29 snapshots and 114 corpus worksheets — the first whose published *binary* was run on a machine that did not build it, and the first where Pages and the release produced byte-identical modules from two separate runs |
 | — The gallery, and migration shown | **done** | `build-gallery.sh` renders every example into a browsable set of pages, typeset since §8.52 and sharing one math font file, and `docs/smath.md` finally *shows* an import: an SMath worksheet written here — ours to publish, unlike the corpora — beside what Nomo makes of it and what it computes. That fixture is also the only importer test that runs without the corpora |
 | — How-to worksheets | **six of six** | `bolt`, `shaft`, `column`, `bearing`, `spring`, `vessel` — a bolted joint, a shaft in combined bending and torsion, a column across the buckling transition, bearing life, a compression spring against six constraints, and a pressure vessel worked thin-wall and thick-wall side by side. The first worksheets written *for* the language rather than to exercise it; their acceptance is an engineer agreeing with the method rather than a green gate. Each says what it leaves out |
 | — The editor assists | **done** | Completion offering a name with what it holds and a unit with its dimension, hover saying what a name is, F12 to its definition, and a Typeset toggle that puts §18's MathML where a reader actually looks. All from the engine's own symbol table — no second parser in the front end. **Multiple open documents is the one piece not built**; the boundary already supports it and the reason is below |
@@ -119,7 +119,7 @@ self-contained file. **Second phase:** a name that spells a Greek letter is set 
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Prose as Markdown | **done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline is `` ` `` and `**`, and nothing else: `_` would eat identifiers and a single `*` is the multiplication operator — 61 corpus prose lines pair one and every pair encloses arithmetic. Design note §8.41 and §8.53, `examples/prose.nomo` |
 
-681 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+685 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -156,7 +156,7 @@ does not survive it, and then:
 
 ```bash
 cd /files/work/nomo
-cargo test --workspace                                  # 681 tests
+cargo test --workspace                                  # 685 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ./scripts/check-no-host-math.sh                         # determinism guard
@@ -480,6 +480,80 @@ here: 681 tests, clippy, fmt, the determinism guard, 29 snapshots, 114 corpus
 worksheets across both corpora, native and WebAssembly byte-identical, and all
 ten browser checks. `compare-arch.sh` was not among them — `qemu-user` is not
 installed here — and CI's `arm64` job is what covers it.
+
+**What the seventh tag settled.** `v0.5.0` is the first tag to publish a
+*capability* the application did not have — an SMath worksheet opens in the
+editor — and the first minor since the release machinery was finished, so it is
+the first one where that machinery was asked to carry something new rather than
+to repeat itself.
+
+Nothing a worksheet computes moved. 29 snapshots and 114 corpus baselines are
+unchanged, and they are unchanged *across a maths fix*: `six_figures` used a host
+`log10` to choose a plot span's decimal places and the oracle used `powi` to
+derive a tolerance, both now routed through `nomo_core::math`. That is the point
+worth keeping. Both calls were harmless for as long as the importer was a native
+binary, and both became a cross-target divergence the moment it shipped inside
+`nomo_wasm.wasm` — one worksheet with two translations, and **not one snapshot
+would have moved to show it**, because the emitted *text* of an import is chosen
+by arithmetic that no golden file covers. `check-no-host-math.sh` now guards
+`nomo-smath`'s library half, and `compare-import.mjs` is the fifth gate in
+`compare-targets.sh` for exactly the failure the other four cannot see.
+
+**The claim checked from outside, extended past the engine.** `v0.4.1` downloaded
+the published module and reproduced 29 snapshots with it. That was repeated here
+and widened: the published `nomo_wasm-v0.5.0.wasm` passed `check-wasm.mjs` —
+imports nothing, same feature set, with `roxmltree` linked in — reproduced the
+**29 snapshots**, and translated **all 114 corpus worksheets** identically to
+this machine's native importer, compared as the whole report rather than as the
+source alone. The determinism evidence from outside now covers what the artifact
+*translates* as well as what it computes.
+
+The published binary was run here too, which no previous tag did. Every release
+so far proved a binary against the golden suite on the machine that built it;
+`nomo-v0.5.0-linux-x86_64.tar.gz` was downloaded, checked against
+`SHA256SUMS.txt`, and its `nomo test` reproduced **29 of 29** on a machine that
+had no part in building it.
+
+**Two runners produced the same bytes**, which is new and stronger than anything
+recorded before. The module GitHub deployed to Pages from the `main` push and the
+module it released from the tag are **byte-identical** — `25fbbadc…`, 1194094
+bytes, from two jobs in two different runs. Neither matches a local build
+(`58411ec6…`, 1194067 bytes), for the ordinary reason recorded at the sixth tag:
+the build path is baked in, the claim is about results rather than binaries, and
+byte-reproducible artifacts would need `--remap-path-prefix` and a pinned build
+environment. What this adds is that within one environment the build *is*
+reproducible, and the 27-byte difference has a boring explanation rather than
+needing one.
+
+**The generated notice was tested by a dependency actually arriving.** `v0.4.1`
+built `NOTICE.txt` from cargo's resolve graph so that nobody would have to
+remember a new dependency; until now nothing had arrived to test it. Linking
+`nomo-smath` put `roxmltree` and `memchr` into a published artifact for the first
+time, and both appear in the release notice and in the zip's — with no edit to
+any file, and contradicting 0.4.1's own changelog note that following normal
+dependencies is what kept `roxmltree` out. The licence obligation was met by the
+build rather than by remembering, which is the whole reason the list is derived.
+
+Both notices are also reproducible across machines again: the runner's
+`nomo_wasm-v0.5.0-NOTICE.txt` hashes `714a9a55…` and the zip's `NOTICE.txt`
+`7a80d201…`, each byte-identical to one generated here. And §8.48 repeats a
+fourth time — the fonts inside `nomo-web-v0.5.0.zip` are **162116, 82300 and
+90256** bytes, the same three as `v0.3.0`, `v0.4.0` and `v0.4.1`.
+
+The branch-versus-tag split held for the seventh time, and macOS agreed again.
+The run took 3 min 23 s, five seconds over its predecessor and the same shape:
+25–38 s per binary, 52 s for the module, and 103 s for the web build, which is
+still the long pole and now runs a browser eleven times. The `pages` job was
+skipped on the tag, as designed.
+
+Before it was cut, every gate that can run on a development machine was run
+here, twice — once before the version bump and once after it, because a release
+that has only been tested before its own version number changed has not been
+tested: 685 tests, clippy, fmt, the determinism guard now covering `nomo-smath`,
+29 snapshots, 114 corpus worksheets, native and WebAssembly byte-identical, 115
+worksheets importing identically on both targets, all eleven browser checks, and
+the zip built and served from a nested prefix. `compare-arch.sh` was not among
+them, for the same reason as every tag before it.
 
 ## Timings
 

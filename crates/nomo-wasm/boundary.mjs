@@ -32,6 +32,7 @@ export function bind(exports) {
     nomo_document_update_as,
     nomo_document_free,
     nomo_for_saving,
+    nomo_attach_image,
     nomo_smath_import,
     nomo_smath_format,
   } = exports;
@@ -138,6 +139,47 @@ export function bind(exports) {
      */
     forSaving(source) {
       return withText(source, (s) => read(nomo_for_saving(s.ptr, s.len)));
+    },
+
+    /**
+     * Add an image to a worksheet: a reference near the cursor, its data at the
+     * end of the file.
+     *
+     * `cursor` is a UTF-16 offset — what `view.state.selection` counts in — and
+     * the two insertions come back in the same units, ready for one CodeMirror
+     * transaction. Two insertions rather than a new document, so a worksheet
+     * carrying megabytes of figures keeps its undo history and its scroll.
+     *
+     * `bytes` is the image itself. The engine encodes it: it has a base64
+     * encoder already, the text goes straight into a `data:` URI, and a second
+     * encoder here would be a second chance to put a padding character in the
+     * wrong place.
+     *
+     * Resolves to `{name, reference, trailer}`, or `{error}` when the bytes are
+     * not an image a worksheet can carry — a clipboard holding the wrong thing
+     * is something to tell the user, not a failure of the call.
+     */
+    attachImage(source, cursor, { width, height, bytes: image }) {
+      const file = writeBytes(image);
+      try {
+        return JSON.parse(
+          withText(source, (s) =>
+            read(
+              nomo_attach_image(
+                s.ptr,
+                s.len,
+                cursor,
+                width,
+                height,
+                file.ptr,
+                file.len,
+              ),
+            ),
+          ),
+        );
+      } finally {
+        if (file.ptr) nomo_free(file.ptr, file.len);
+      }
     },
 
     /** Render a worksheet to its golden snapshot. Stateless. */

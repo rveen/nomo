@@ -159,6 +159,48 @@ impl Image {
     }
 }
 
+/// The format some bytes are in, if it is one a worksheet can show.
+///
+/// Read from the bytes rather than taken from the caller, because the caller's
+/// answer comes from a clipboard. A browser labels what it hands over, and the
+/// label is a description of the *transfer* — a screenshot arriving as
+/// `image/png` from one application and `application/octet-stream` from another
+/// is the same file either way. The first bytes of an image say what it is, and
+/// they cannot be mistaken about it.
+///
+/// Every name this can return is one [`Image::media_type`] can name, which is
+/// the property that keeps a `data:` URI out of the guessing business: the two
+/// lists are the same list, and the test below says so.
+///
+/// A format not on the list is `None` and never a guess. That is the whole rule
+/// the resource path is written to — a worksheet that shows a broken figure is
+/// worse than one that says it cannot carry the file.
+pub fn sniff(bytes: &[u8]) -> Option<&'static str> {
+    let starts = |magic: &[u8]| bytes.starts_with(magic);
+    if starts(b"\x89PNG\r\n\x1a\n") {
+        return Some("png");
+    }
+    // Start of Image, then any marker. The third byte varies by encoder and
+    // only the first two are the signature.
+    if starts(b"\xff\xd8\xff") {
+        return Some("jpeg");
+    }
+    if starts(b"GIF87a") || starts(b"GIF89a") {
+        return Some("gif");
+    }
+    // A RIFF container says `WEBP` in its fourth word; the four bytes between
+    // are the file's length and say nothing about the format.
+    if starts(b"RIFF") && bytes.len() >= 12 && &bytes[8..12] == b"WEBP" {
+        return Some("webp");
+    }
+    // Two bytes is a weak signature and it is the whole of what BMP has. It is
+    // last so that nothing richer is ever decided by it.
+    if starts(b"BM") {
+        return Some("bmp");
+    }
+    None
+}
+
 /// The images a worksheet carries, and which of its lines are their data.
 #[derive(Debug, Clone, Default)]
 pub struct Resources {
@@ -801,6 +843,49 @@ mod tests {
                 .data,
             data
         );
+    }
+
+    #[test]
+    fn a_format_is_read_from_the_bytes_and_not_from_a_label() {
+        assert_eq!(sniff(b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR"), Some("png"));
+        assert_eq!(sniff(b"\xff\xd8\xff\xe0\0\x10JFIF"), Some("jpeg"));
+        assert_eq!(sniff(b"GIF89a\x01\0\x01\0"), Some("gif"));
+        assert_eq!(sniff(b"RIFF\x24\0\0\0WEBPVP8 "), Some("webp"));
+        assert_eq!(sniff(b"BM\x8a\0\0\0"), Some("bmp"));
+    }
+
+    #[test]
+    fn something_that_is_not_an_image_is_refused_rather_than_carried() {
+        assert_eq!(sniff(b""), None);
+        assert_eq!(sniff(b"BM"), Some("bmp")); // the whole of what BMP has
+        assert_eq!(sniff(b"\x89PNG"), None); // a truncated signature is not one
+        assert_eq!(sniff(b"II*\0"), None); // TIFF, which no `data:` URI names
+        assert_eq!(sniff(b"<svg xmlns="), None); // text, and a document of its own
+        assert_eq!(sniff(b"RIFF\x24\0\0\0WAVEfmt "), None); // a RIFF, not an image
+    }
+
+    #[test]
+    fn every_format_sniff_names_is_one_a_data_uri_can_carry() {
+        // The two lists are one list. A format read out of the bytes and then
+        // refused a media type would be an image the worksheet accepted and
+        // cannot show — the exact outcome the resource path exists to prevent.
+        for magic in [
+            &b"\x89PNG\r\n\x1a\n"[..],
+            &b"\xff\xd8\xff"[..],
+            &b"GIF89a"[..],
+            &b"RIFF\0\0\0\0WEBP"[..],
+            &b"BM"[..],
+        ] {
+            let format = sniff(magic).expect("a format");
+            let image = Image {
+                format: format.to_string(),
+                data: String::new(),
+            };
+            assert!(
+                image.media_type().is_some(),
+                "sniff names `{format}` and media_type does not"
+            );
+        }
     }
 
     #[test]

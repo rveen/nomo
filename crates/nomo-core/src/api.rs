@@ -30,7 +30,8 @@ use crate::diag::Severity;
 use crate::doc::Sheet;
 use crate::eval::OutcomeKind;
 use crate::lex::{self, TokenKind};
-use crate::render::{html, RenderOptions};
+use crate::render::{base64, html, RenderOptions};
+use crate::resource;
 use crate::span::Span;
 
 /// How a token should be coloured.
@@ -301,6 +302,22 @@ impl Utf16Offsets {
             self.0.last().copied().unwrap_or(0)
         })
     }
+
+    /// The other direction: a host's UTF-16 offset as a byte offset.
+    ///
+    /// Needed because one thing does travel *into* the engine as an offset —
+    /// where the cursor is when an image is pasted. A binary search rather than
+    /// a second map: the table is non-decreasing by construction, so the first
+    /// entry that reaches `utf16` is the byte the host meant.
+    ///
+    /// A `utf16` landing inside a character — which only a lone surrogate could
+    /// produce — gives that character's first byte, degrading to a boundary the
+    /// way [`Utf16Offsets::at`] does rather than to a panic in `split_at`.
+    fn byte_at(&self, utf16: u32) -> usize {
+        self.0
+            .partition_point(|&u| u < utf16)
+            .min(self.0.len().saturating_sub(1))
+    }
 }
 
 /// A name the worksheet binds, for an editor to complete, explain and find.
@@ -540,6 +557,78 @@ pub fn analysis_json_with(sheet: &Sheet, opts: &RenderOptions) -> String {
 
 /// Append a JSON string literal, escaped per RFC 8259.
 ///
+/// Add an image to a worksheet, as the two insertions that does to its text.
+///
+/// The one entry point that takes an offset *in*: `cursor` is where the caret
+/// was, in UTF-16 code units, and everything that comes back is in them too.
+///
+/// Stateless, and deliberately not a method on an open [`Sheet`]. The session's
+/// source trails the editor's buffer by a debounce, and offsets computed against
+/// text one keystroke out of date would place the reference in the wrong line.
+/// The buffer the host passes here is the one the answer is about.
+///
+/// Only the syntax tree is needed — what names are taken and where the trailer
+/// starts — so this parses rather than evaluating. A worksheet already carrying
+/// figures is measured in megabytes, and none of that is worth a second pass
+/// over the mathematics.
+///
+/// Comes back as `{"error": …}` when the bytes are not an image a worksheet can
+/// carry, which is the convention the import report already uses: a file the
+/// user chose being wrong is something to show them, not a failure of the call.
+pub fn attach_image_json(source: &str, cursor: u32, size: resource::Size, bytes: &[u8]) -> String {
+    let Some(format) = resource::sniff(bytes) else {
+        return error_json(
+            "that is not an image a worksheet can carry — \
+             png, jpeg, gif, bmp and webp are the formats a figure can be in",
+        );
+    };
+    // `resource::reference` refuses a zero dimension, so a figure placed at one
+    // would leave the line a comment and the image would never appear: the paste
+    // would be swallowed by the format rather than reported.
+    if size.width == 0 || size.height == 0 {
+        return error_json("an image placed at no width or no height cannot be shown");
+    }
+
+    let offsets = Utf16Offsets::build(source);
+    let resources = resource::Resources::scan(&crate::parse(source).ast);
+    let attached = resource::attach(
+        source,
+        &resources,
+        offsets.byte_at(cursor),
+        &resource::Attachment {
+            format,
+            data: &base64::encode(bytes),
+            size,
+        },
+    );
+
+    let mut out = String::from("{\"name\":");
+    push_string(&mut out, &attached.name);
+    out.push_str(",\"reference\":");
+    push_splice(&mut out, &attached.reference, &offsets);
+    out.push_str(",\"trailer\":");
+    push_splice(&mut out, &attached.trailer, &offsets);
+    out.push('}');
+    out
+}
+
+/// One insertion, with its offset in the units the host counts in.
+fn push_splice(out: &mut String, splice: &resource::Splice, offsets: &Utf16Offsets) {
+    out.push_str(&format!(
+        "{{\"at\":{},\"text\":",
+        offsets.at(splice.at as u32)
+    ));
+    push_string(out, &splice.text);
+    out.push('}');
+}
+
+fn error_json(message: &str) -> String {
+    let mut out = String::from("{\"error\":");
+    push_string(&mut out, message);
+    out.push('}');
+    out
+}
+
 /// Public because `nomo-smath` writes an import report across the same boundary
 /// and to the same convention. Two hand-written escapers that could disagree
 /// about a control character is precisely the drift `boundary.mjs` exists to
@@ -778,6 +867,76 @@ mod tests {
             .find(|c: char| !c.is_ascii_digit())
             .unwrap_or(rest.len());
         rest[..end].parse().expect("number")
+    }
+
+    /// The first bytes of a PNG and nothing after them. Enough for every
+    /// question here: `sniff` reads the signature and the base64 is carried as
+    /// text, so nothing in this path ever decodes an image.
+    const PNG: &[u8] = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR";
+
+    const PLACED: resource::Size = resource::Size {
+        width: 700,
+        height: 394,
+    };
+
+    #[test]
+    fn an_attached_image_comes_back_as_two_insertions() {
+        let json = attach_image_json("x = 1\n", 0, PLACED, PNG);
+        assert!(json.contains("\"name\":\"figure1\""), "{json}");
+        assert!(json.contains("' image figure1 700x394"), "{json}");
+        assert!(json.contains("' image figure1 png 16"), "{json}");
+        assert!(!json.contains("\"error\""), "{json}");
+    }
+
+    #[test]
+    fn the_offsets_it_takes_and_gives_are_utf16_not_bytes() {
+        // The bug this whole conversion exists for, in both directions at once.
+        // `🔧` is four bytes and two UTF-16 units, so the first line is 12 bytes
+        // and 10 units, and every offset below differs by two between them.
+        let source = "' 🔧 tool\nx = 1\n";
+        assert_eq!(source.find("x = 1"), Some(12));
+
+        // 10 is the start of `x = 1` in UTF-16. Read as a byte offset it would
+        // land inside `tool`, and the reference would go a line too early.
+        let json = attach_image_json(source, 10, PLACED, PNG);
+
+        // After `x = 1`: byte 18, UTF-16 16. A payload saying 18 is one the
+        // editor would apply two columns further on than the engine meant.
+        assert!(
+            json.contains("\"reference\":{\"at\":16,"),
+            "the reference is not where the cursor was:\n{json}"
+        );
+        assert!(
+            json.contains("\"trailer\":{\"at\":16,"),
+            "the trailer is not at the end of the document:\n{json}"
+        );
+    }
+
+    #[test]
+    fn a_cursor_the_host_pushed_past_the_end_is_still_answered() {
+        // The buffer and the offset can disagree by a keystroke, and a paste is
+        // not the moment to fail over it.
+        let json = attach_image_json("x = 1\n", 9_000, PLACED, PNG);
+        assert!(json.contains("\"name\":\"figure1\""), "{json}");
+    }
+
+    #[test]
+    fn bytes_that_are_not_an_image_are_reported_rather_than_carried() {
+        // The worksheet would accept it and then be unable to show it.
+        let json = attach_image_json("x = 1\n", 0, PLACED, b"II*\0 a TIFF");
+        assert!(json.starts_with("{\"error\":"), "{json}");
+        assert!(json.contains("png, jpeg, gif, bmp and webp"), "{json}");
+    }
+
+    #[test]
+    fn a_figure_placed_at_no_size_is_refused_rather_than_written() {
+        // `resource::reference` would refuse the line and it would stay a
+        // comment: an image in the file that nothing on the page refers to.
+        let none = resource::Size {
+            width: 0,
+            height: 394,
+        };
+        assert!(attach_image_json("x = 1\n", 0, none, PNG).starts_with("{\"error\":"));
     }
 
     #[test]

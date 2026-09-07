@@ -303,6 +303,60 @@ pub unsafe extern "C" fn nomo_for_saving(ptr: *const u8, len: usize) -> *mut u8 
     }
 }
 
+/// Add an image to a worksheet: a reference near the cursor, its data at the end.
+///
+/// `cursor` is in **UTF-16 code units**, like every offset in the analysis
+/// payload, because the host that sends it counts in them and so does its
+/// editor. The two insertions come back in the same units.
+///
+/// Bytes rather than base64, so the encoder is the engine's. The host has the
+/// image as a blob and would otherwise have to produce base64 itself, and a
+/// second encoder is a second thing that can put a padding character in the
+/// wrong place — in text that goes straight into a `data:` URI.
+///
+/// Stateless, like `nomo_for_saving` and for a stronger version of the same
+/// reason: an open session's source trails the editor's buffer by a debounce,
+/// and an offset computed against text one keystroke old points at the wrong
+/// line. What is passed here is what the answer is about.
+///
+/// Returns a length-prefixed JSON payload, `{name, reference, trailer}` — or one
+/// carrying `error`, when the bytes are not an image a worksheet can carry. Null
+/// only for a caller that passed something impossible, which is the same
+/// distinction `nomo_smath_import` draws.
+///
+/// # Safety
+///
+/// `ptr` must address at least `len` readable bytes, and `image_ptr` at least
+/// `image_len`.
+#[no_mangle]
+pub unsafe extern "C" fn nomo_attach_image(
+    ptr: *const u8,
+    len: usize,
+    cursor: u32,
+    width: u32,
+    height: u32,
+    image_ptr: *const u8,
+    image_len: usize,
+) -> *mut u8 {
+    let Some(source) = str_from(ptr, len) else {
+        return std::ptr::null_mut();
+    };
+    if image_ptr.is_null() && image_len != 0 {
+        return std::ptr::null_mut();
+    }
+    let bytes = if image_len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(image_ptr, image_len)
+    };
+    into_buffer(nomo_core::api::attach_image_json(
+        source,
+        cursor,
+        nomo_core::resource::Size { width, height },
+        bytes,
+    ))
+}
+
 /// Splice the recalculation counts into the analysis payload.
 ///
 /// They belong to the editing session rather than to the sheet, so the engine's

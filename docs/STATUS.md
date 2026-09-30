@@ -216,6 +216,9 @@ cargo run -p nomo-smath --bin smath-import -- --json x.sm       # the report as 
 node scripts/compare-import.mjs                         # the importer, native vs
                                                         # WebAssembly; run by
                                                         # compare-targets.sh
+node scripts/compare-html.mjs                           # the typeset page, native
+                                                        # vs nomo_render_html; run
+                                                        # by compare-targets.sh
 ```
 
 The importer also runs **in the editor**: opening a `.sm` translates it in the
@@ -752,7 +755,7 @@ direction:
 ## Cross-target determinism
 
 `./scripts/compare-targets.sh` is the verification the numeric model exists for.
-Five gates, each localising a different failure:
+Six gates, each localising a different failure:
 
 1. Build `nomo-wasm` for `wasm32-unknown-unknown`.
 2. `scripts/check-wasm.mjs` — the artifact imports nothing and enables no SIMD.
@@ -763,6 +766,13 @@ Five gates, each localising a different failure:
    oracle checked. **115 worksheets currently agree** — the 114 fetched corpora
    plus a fixture written into the script, so the gate still runs on a machine
    that has never fetched them.
+6. `scripts/compare-html.mjs` — `nomo_render_html` returns the page
+   `nomo html --mathml --font-url` writes, byte for byte, for every example.
+   The export exists for a server that *shows* stored worksheets: gserver's
+   plugin (`golib/formats/nomo`) runs this module under wazero and answers a
+   request for `beam.nomo` with the typeset page. No golden snapshot covers
+   the document chrome — stylesheet, title, `@font-face` — so this gate does.
+   The plugin's own test holds wazero to the native CLI the same way.
 
 Native == snapshots and WASM == snapshots together give native == WASM byte for
 byte. **All 9 worksheets currently agree**, transcendentals and float residue

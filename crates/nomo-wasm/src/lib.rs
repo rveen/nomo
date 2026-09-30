@@ -217,6 +217,57 @@ pub unsafe extern "C" fn nomo_document_free(handle: *mut nomo_core::Sheet) {
     }
 }
 
+// ---- a worksheet as a page ------------------------------------------------
+//
+// For a host that shows a stored worksheet rather than edits one: a file server
+// answering a request for `beam.nomo` with the page `nomo html` would have
+// written. It runs this module rather than the CLI so the page it serves is the
+// one the editor's pane draws, bit for bit, from the same artifact — a second
+// build of the engine on the server would be a second thing to keep in step.
+
+/// Evaluate a worksheet and return it as a standalone HTML document.
+///
+/// Exactly what `nomo html` writes for the same source, title and options:
+/// `mathml` non-zero typesets the mathematics, and a non-empty `font_ptr`/
+/// `font_len` names the URL the math font is served at, as `--font-url` does.
+/// An empty one leaves the named stack, which fetches nothing.
+///
+/// A worksheet with errors still comes back as a document — the diagnostics are
+/// drawn in it. Null means the arguments were not UTF-8.
+///
+/// # Safety
+///
+/// Each pointer must address at least its length in readable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn nomo_render_html(
+    src_ptr: *const u8,
+    src_len: usize,
+    title_ptr: *const u8,
+    title_len: usize,
+    font_ptr: *const u8,
+    font_len: usize,
+    mathml: u32,
+) -> *mut u8 {
+    let (Some(source), Some(title), Some(font)) = (
+        str_from(src_ptr, src_len),
+        str_from(title_ptr, title_len),
+        str_from(font_ptr, font_len),
+    ) else {
+        return std::ptr::null_mut();
+    };
+    let sheet = nomo_core::Sheet::new(source);
+    let opts = nomo_core::RenderOptions {
+        mathml: mathml != 0,
+        font: if font.is_empty() {
+            nomo_core::MathFont::Named
+        } else {
+            nomo_core::MathFont::Url(font.to_string())
+        },
+        ..Default::default()
+    };
+    into_buffer(nomo_core::render::html::render(&sheet, &opts, title))
+}
+
 // ---- importing an SMath worksheet ---------------------------------------
 //
 // The alternative considered was a small server: an upload endpoint, the
@@ -472,6 +523,43 @@ mod tests {
         // Freeing it must be harmless.
         // SAFETY: null with zero length is the documented no-op.
         unsafe { nomo_free(std::ptr::null_mut(), 0) };
+    }
+
+    #[test]
+    fn a_rendered_page_is_what_nomo_html_writes() {
+        let source = "r = 5 cm\nh = 12 cm\nV = r^2*h/3\n";
+        let (title, font) = ("cone", "fonts/math.woff2");
+        // SAFETY: every slice outlives the call.
+        let buffer = unsafe {
+            nomo_render_html(
+                source.as_ptr(),
+                source.len(),
+                title.as_ptr(),
+                title.len(),
+                font.as_ptr(),
+                font.len(),
+                1,
+            )
+        };
+        assert!(!buffer.is_null());
+        // SAFETY: the buffer is the layout `into_buffer` wrote.
+        let page = unsafe {
+            let mut header = [0u8; HEADER];
+            std::ptr::copy_nonoverlapping(buffer, header.as_mut_ptr(), HEADER);
+            let len = u32::from_le_bytes(header) as usize;
+            let bytes = std::slice::from_raw_parts(buffer.add(HEADER), len).to_vec();
+            nomo_free(buffer, HEADER + len);
+            String::from_utf8(bytes).expect("the page is UTF-8")
+        };
+        let opts = nomo_core::RenderOptions {
+            mathml: true,
+            font: nomo_core::MathFont::Url(font.to_string()),
+            ..Default::default()
+        };
+        let expected =
+            nomo_core::render::html::render(&nomo_core::Sheet::new(source), &opts, title);
+        assert_eq!(page, expected);
+        assert!(page.contains("<math"), "not typeset:\n{page}");
     }
 
     #[test]

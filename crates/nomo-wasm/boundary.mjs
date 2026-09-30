@@ -31,6 +31,7 @@ export function bind(exports) {
     nomo_document_update,
     nomo_document_update_as,
     nomo_document_free,
+    nomo_render_html,
     nomo_for_saving,
     nomo_attach_image,
     nomo_smath_import,
@@ -186,6 +187,25 @@ export function bind(exports) {
     snapshot(name, source) {
       return withText(name, (n) =>
         withText(source, (s) => read(nomo_snapshot(n.ptr, n.len, s.ptr, s.len))),
+      );
+    },
+
+    /**
+     * A worksheet as the standalone page `nomo html` writes. Stateless.
+     *
+     * `fontUrl` is what `--font-url` takes; empty leaves the named stack. This
+     * is the call a server makes to show a stored worksheet, and it is here so
+     * `compare-html.mjs` can hold it to the native CLI.
+     */
+    renderHtml(source, title, { mathml = false, fontUrl = "" } = {}) {
+      return withText(source, (s) =>
+        withText(title, (t) =>
+          withText(fontUrl, (f) =>
+            read(
+              nomo_render_html(s.ptr, s.len, t.ptr, t.len, f.ptr, f.len, mathml ? 1 : 0),
+            ),
+          ),
+        ),
       );
     },
 

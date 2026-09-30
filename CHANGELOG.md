@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.7.0 — a stored worksheet, shown by a server
+
+### Added
+
+- **`nomo_render_html`, a WebAssembly export that returns a worksheet as a
+  page.** Given a source, a title, a font URL and a typeset flag, it returns the
+  standalone document `nomo html` writes with the same options, byte for byte.
+  It is for a host that *shows* stored worksheets rather than edits them:
+  gserver's plugin (`golib/formats/nomo`) runs this module under wazero and
+  answers a request for `beam.nomo` with the page the editor's pane draws with
+  Typeset on. Running the module rather than a second build of the engine
+  means the page served is the artifact the browser runs, and the server needs
+  neither a binary on its path nor cgo. It computes nothing of record.
+
+  The module still imports nothing.
+
+- **A sixth cross-target gate, `scripts/compare-html.mjs`.** The export's page
+  against `nomo html --mathml --font-url` for every example; 29 of 29 agree. No
+  golden snapshot covers the document chrome — stylesheet, title, `@font-face`
+  — which is exactly what the new export is responsible for, so it gets a gate
+  of its own. `compare-targets.sh` runs it.
+
+Nothing a worksheet computes has moved: 29 golden snapshots and the corpus
+baselines are unchanged. The editor and the binaries are unchanged.
+
 ## 0.6.0 — a picture pasted becomes a figure
 
 ### Added

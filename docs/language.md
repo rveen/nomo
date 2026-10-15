@@ -466,6 +466,93 @@ The ohm is `Ω` or `ohm`. `Ω` may be typed as either the Greek capital omega
 them as the same character, so both are accepted and results are always written
 with the Greek letter: `4.7 kΩ` is the same unit however it was typed.
 
+### Every built-in unit
+
+This is the whole table; a test in `nomo-core` checks it against the engine's
+own list in both directions, so a unit cannot be added without appearing here.
+**Prefixes** says whether an SI prefix may be attached. The imperial conversions
+are exact by definition — `1 in = 0.0254 m`, `1 lb = 0.45359237 kg`,
+`1 lbf = 4.4482216152605 N` — and the other imperial units are built from them.
+
+| Unit | Name | Quantity | Equal to | Prefixes |
+|---|---|---|---|---|
+| `m` | metre | length | SI base | yes |
+| `g` | gram | mass | 10⁻³ kg | yes |
+| `kg` | kilogram | mass | SI base | no |
+| `s` | second | time | SI base | yes |
+| `A` | ampere | current | SI base | yes |
+| `K` | kelvin | temperature | SI base | yes |
+| `mol` | mole | amount of substance | SI base | yes |
+| `cd` | candela | luminous intensity | SI base | yes |
+| `N` | newton | force | kg·m/s² | yes |
+| `Pa` | pascal | pressure, stress | N/m² | yes |
+| `J` | joule | energy | N·m | yes |
+| `W` | watt | power | J/s | yes |
+| `VA` | volt-ampere | apparent power | W | yes |
+| `var` | volt-ampere reactive | reactive power | W | yes |
+| `Hz` | hertz | frequency | 1/s | yes |
+| `C` | coulomb | charge | A·s | yes |
+| `V` | volt | voltage | W/A | yes |
+| `Ω` | ohm | resistance | V/A | yes |
+| `ohm` | ohm | resistance | V/A | yes |
+| `S` | siemens | conductance | A/V | yes |
+| `F` | farad | capacitance | C/V | yes |
+| `H` | henry | inductance | Wb/A | yes |
+| `Wb` | weber | magnetic flux | V·s | yes |
+| `T` | tesla | flux density | Wb/m² | yes |
+| `L` | litre | volume | 10⁻³ m³ | yes |
+| `bar` | bar | pressure | 10⁵ Pa | yes |
+| `sec` | second | time | s | no |
+| `min` | minute | time | 60 s | no |
+| `h` | hour | time | 3600 s | no |
+| `hr` | hour | time | 3600 s | no |
+| `day` | day | time | 86400 s | no |
+| `in` | inch | length | 0.0254 m | no |
+| `ft` | foot | length | 0.3048 m | no |
+| `yd` | yard | length | 0.9144 m | no |
+| `mi` | mile | length | 1609.344 m | no |
+| `mil` | thousandth of an inch | length | 25.4 µm | no |
+| `lb` | pound | mass | 0.45359237 kg | no |
+| `oz` | ounce | mass | 0.028349523125 kg | no |
+| `slug` | slug | mass | lbf·s²/ft ≈ 14.5939 kg | no |
+| `lbf` | pound-force | force | 4.4482216152605 N | no |
+| `kip` | kip | force | 1000 lbf | no |
+| `psi` | pound per square inch | pressure | lbf/in² ≈ 6894.76 Pa | no |
+| `ksi` | kilo-psi | pressure | 1000 psi | no |
+| `atm` | standard atmosphere | pressure | 101325 Pa | no |
+| `BTU` | British thermal unit (IT) | energy | 1055.05585262 J | no |
+| `gal` | US gallon | volume | 0.003785411784 m³ | no |
+| `rad` | radian | angle | 1 (dimensionless) | yes |
+| `°` | degree | angle | π/180 | no |
+| `deg` | degree | angle | π/180 | no |
+| `%` | percent | ratio | 0.01 | no |
+| `°C` | degree Celsius | temperature | K − 273.15 | no |
+| `°F` | degree Fahrenheit | temperature | (K × 9/5) − 459.67 | no |
+| `°R` | degree Rankine | temperature | 5/9 K | no |
+
+`°C` and `°F` are the two affine scales: they carry an offset as well as a
+factor, which is why neither takes a prefix. `°R` is absolute, so it is an
+ordinary linear unit despite being imperial.
+
+The prefixes, which attach to every unit marked *yes* above:
+
+| Prefix | Name | Factor | | Prefix | Name | Factor |
+|---|---|---|---|---|---|---|
+| `Y` | yotta | 10²⁴ | | `d` | deci | 10⁻¹ |
+| `Z` | zetta | 10²¹ | | `c` | centi | 10⁻² |
+| `E` | exa | 10¹⁸ | | `m` | milli | 10⁻³ |
+| `P` | peta | 10¹⁵ | | `µ`, `u` | micro | 10⁻⁶ |
+| `T` | tera | 10¹² | | `n` | nano | 10⁻⁹ |
+| `G` | giga | 10⁹ | | `p` | pico | 10⁻¹² |
+| `M` | mega | 10⁶ | | `f` | femto | 10⁻¹⁵ |
+| `k` | kilo | 10³ | | `a` | atto | 10⁻¹⁸ |
+| `h` | hecto | 10² | | `z` | zepto | 10⁻²¹ |
+| `da` | deca | 10¹ | | `y` | yocto | 10⁻²⁴ |
+
+`u` is there for keyboards without `µ`. An exact unit name always beats a
+prefixed reading, so `h` alone is an hour, `T` alone a tesla, and `min` a
+minute; `hm` is still a hectometre and `Tm` a terametre.
+
 ### Declaring units
 
 ```nomo

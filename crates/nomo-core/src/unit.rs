@@ -376,6 +376,7 @@ impl UnitTable {
 #[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
+    use std::collections::BTreeSet;
 
     fn t() -> UnitTable {
         UnitTable::new()
@@ -537,5 +538,59 @@ mod tests {
             .filter(|s| !table.contains(s))
             .collect();
         assert!(missing.is_empty(), "unresolved: {missing:?}");
+    }
+
+    /// The "Every built-in unit" section of `docs/language.md`.
+    fn section() -> &'static str {
+        let doc = include_str!("../../../docs/language.md");
+        let start = doc.find("### Every built-in unit").expect("section");
+        let section = &doc[start..];
+        &section[..section[4..].find("\n### ").unwrap() + 4]
+    }
+
+    /// The section's two tables, each as the backticked symbols in its symbol
+    /// columns.
+    fn documented() -> (BTreeSet<String>, BTreeSet<String>) {
+        let tables: Vec<&str> = section()
+            .split("\n\n")
+            .filter(|b| b.starts_with('|'))
+            .collect();
+        assert_eq!(tables.len(), 2, "a unit table and a prefix table");
+        // Every cell of a symbol column, split on commas: `µ`, `u` is two.
+        let symbols = |table: &str, columns: &[usize]| {
+            let mut out = BTreeSet::new();
+            for row in table.lines().skip(2) {
+                let cells: Vec<&str> = row.split('|').map(str::trim).collect();
+                for &c in columns {
+                    for sym in cells[c + 1].split(", ").filter(|x| !x.is_empty()) {
+                        out.insert(sym.trim_matches('`').to_string());
+                    }
+                }
+            }
+            out
+        };
+        (symbols(tables[0], &[0]), symbols(tables[1], &[0, 4]))
+    }
+
+    #[test]
+    fn the_language_reference_lists_every_unit() {
+        // Both directions: a unit missing from the page is the gap this table
+        // exists to close, and a unit on the page the engine does not know is
+        // a promise the engine does not keep.
+        let (units, prefixes) = documented();
+        let built_in: BTreeSet<String> = builtin_rows().iter().map(|r| r.0.to_string()).collect();
+        assert_eq!(units, built_in);
+        let built_in: BTreeSet<String> = PREFIXES.iter().map(|p| p.0.to_string()).collect();
+        assert_eq!(prefixes, built_in);
+    }
+
+    #[test]
+    fn the_language_reference_says_which_units_take_prefixes() {
+        for (symbol, _, _, _, prefixable) in builtin_rows() {
+            let row = format!("| `{symbol}` |");
+            let line = section().lines().find(|l| l.starts_with(&row)).unwrap();
+            let says = line.trim_end_matches(" |").rsplit("| ").next().unwrap();
+            assert_eq!(says == "yes", prefixable, "{symbol}: the page says {says}");
+        }
     }
 }

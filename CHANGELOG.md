@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.1 — the ohm sign is the ohm
+
+### Fixed
+
+- **`Ω` is accepted as either character that draws it.** The ohm resolved
+  only as the Greek capital omega (U+03A9); the ohm sign (U+2126) looks the
+  same, is what some keyboards and character maps type, and was reported as an
+  undefined unit. Unicode makes the two canonically equivalent, so unit lookup
+  now reads one as the other: `4.7 kΩ` works however it was typed, prefixes
+  included, and results always print the Greek letter.
+
+Nothing a worksheet computes has moved: 29 golden snapshots and the corpus
+baselines are unchanged.
+
 ## 0.7.0 — a stored worksheet, shown by a server
 
 ### Added

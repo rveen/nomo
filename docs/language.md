@@ -461,6 +461,11 @@ than a milli-inch, `cd` is a candela rather than a centi-day, and `T` is a tesla
 electrical worksheets distinguish them by name, and the SMath corpus declares
 exactly these two.
 
+The ohm is `Ω` or `ohm`. `Ω` may be typed as either the Greek capital omega
+(U+03A9) or the ohm sign (U+2126). The two look the same, and Unicode treats
+them as the same character, so both are accepted and results are always written
+with the Greek letter: `4.7 kΩ` is the same unit however it was typed.
+
 ### Declaring units
 
 ```nomo

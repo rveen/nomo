@@ -109,6 +109,9 @@ fn d(l: i32, m: i32, t: i32, i: i32, k: i32, n: i32, j: i32) -> Dimension {
     Dimension::from_exponents(dims(l, m, t, i, k, n, j))
 }
 
+/// U+2126 OHM SIGN, which [`UnitTable::resolve`] reads as `Ω` (U+03A9).
+const OHM_SIGN: char = '\u{2126}';
+
 /// SI prefixes, longest symbol first so that `da` matches before `d`.
 const PREFIXES: &[(&str, f64)] = &[
     ("da", 1e1),
@@ -290,7 +293,21 @@ impl UnitTable {
     ///
     /// Exact matches always win, which is what keeps `min` a minute rather than
     /// a milli-inch, and `cd` a candela rather than a centi-day.
+    ///
+    /// The ohm sign U+2126 is read as the Greek capital omega U+03A9 it is
+    /// canonically equivalent to. They look identical, some keyboards and
+    /// character maps produce the ohm sign, and a worksheet that rejected `kΩ`
+    /// over a code point nobody can see would be wrong in a way no one could
+    /// diagnose. Normalising here rather than adding a row keeps one spelling in
+    /// results and lets prefixes work on both.
     pub fn resolve(&self, name: &str) -> Result<Unit, UnitError> {
+        let normalised;
+        let name = if name.contains(OHM_SIGN) {
+            normalised = name.replace(OHM_SIGN, "Ω");
+            normalised.as_str()
+        } else {
+            name
+        };
         if let Some(u) = self.units.get(name) {
             return Ok(u.clone());
         }
@@ -391,6 +408,16 @@ mod tests {
         assert_eq!(t().resolve("T").unwrap().dim, d(0, 1, -2, -1, 0, 0, 0));
         // `h` is an hour.
         assert_eq!(t().resolve("h").unwrap().factor, 3600.0);
+    }
+
+    #[test]
+    fn the_ohm_sign_is_the_ohm() {
+        let ohm = t().resolve("\u{2126}").unwrap();
+        assert_eq!(ohm.symbol, "Ω");
+        assert_eq!(ohm.dim, t().resolve("ohm").unwrap().dim);
+        let kohm = t().resolve("k\u{2126}").unwrap();
+        assert_eq!(kohm.symbol, "kΩ");
+        assert_eq!(kohm.factor, 1e3);
     }
 
     #[test]

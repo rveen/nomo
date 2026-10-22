@@ -472,6 +472,139 @@ pub fn vocabulary_json() -> String {
     out
 }
 
+/// The format of [`units_json`], raised whenever a consumer would have to read
+/// it differently.
+pub const UNITS_FORMAT: u32 = 1;
+
+/// The unit table as exact data, for a program that must agree with Nomo about
+/// what a unit means without running Nomo.
+///
+/// [`vocabulary_json`] is for an editor completing names; this is for another
+/// implementation of the same units — G1 stores quantities as decimals and
+/// computes with them exactly, so it needs each factor as the number it is
+/// defined to be, not as the nearest binary64. Each factor is given as
+/// `{"num", "den", "pi"}`, meaning num/den·π^pi in lowest terms, with the
+/// integers as decimal strings because 10²⁴ fits no JSON number exactly; and
+/// beside it the `f64` this engine computes with, in Rust's shortest
+/// round-trip form, so a consumer can also check it agrees with the engine.
+///
+/// `resolutions` is the prefix rules as test vectors rather than prose: every
+/// prefix in front of every built-in symbol, as [`UnitTable::resolve`] reads
+/// it. That covers the rules that are easy to get wrong — `min` is a minute,
+/// `kin` is nothing, `k°C` is a named mistake, `kg` is the kilogram itself —
+/// without a list someone has to remember to extend. `docs/units.json` is this
+/// output, held to the engine by a test.
+///
+/// [`UnitTable::resolve`]: crate::UnitTable::resolve
+pub fn units_json() -> String {
+    use crate::unit::{UnitError, UnitTable, PREFIXES};
+    use std::collections::BTreeSet;
+
+    let table = UnitTable::new();
+    let mut out = format!("{{\"format\":{UNITS_FORMAT},\n\"bases\":[");
+    for (i, b) in crate::dim::BASE_SYMBOLS.iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        push_string(&mut out, b);
+    }
+    out.push_str("],\n\"prefixes\":[");
+    for (i, (symbol, _, exp10)) in PREFIXES.iter().enumerate() {
+        out.push_str(if i > 0 { ",\n" } else { "\n" });
+        out.push_str("{\"symbol\":");
+        push_string(&mut out, symbol);
+        out.push_str(",\"factor\":");
+        push_exact(&mut out, crate::unit::Exact::dec(1, *exp10));
+        out.push('}');
+    }
+    out.push_str("],\n\"units\":[");
+    for (i, symbol) in table.symbols().enumerate() {
+        out.push_str(if i > 0 { ",\n" } else { "\n" });
+        // A built-in symbol always resolves, to itself.
+        if let Ok(unit) = table.resolve(symbol) {
+            push_unit(&mut out, &unit);
+        }
+    }
+    out.push_str("],\n\"resolutions\":[");
+    let mut seen = BTreeSet::new();
+    let mut first = true;
+    // The ohm sign is read as the omega it is canonically equivalent to, a rule
+    // no prefix-by-symbol product would show; three names state it.
+    let names = PREFIXES
+        .iter()
+        .flat_map(|(prefix, _, _)| {
+            table
+                .symbols()
+                .map(move |symbol| format!("{prefix}{symbol}"))
+        })
+        .chain(["\u{2126}", "k\u{2126}", "M\u{2126}"].map(String::from));
+    for name in names {
+        if !seen.insert(name.clone()) {
+            continue;
+        }
+        out.push_str(if first { "\n" } else { ",\n" });
+        first = false;
+        out.push_str("{\"name\":");
+        push_string(&mut out, &name);
+        match table.resolve(&name) {
+            Ok(unit) => {
+                out.push_str(",\"unit\":");
+                push_unit(&mut out, &unit);
+            }
+            Err(e) => {
+                let code = match e {
+                    UnitError::NotPrefixable(_) => "not_prefixable",
+                    _ => "unknown_unit",
+                };
+                out.push_str(",\"error\":");
+                push_string(&mut out, code);
+            }
+        }
+        out.push('}');
+    }
+    out.push_str("\n]}");
+    out
+}
+
+/// One unit of [`units_json`]: what it is called, what it is exactly, what the
+/// engine computes it as, its dimension and whether it takes a prefix.
+fn push_unit(out: &mut String, unit: &crate::Unit) {
+    out.push_str("{\"symbol\":");
+    push_string(out, &unit.symbol);
+    out.push_str(",\"factor\":");
+    match unit.exact {
+        Some(e) => push_exact(out, e.factor),
+        None => out.push_str("null"),
+    }
+    out.push_str(&format!(",\"f64\":\"{:e}\"", unit.factor));
+    out.push_str(",\"offset\":");
+    match (unit.offset, unit.exact.and_then(|e| e.offset)) {
+        (Some(o), Some(e)) => {
+            out.push_str("{\"exact\":");
+            push_exact(out, e);
+            out.push_str(&format!(",\"f64\":\"{o:e}\"}}"));
+        }
+        _ => out.push_str("null"),
+    }
+    out.push_str(",\"dimension\":[");
+    for (i, e) in unit.dim.exponents().iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        push_string(out, &e.to_string());
+    }
+    out.push_str(&format!("],\"prefixable\":{}}}", unit.prefixable));
+}
+
+fn push_exact(out: &mut String, e: crate::unit::Exact) {
+    out.push_str(&format!(
+        "{{\"num\":\"{}\",\"den\":\"{}\",\"pi\":{}}}",
+        e.numerator(),
+        e.denominator(),
+        e.pi_exponent()
+    ));
+}
+
 /// The reserved words, which `docs/language.md` lists and the lexer enforces.
 const KEYWORDS: &[&str] = &[
     "unit", "fn", "global", "check", "use", "digits", "axis", "label", "if", "then", "else", "and",
@@ -676,6 +809,18 @@ pub fn push_string(out: &mut String, text: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_published_unit_table_is_the_engines() {
+        // Other programs read docs/units.json instead of running the engine, so
+        // a unit that changes here and not there is a disagreement nobody would
+        // see until two systems gave one quantity two values.
+        let published = include_str!("../../../docs/units.json");
+        assert!(
+            published.trim_end() == units_json(),
+            "docs/units.json is stale: `cargo run -p nomo-cli -- units > docs/units.json`"
+        );
+    }
 
     fn classes(source: &str) -> Vec<(String, &'static str)> {
         let sheet = Sheet::new(source);

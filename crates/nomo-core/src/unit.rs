@@ -83,6 +83,125 @@ pub struct Unit {
     pub dim: Dimension,
     /// Whether an SI prefix may be attached.
     pub prefixable: bool,
+    /// What `factor` and `offset` are exactly. `None` for a declared unit, whose
+    /// factor was computed in `f64` by the worksheet that declared it.
+    pub exact: Option<Definition>,
+}
+
+/// A built-in unit's factor and offset as exact numbers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Definition {
+    pub factor: Exact,
+    pub offset: Option<Exact>,
+}
+
+/// An exact constant: `num / den · π^pi`, in lowest terms with `den > 0`.
+///
+/// The engine computes in `f64`, and this is not used by evaluation at all. It
+/// is what each constant of the table *means*, for a host that must compute
+/// exactly: a store that keeps decimals and rounds once cannot take `0.0254`
+/// back out of the nearest binary64. Every factor in the table is rational but
+/// the degree's, which is why π has an exponent of its own rather than a
+/// rational approximation. `i128` holds every built-in factor times every
+/// prefix with room to spare: the largest, a yotta-bar, is 10²⁹.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Exact {
+    num: i128,
+    den: i128,
+    pi: i32,
+}
+
+fn gcd128(a: i128, b: i128) -> i128 {
+    let (mut a, mut b) = (a.abs(), b.abs());
+    while b != 0 {
+        let t = b;
+        b = a % b;
+        a = t;
+    }
+    a.max(1)
+}
+
+impl Exact {
+    pub const ONE: Exact = Exact {
+        num: 1,
+        den: 1,
+        pi: 0,
+    };
+
+    pub const fn int(n: i128) -> Exact {
+        Exact {
+            num: n,
+            den: 1,
+            pi: 0,
+        }
+    }
+
+    pub fn ratio(num: i128, den: i128) -> Exact {
+        assert!(den != 0, "exact constant with zero denominator");
+        let sign = if den < 0 { -1 } else { 1 };
+        let g = gcd128(num, den);
+        Exact {
+            num: sign * num / g,
+            den: sign * den / g,
+            pi: 0,
+        }
+    }
+
+    /// A decimal as its digits and a power of ten: `dec(254, -4)` is 0.0254.
+    /// Written this way so each definition reads as the number it defines.
+    pub fn dec(digits: i128, exp10: i32) -> Exact {
+        let p = 10i128.pow(exp10.unsigned_abs());
+        if exp10 < 0 {
+            Exact::ratio(digits, p)
+        } else {
+            Exact::int(digits * p)
+        }
+    }
+
+    /// This constant times π^k.
+    pub fn times_pi(self, k: i32) -> Exact {
+        Exact {
+            pi: self.pi + k,
+            ..self
+        }
+    }
+
+    pub fn mul(self, other: Exact) -> Exact {
+        // Cross-reduce first, so intermediate products stay as small as the
+        // result: `ksi` is a thousand pounds-force over a square inch.
+        let g1 = gcd128(self.num, other.den);
+        let g2 = gcd128(other.num, self.den);
+        let num = (self.num / g1).checked_mul(other.num / g2);
+        let den = (self.den / g2).checked_mul(other.den / g1);
+        let (Some(num), Some(den)) = (num, den) else {
+            panic!("exact constant out of range");
+        };
+        Exact {
+            pi: self.pi + other.pi,
+            ..Exact::ratio(num, den)
+        }
+    }
+
+    pub fn div(self, other: Exact) -> Exact {
+        assert!(other.num != 0, "exact constant divided by zero");
+        self.mul(Exact {
+            num: other.den,
+            den: other.num,
+            pi: -other.pi,
+        })
+    }
+
+    pub fn numerator(self) -> i128 {
+        self.num
+    }
+
+    pub fn denominator(self) -> i128 {
+        self.den
+    }
+
+    pub fn pi_exponent(self) -> i32 {
+        self.pi
+    }
 }
 
 impl Unit {
@@ -112,41 +231,61 @@ fn d(l: i32, m: i32, t: i32, i: i32, k: i32, n: i32, j: i32) -> Dimension {
 /// U+2126 OHM SIGN, which [`UnitTable::resolve`] reads as `Ω` (U+03A9).
 const OHM_SIGN: char = '\u{2126}';
 
-/// SI prefixes, longest symbol first so that `da` matches before `d`.
-const PREFIXES: &[(&str, f64)] = &[
-    ("da", 1e1),
-    ("Y", 1e24),
-    ("Z", 1e21),
-    ("E", 1e18),
-    ("P", 1e15),
-    ("T", 1e12),
-    ("G", 1e9),
-    ("M", 1e6),
-    ("k", 1e3),
-    ("h", 1e2),
-    ("d", 1e-1),
-    ("c", 1e-2),
-    ("m", 1e-3),
-    ("µ", 1e-6),
-    ("u", 1e-6),
-    ("n", 1e-9),
-    ("p", 1e-12),
-    ("f", 1e-15),
-    ("a", 1e-18),
-    ("z", 1e-21),
-    ("y", 1e-24),
+/// SI prefixes, longest symbol first so that `da` matches before `d`: the
+/// symbol, its factor, and that factor's power of ten, for [`Exact`].
+pub(crate) const PREFIXES: &[(&str, f64, i32)] = &[
+    ("da", 1e1, 1),
+    ("Y", 1e24, 24),
+    ("Z", 1e21, 21),
+    ("E", 1e18, 18),
+    ("P", 1e15, 15),
+    ("T", 1e12, 12),
+    ("G", 1e9, 9),
+    ("M", 1e6, 6),
+    ("k", 1e3, 3),
+    ("h", 1e2, 2),
+    ("d", 1e-1, -1),
+    ("c", 1e-2, -2),
+    ("m", 1e-3, -3),
+    ("µ", 1e-6, -6),
+    ("u", 1e-6, -6),
+    ("n", 1e-9, -9),
+    ("p", 1e-12, -12),
+    ("f", 1e-15, -15),
+    ("a", 1e-18, -18),
+    ("z", 1e-21, -21),
+    ("y", 1e-24, -24),
 ];
 
-/// `(symbol, factor, offset, dimension, prefixable)`
-type Row = (&'static str, f64, Option<f64>, Dimension, bool);
+/// `(symbol, factor, offset, dimension, prefixable, exact factor and offset)`
+type Row = (&'static str, f64, Option<f64>, Dimension, bool, Definition);
+
+/// A linear unit's exact definition.
+fn linear(factor: Exact) -> Definition {
+    Definition {
+        factor,
+        offset: None,
+    }
+}
 
 fn builtin_rows() -> Vec<Row> {
     // Exact conversion constants, by definition:
     //   1 in  = 0.0254 m           1 lb  = 0.45359237 kg
     //   1 lbf = 4.4482216152605 N  1 BTU = 1055.05585262 J (IT)
+    //
+    // Each row carries its factor twice: as the `f64` the engine computes with,
+    // and as the exact number that `f64` stands for. The `f64`s are computed as
+    // they always were, so that no result moves; a test holds each to its exact
+    // value within two units in the last place.
     let inch = 0.0254_f64;
     let lbf = 4.4482216152605_f64;
     let psi = lbf / (inch * inch);
+    let exact_inch = Exact::dec(254, -4);
+    let exact_ft = Exact::dec(3048, -4);
+    let exact_lbf = Exact::dec(44482216152605, -13);
+    let exact_psi = exact_lbf.div(exact_inch.mul(exact_inch));
+    let one = linear(Exact::ONE);
+    let exact_degree = linear(Exact::ratio(1, 180).times_pi(1));
 
     let length = d(1, 0, 0, 0, 0, 0, 0);
     let mass = d(0, 1, 0, 0, 0, 0, 0);
@@ -169,71 +308,196 @@ fn builtin_rows() -> Vec<Row> {
 
     vec![
         // ---- SI base -----------------------------------------------------
-        ("m", 1.0, None, length, true),
-        ("g", 1e-3, None, mass, true),
-        ("kg", 1.0, None, mass, false),
-        ("s", 1.0, None, time, true),
-        ("A", 1.0, None, current, true),
-        ("K", 1.0, None, temp, true),
-        ("mol", 1.0, None, amount, true),
-        ("cd", 1.0, None, luminous, true),
+        ("m", 1.0, None, length, true, one),
+        ("g", 1e-3, None, mass, true, linear(Exact::dec(1, -3))),
+        ("kg", 1.0, None, mass, false, one),
+        ("s", 1.0, None, time, true, one),
+        ("A", 1.0, None, current, true, one),
+        ("K", 1.0, None, temp, true, one),
+        ("mol", 1.0, None, amount, true, one),
+        ("cd", 1.0, None, luminous, true, one),
         // ---- SI derived --------------------------------------------------
-        ("N", 1.0, None, force, true),
-        ("Pa", 1.0, None, pressure, true),
-        ("J", 1.0, None, energy, true),
-        ("W", 1.0, None, power, true),
-        ("Hz", 1.0, None, frequency, true),
-        ("C", 1.0, None, charge, true),
-        ("V", 1.0, None, voltage, true),
-        ("Ω", 1.0, None, resistance, true),
-        ("ohm", 1.0, None, resistance, true),
-        ("S", 1.0, None, d(-2, -1, 3, 2, 0, 0, 0), true),
-        ("F", 1.0, None, d(-2, -1, 4, 2, 0, 0, 0), true),
-        ("H", 1.0, None, d(2, 1, -2, -2, 0, 0, 0), true),
-        ("Wb", 1.0, None, d(2, 1, -2, -1, 0, 0, 0), true),
-        ("T", 1.0, None, d(0, 1, -2, -1, 0, 0, 0), true),
-        ("L", 1e-3, None, volume, true),
+        ("N", 1.0, None, force, true, one),
+        ("Pa", 1.0, None, pressure, true, one),
+        ("J", 1.0, None, energy, true, one),
+        ("W", 1.0, None, power, true, one),
+        ("Hz", 1.0, None, frequency, true, one),
+        ("C", 1.0, None, charge, true, one),
+        ("V", 1.0, None, voltage, true, one),
+        ("Ω", 1.0, None, resistance, true, one),
+        ("ohm", 1.0, None, resistance, true, one),
+        ("S", 1.0, None, d(-2, -1, 3, 2, 0, 0, 0), true, one),
+        ("F", 1.0, None, d(-2, -1, 4, 2, 0, 0, 0), true, one),
+        ("H", 1.0, None, d(2, 1, -2, -2, 0, 0, 0), true, one),
+        ("Wb", 1.0, None, d(2, 1, -2, -1, 0, 0, 0), true, one),
+        ("T", 1.0, None, d(0, 1, -2, -1, 0, 0, 0), true, one),
+        ("L", 1e-3, None, volume, true, linear(Exact::dec(1, -3))),
         // Apparent and reactive power. Dimensionally watts; kept as separate
         // names because electrical worksheets distinguish them, and the SMath
         // corpus declares exactly these two (`VA : W`, `var : W`).
-        ("VA", 1.0, None, power, true),
-        ("var", 1.0, None, power, true),
+        ("VA", 1.0, None, power, true, one),
+        ("var", 1.0, None, power, true, one),
         // ---- time --------------------------------------------------------
-        ("sec", 1.0, None, time, false),
-        ("min", 60.0, None, time, false),
-        ("h", 3600.0, None, time, false),
-        ("hr", 3600.0, None, time, false),
-        ("day", 86400.0, None, time, false),
+        ("sec", 1.0, None, time, false, one),
+        ("min", 60.0, None, time, false, linear(Exact::int(60))),
+        ("h", 3600.0, None, time, false, linear(Exact::int(3600))),
+        ("hr", 3600.0, None, time, false, linear(Exact::int(3600))),
+        ("day", 86400.0, None, time, false, linear(Exact::int(86400))),
         // ---- imperial and US customary ------------------------------------
-        ("in", inch, None, length, false),
-        ("ft", 0.3048, None, length, false),
-        ("yd", 0.9144, None, length, false),
-        ("mi", 1609.344, None, length, false),
-        ("mil", inch / 1000.0, None, length, false),
-        ("lb", 0.45359237, None, mass, false),
-        ("oz", 0.028349523125, None, mass, false),
-        ("slug", lbf / 0.3048, None, mass, false),
-        ("lbf", lbf, None, force, false),
-        ("kip", 1000.0 * lbf, None, force, false),
-        ("psi", psi, None, pressure, false),
-        ("ksi", 1000.0 * psi, None, pressure, false),
-        ("bar", 1e5, None, pressure, true),
-        ("atm", 101325.0, None, pressure, false),
-        ("BTU", 1055.05585262, None, energy, false),
-        ("gal", 0.003785411784, None, volume, false),
+        ("in", inch, None, length, false, linear(exact_inch)),
+        ("ft", 0.3048, None, length, false, linear(exact_ft)),
+        (
+            "yd",
+            0.9144,
+            None,
+            length,
+            false,
+            linear(Exact::dec(9144, -4)),
+        ),
+        (
+            "mi",
+            1609.344,
+            None,
+            length,
+            false,
+            linear(Exact::dec(1609344, -3)),
+        ),
+        (
+            "mil",
+            inch / 1000.0,
+            None,
+            length,
+            false,
+            linear(exact_inch.div(Exact::int(1000))),
+        ),
+        (
+            "lb",
+            0.45359237,
+            None,
+            mass,
+            false,
+            linear(Exact::dec(45359237, -8)),
+        ),
+        (
+            "oz",
+            0.028349523125,
+            None,
+            mass,
+            false,
+            linear(Exact::dec(28349523125, -12)),
+        ),
+        (
+            "slug",
+            lbf / 0.3048,
+            None,
+            mass,
+            false,
+            linear(exact_lbf.div(exact_ft)),
+        ),
+        ("lbf", lbf, None, force, false, linear(exact_lbf)),
+        (
+            "kip",
+            1000.0 * lbf,
+            None,
+            force,
+            false,
+            linear(Exact::int(1000).mul(exact_lbf)),
+        ),
+        ("psi", psi, None, pressure, false, linear(exact_psi)),
+        (
+            "ksi",
+            1000.0 * psi,
+            None,
+            pressure,
+            false,
+            linear(Exact::int(1000).mul(exact_psi)),
+        ),
+        (
+            "bar",
+            1e5,
+            None,
+            pressure,
+            true,
+            linear(Exact::int(100_000)),
+        ),
+        (
+            "atm",
+            101325.0,
+            None,
+            pressure,
+            false,
+            linear(Exact::int(101_325)),
+        ),
+        (
+            "BTU",
+            1055.05585262,
+            None,
+            energy,
+            false,
+            linear(Exact::dec(105505585262, -8)),
+        ),
+        (
+            "gal",
+            0.003785411784,
+            None,
+            volume,
+            false,
+            linear(Exact::dec(3785411784, -12)),
+        ),
         // ---- dimensionless ------------------------------------------------
         // `rad` is dimensionless: angle is a ratio of lengths. `sin` therefore
         // accepts a bare number, and `sin(2)` and `sin(2 rad)` agree.
-        ("rad", 1.0, None, none, true),
-        ("°", core::f64::consts::PI / 180.0, None, none, false),
-        ("deg", core::f64::consts::PI / 180.0, None, none, false),
-        ("%", 0.01, None, none, false),
+        ("rad", 1.0, None, none, true, one),
+        (
+            "°",
+            core::f64::consts::PI / 180.0,
+            None,
+            none,
+            false,
+            exact_degree,
+        ),
+        (
+            "deg",
+            core::f64::consts::PI / 180.0,
+            None,
+            none,
+            false,
+            exact_degree,
+        ),
+        ("%", 0.01, None, none, false, linear(Exact::dec(1, -2))),
         // ---- affine temperature scales ------------------------------------
         // T_K = factor * x + offset.
-        ("°C", 1.0, Some(273.15), temp, false),
-        ("°F", 5.0 / 9.0, Some(459.67 * 5.0 / 9.0), temp, false),
+        (
+            "°C",
+            1.0,
+            Some(273.15),
+            temp,
+            false,
+            Definition {
+                factor: Exact::ONE,
+                offset: Some(Exact::dec(27315, -2)),
+            },
+        ),
+        (
+            "°F",
+            5.0 / 9.0,
+            Some(459.67 * 5.0 / 9.0),
+            temp,
+            false,
+            Definition {
+                factor: Exact::ratio(5, 9),
+                offset: Some(Exact::dec(45967, -2).mul(Exact::ratio(5, 9))),
+            },
+        ),
         // Rankine is an absolute scale, so it is linear despite being imperial.
-        ("°R", 5.0 / 9.0, None, temp, false),
+        (
+            "°R",
+            5.0 / 9.0,
+            None,
+            temp,
+            false,
+            linear(Exact::ratio(5, 9)),
+        ),
     ]
 }
 
@@ -253,7 +517,7 @@ impl UnitTable {
     /// A table of the built-in units.
     pub fn new() -> UnitTable {
         let mut units = BTreeMap::new();
-        for (symbol, factor, offset, dim, prefixable) in builtin_rows() {
+        for (symbol, factor, offset, dim, prefixable, exact) in builtin_rows() {
             units.insert(
                 symbol.to_string(),
                 Unit {
@@ -262,6 +526,7 @@ impl UnitTable {
                     offset,
                     dim,
                     prefixable,
+                    exact: Some(exact),
                 },
             );
         }
@@ -281,6 +546,7 @@ impl UnitTable {
                 offset: None,
                 dim,
                 prefixable: false,
+                exact: None,
             },
         );
     }
@@ -311,7 +577,7 @@ impl UnitTable {
         if let Some(u) = self.units.get(name) {
             return Ok(u.clone());
         }
-        for (prefix, scale) in PREFIXES {
+        for (prefix, scale, exp10) in PREFIXES {
             let Some(rest) = name.strip_prefix(prefix) else {
                 continue;
             };
@@ -337,6 +603,9 @@ impl UnitTable {
                 offset: None,
                 dim: base_unit.dim,
                 prefixable: false,
+                exact: base_unit
+                    .exact
+                    .map(|e| linear(e.factor.mul(Exact::dec(1, *exp10)))),
             });
         }
         Err(UnitError::UnknownUnit(name.to_string()))
@@ -584,9 +853,88 @@ mod tests {
         assert_eq!(prefixes, built_in);
     }
 
+    /// The `f64` nearest an exact constant, or within an ulp of it: every
+    /// built-in unit's numerator and denominator is below 2⁵³, so each converts
+    /// exactly and the division rounds once; π adds a second rounding.
+    fn approx(e: Exact) -> f64 {
+        let r = e.numerator() as f64 / e.denominator() as f64;
+        match e.pi_exponent() {
+            0 => r,
+            1 => r * core::f64::consts::PI,
+            k => panic!("π^{k} in a built-in constant"),
+        }
+    }
+
+    /// How many representable doubles lie between two positive ones.
+    fn ulps(a: f64, b: f64) -> u64 {
+        assert!(a > 0.0 && b > 0.0, "{a} and {b} must be positive");
+        a.to_bits().abs_diff(b.to_bits())
+    }
+
+    #[test]
+    fn every_factor_is_its_exact_definition() {
+        // The `f64`s are computed as they always were, some by several roundings
+        // (`psi` is `lbf / (in * in)`), so each may sit an ulp or two from the
+        // nearest double to what it means. More than that is a typo in one of
+        // the two columns.
+        for (symbol, factor, offset, _, _, exact) in builtin_rows() {
+            let off = ulps(factor, approx(exact.factor));
+            assert!(
+                off <= 2,
+                "{symbol}: factor is {off} ulps from its definition"
+            );
+            match (offset, exact.offset) {
+                (None, None) => {}
+                (Some(o), Some(e)) => {
+                    let off = ulps(o, approx(e));
+                    assert!(
+                        off <= 2,
+                        "{symbol}: offset is {off} ulps from its definition"
+                    );
+                }
+                _ => panic!("{symbol}: offset and its definition disagree on existing"),
+            }
+        }
+        // A prefix's literal is the nearest double to its power of ten, but
+        // 10²⁴ is not itself a double, so the reference rounds twice for the
+        // largest and smallest.
+        for (symbol, scale, exp10) in PREFIXES {
+            let off = ulps(*scale, approx(Exact::dec(1, *exp10)));
+            assert!(
+                off <= 1,
+                "prefix {symbol} is {off} ulps from its power of ten"
+            );
+        }
+    }
+
+    #[test]
+    fn exact_definitions_keep_the_relationships_floats_approximate() {
+        let exact = |s: &str| t().resolve(s).unwrap().exact.unwrap();
+        let (psi, lbf, inch) = (exact("psi").factor, exact("lbf").factor, exact("in").factor);
+        assert_eq!(psi.mul(inch).mul(inch), lbf);
+        assert_eq!(exact("ksi").factor, Exact::int(1000).mul(psi));
+        assert_eq!(exact("slug").factor.mul(exact("ft").factor), lbf);
+        assert_eq!(exact("°F").offset, Some(Exact::ratio(45967, 180)));
+        assert_eq!(exact("°").factor.pi_exponent(), 1);
+        // Prefixes are exact powers of ten, the ohm sign included.
+        assert_eq!(exact("kN").factor, Exact::int(1000));
+        assert_eq!(exact("µs").factor, Exact::ratio(1, 1_000_000));
+        assert_eq!(exact("us").factor, exact("µs").factor);
+        assert_eq!(exact("k\u{2126}").factor, Exact::int(1000));
+        assert_eq!(exact("Ybar").factor, Exact::dec(1, 29));
+        assert_eq!(exact("mg").factor, Exact::dec(1, -6));
+    }
+
+    #[test]
+    fn declared_units_have_no_exact_definition() {
+        let mut table = t();
+        table.declare("tonf", 9964.016418183, d(1, 1, -2, 0, 0, 0, 0));
+        assert_eq!(table.resolve("tonf").unwrap().exact, None);
+    }
+
     #[test]
     fn the_language_reference_says_which_units_take_prefixes() {
-        for (symbol, _, _, _, prefixable) in builtin_rows() {
+        for (symbol, _, _, _, prefixable, _) in builtin_rows() {
             let row = format!("| `{symbol}` |");
             let line = section().lines().find(|l| l.starts_with(&row)).unwrap();
             let says = line.trim_end_matches(" |").rsplit("| ").next().unwrap();

@@ -123,6 +123,16 @@ pub extern "C" fn nomo_vocabulary() -> *mut u8 {
     into_buffer(nomo_core::api::vocabulary_json())
 }
 
+/// The unit table as exact data: every factor as a ratio and a power of π,
+/// every prefix, and how each prefixed name resolves (`api::units_json`).
+///
+/// For a host that computes with Nomo's units on its own rather than through
+/// this module; the same JSON as `nomo units` and `docs/units.json`.
+#[no_mangle]
+pub extern "C" fn nomo_units() -> *mut u8 {
+    into_buffer(nomo_core::api::units_json())
+}
+
 // ---- the editing session -------------------------------------------------
 //
 // `nomo_snapshot` above is stateless, which is right for rendering a file. An

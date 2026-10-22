@@ -47,6 +47,10 @@ fn main() -> ExitCode {
         "test" => harness::run(rest),
         "bench" => bench::run(rest),
         "packs" => list_packs(),
+        "units" => {
+            println!("{}", nomo_core::api::units_json());
+            ExitCode::SUCCESS
+        }
         "version" | "--version" | "-V" => {
             version();
             ExitCode::SUCCESS
@@ -77,6 +81,7 @@ fn usage() {
          nomo test   [--write]        check every example against its snapshot\n    \
          nomo bench                   time the engine on worksheets of fixed shape\n    \
          nomo packs                   list the packs `use` can bring in\n    \
+         nomo units                   the unit table as exact data, in JSON\n    \
          nomo version                 this build, and the formats it speaks\n\n\
          `test` runs from the repository root; --examples and --golden override\n\
          the directories it uses.\n\n\

@@ -27,6 +27,7 @@ export function bind(exports) {
     nomo_snapshot,
     nomo_snapshot_format,
     nomo_vocabulary,
+    nomo_units,
     nomo_document_new,
     nomo_document_update,
     nomo_document_update_as,
@@ -130,6 +131,15 @@ export function bind(exports) {
      */
     vocabulary() {
       return JSON.parse(read(nomo_vocabulary()));
+    },
+
+    /**
+     * The unit table as exact data, for a program that implements Nomo's
+     * units itself: each factor as a ratio and a power of π, and every
+     * prefixed name as the engine resolves it. The same as `nomo units`.
+     */
+    units() {
+      return JSON.parse(read(nomo_units()));
     },
 
     /**

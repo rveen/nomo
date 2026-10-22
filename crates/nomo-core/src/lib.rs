@@ -52,7 +52,7 @@ pub use render::{MathFont, RenderOptions, Renderer};
 pub use resource::{Image, Reference, Resources, Size};
 pub use span::Span;
 pub use trace::{Trace, TraceNode};
-pub use unit::{Unit, UnitError, UnitTable};
+pub use unit::{Definition, Exact, Unit, UnitError, UnitTable};
 pub use value::{EvalError, Value};
 
 /// Parse a worksheet source into a syntax tree plus any diagnostics.

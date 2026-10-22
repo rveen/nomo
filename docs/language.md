@@ -553,6 +553,15 @@ The prefixes, which attach to every unit marked *yes* above:
 prefixed reading, so `h` alone is an hour, `T` alone a tesla, and `min` a
 minute; `hm` is still a hectometre and `Tm` a terametre.
 
+The same table is published as data. `nomo units` prints it as JSON, and
+[`units.json`](units.json) is that output, held to the engine by a test. Each
+factor and offset is given as the exact number it is defined to be, a ratio
+and a power of π (`psi` is 8896443230521/1290320000 Pa, `°` is π/180), with
+the `f64` the engine computes with beside it; and every prefix in front of
+every symbol is listed with what it resolves to, or why it does not. It is for
+programs that implement these units themselves and must agree with Nomo
+exactly.
+
 ### Declaring units
 
 ```nomo

@@ -158,15 +158,18 @@ fn plural(n: usize) -> &'static str {
 
 /// Which build this is, and which formats it speaks.
 ///
-/// Three numbers rather than one, because they answer different questions. The
+/// Four numbers rather than one, because they answer different questions. The
 /// build says which code this is. The worksheet format says which files it can
 /// open — a worksheet declaring a later one still opens, with a warning. The
 /// snapshot format says which golden files it can be compared against, and is
-/// what the cross-target comparison agrees on before it compares anything.
+/// what the cross-target comparison agrees on before it compares anything. The
+/// units format says how `nomo units` writes the table, for programs that read
+/// it instead of running the engine.
 fn version() {
     println!("nomo {}", env!("CARGO_PKG_VERSION"));
     println!("worksheet format {}", nomo_core::doc::CURRENT_VERSION);
     println!("snapshot format {}", nomo_core::golden::FORMAT);
+    println!("units format {}", nomo_core::api::UNITS_FORMAT);
 }
 
 /// What `use` can bring in, and what each one holds.

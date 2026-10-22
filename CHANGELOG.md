@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.8.0 — the unit table as exact data
+
+### Added
+
+- **`nomo units`, the `nomo_units` export and `docs/units.json`: the unit
+  table as data, for a program that implements Nomo's units itself.** G1, a
+  store for structured records, takes Nomo's units as its own — the same names,
+  prefixes and rules — but computes exactly, because it keeps decimals and
+  rounds once. It cannot take `0.0254` back out of the nearest binary64, and a
+  second table typed in by hand would drift from this one unseen. The JSON
+  gives the seven bases, every prefix, and every unit with its factor and
+  offset as the exact number each is defined to be — a ratio in lowest terms
+  and a power of π, which only the degree needs (`psi` is
+  8896443230521/1290320000 Pa) — beside the `f64` the engine computes with, its
+  dimension and whether it takes a prefix. It ends with 1,116 resolutions:
+  every prefix in front of every symbol, and the ohm sign, as the engine reads
+  them, so the prefix rules arrive as test vectors rather than prose.
+  `docs/units.json` is held to the engine by a test, and `nomo version` names
+  its format, 1.
+
+- **`Exact` and `Definition` in `nomo-core`**, and an `exact` field on `Unit`:
+  the definitions behind the table. Derived constants are computed from the
+  defining ones, as the floats are, so `psi` is exactly `lbf/in²` and `ksi`
+  exactly a thousand of it. A test holds each `f64` to its definition within
+  two ulps, and each prefix within one. A unit a worksheet declares has none.
+
+### Changed
+
+- **`Unit` has a new public field**, so code outside `nomo-core` that builds a
+  `Unit` literally must add `exact`. This is why the release is 0.8.0 rather
+  than 0.7.2.
+
+Nothing a worksheet computes has moved: 29 golden snapshots and the corpus
+baselines are unchanged. The editor is unchanged.
+
 ## 0.7.1 — the ohm sign is the ohm
 
 ### Fixed

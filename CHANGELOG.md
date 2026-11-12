@@ -28,7 +28,9 @@
 - **Pages and Print in the editor.** Pages shows the worksheet as the pages it
   prints on, fitted to the pane; Print and Ctrl+P lay them out and print them,
   and only once they exist. Folio is fetched the first time pages are asked
-  for, and works offline.
+  for, and works offline. The pages' frame requests nothing itself: the
+  editor hands it Folio and the fonts as `blob:` URLs, because the frame's own
+  requests could stall while a new service worker took over.
 
 - **`scripts/fetch-folio.sh`**, which builds Folio at a pinned commit and
   verifies it against committed hashes, like the fonts. `build-web.sh` and

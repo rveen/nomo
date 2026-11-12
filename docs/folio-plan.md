@@ -211,8 +211,9 @@ covers:
 - The browser menu's print prints the results.
 
 `check-offline.mjs` adds the Pages view opened for the first time with the
-network already off. That works only because the `about:srcdoc` frame
-inherits the editor's service worker, and the check proves it does.
+network already off. (Since the follow-up "Pages in the worker's first
+moments", the editor fetches Folio and the fonts and hands the frame `blob:`
+URLs; the frame requests nothing.)
 
 ### 5. A browser gate: `scripts/check-paged.mjs`
 
@@ -326,3 +327,30 @@ command list.
 - Folio's bundle is fetched, built and hash-verified, not committed.
 - The CLI shape is the `--paged` flag, not a `nomo paged` subcommand.
 - The logo is the placeholder text "Nomo" until there is a logo.
+
+### Follow-up: Pages in the service worker's first moments
+
+*Reported from use.* Opening a 23-page worksheet and choosing Pages with
+Typeset on showed "folio: "STIX Two Math Subset" is laying out math without a
+MATH table", and a reload cured it.
+
+*Found.*
+- **First guess, disproved.** Two layouts racing for the frame's `load`
+  event. Instrumenting showed one document, never loaded,
+  stuck in `<head>` waiting for Folio's script.
+- **The cause.** The frame's requests went through the service worker, and
+  in the first moments after a new worker takes over (the first visit after
+  every build) they could stall. Folio's script never arrived, or the math
+  font did not, and the probe refused the fallback face.
+- **The proof.** With `/sw.js` answering 404, the same sequence worked every
+  time.
+
+*Fixed.* The editor fetches Folio and the three fonts once and hands the
+frame `blob:` URLs, so the frame requests nothing. The repro with the
+reported worksheet, run ten times, never failed after the change and always
+failed before it.
+
+*Gate.* `check-pages` opens typeset pages straight after the editor starts.
+It asserts that the frame requested nothing but `blob:` URLs and that the math
+font loaded. It fails against the old code, which fetched both over HTTP.
+`build-web.sh`: all 18 gates green.

@@ -1080,7 +1080,11 @@ it fail, which was checked.
   pastes, since the handler sees every paste in the application. Confirmed to
   fail when the 700 px limit is changed.
 - `check-pages.mjs` — the editor's Pages view. Folio must not be fetched before
-  pages are asked for; a long worksheet must take several pages, with every
+  pages are asked for; typeset pages opened straight after the editor starts,
+  while the service worker is still taking over, must lay out, with the frame
+  requesting nothing but the `blob:` URLs the editor hands it (it used to
+  fetch through the worker, and those requests could stall — design note
+  §8.55); a long worksheet must take several pages, with every
   worked line on them once, "Nomo" heading every page but the first and the
   foot counting them; no page may run past the pane; typeset pages must pass
   Folio's MATH-table probe of the shipped subset font; and Print, and Ctrl+P

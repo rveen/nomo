@@ -331,14 +331,51 @@ const pages = {
   supersede: null,
 };
 
+/**
+ * Folio and the three fonts, as `blob:` URLs made from the editor's own copies.
+ *
+ * The frame is given these rather than the files' paths so that it requests
+ * nothing at all. It used to fetch Folio and the fonts itself, through the
+ * service worker, and on the first visit after a build — while a new worker
+ * was taking over — those requests could stall: Folio's script never arrived
+ * and the pages never finished, or the math font did not, and Folio's probe
+ * measured a fallback face and refused it as having no MATH table. A reload
+ * cured it, which is how it was reported. Without the worker the same
+ * sequence worked every time. The editor's own requests were never affected,
+ * so the editor fetches, and a `blob:` URL is read from memory — never from the
+ * worker or the network — which also means a re-layout no longer re-fetches
+ * 115 kB of script and three fonts. Offline, the editor's fetch is answered
+ * from the precache, as before.
+ *
+ * Fetched once, on the first layout. A failure is not kept, so the next
+ * attempt tries again.
+ */
+let frameAssets = null;
+function assets() {
+  if (!frameAssets) {
+    const local = async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`could not fetch ${url}: ${response.status}`);
+      return URL.createObjectURL(await response.blob());
+    };
+    frameAssets = Promise.all(
+      [FOLIO_URL, MATH_FONT_URL, TEXT_FONT.upright, TEXT_FONT.italic].map(local),
+    ).then(([folio, math, upright, italic]) => ({ folio, math, text: { upright, italic } }));
+    frameAssets.catch(() => {
+      frameAssets = null;
+    });
+  }
+  return frameAssets;
+}
+
 /** The paged document for the buffer as it stands. */
-function pagedDocument() {
+function pagedDocument(urls) {
   const title = current.name.replace(/\.nomo$/, "");
   return engine.renderPaged(view.state.doc.toString(), title, {
     mathml: typeset.checked,
-    fontUrl: MATH_FONT_URL,
-    folio: { url: FOLIO_URL },
-    textFont: TEXT_FONT,
+    fontUrl: urls.math,
+    folio: { url: urls.folio },
+    textFont: urls.text,
   });
 }
 
@@ -351,13 +388,14 @@ function pagedDocument() {
  * worksheet is not laid out again: typesetting toggled twice, or a save,
  * should not reflow the pages someone is reading.
  */
-function layOutPages() {
+async function layOutPages() {
+  const urls = await assets();
   let html;
   try {
-    html = pagedDocument();
+    html = pagedDocument(urls);
   } catch (error) {
     void restartEngine(error);
-    return Promise.reject(error);
+    throw error;
   }
   if (html === pages.document && pages.done) return pages.done;
   pages.document = html;

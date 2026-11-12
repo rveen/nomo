@@ -139,10 +139,9 @@ try {
   );
 
   // Pages, asked for for the first time with the network already off. Folio
-  // has never been requested in this profile, so it can only come from the
-  // precache — and the frame that asks for it is an `about:srcdoc` document,
-  // which reaches the worker only because it inherits the editor's. Both are
-  // claims worth a check rather than a belief.
+  // has never been requested by this page, so the editor's fetch of it can
+  // only be answered by the precache; the frame is then handed blob: URLs and
+  // requests nothing itself.
   await browser.evaluate(`document.querySelector("#pages").click()`);
   await waitFor(
     browser,

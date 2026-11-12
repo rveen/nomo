@@ -3810,12 +3810,38 @@ prints is what is on screen. And the editor's pages are then byte for byte the
 document `compare-html.mjs` gates. The editor's only addition is a screen-only
 zoom that fits an A4 page to a half-screen pane, added after Folio has
 finished, because the document has to stay the CLI's. Folio is fetched the
-first time pages are asked for and precached for offline use; the
-`about:srcdoc` frame reaches the service worker only because it inherits the
-editor's, which `check-offline.mjs` proves by opening pages for the first time
-with the network off.
+first time pages are asked for, and precached for offline use. The *editor*
+fetches it, with the fonts, and hands the frame `blob:` URLs, so the frame
+itself requests nothing (below). `check-offline.mjs` opens pages for the first
+time with the network off.
 
 #### What only a browser could say
+
+**The frame's own requests could stall in the service worker's first
+moments.** Reported from use: on opening a worksheet and choosing Pages with
+Typeset on, the status line said Folio was "laying out math without a MATH
+table", and a reload cured it. The font was fine. The frame fetched Folio and
+the fonts itself, through the service worker, and on the first visit after a
+build — while the new worker took over — those requests stalled. With a
+23-page worksheet, the pages either never finished, because Folio's script
+never arrived, or the math font did not arrive in time. Folio's probe then
+measured a fallback face and refused it, which is what the message says. The
+same sequence with `/sw.js` answering 404 worked every time, and the editor's
+own requests were never affected. Exactly why the worker stalled a
+`srcdoc` frame's requests was not established; a debug log in the worker came
+back empty and was not pursued. What was established is enough to design
+out: the editor fetches Folio and the three fonts once, and gives the frame
+`blob:` URLs, which are read from memory and never reach the worker or the
+network. A re-layout also no longer re-fetches them. `check-pages` now opens
+typeset pages straight after the editor starts and asserts the frame
+requested nothing but `blob:` URLs. That fails against the old code, which
+fetched them over HTTP. The stall itself is timing-dependent and did not
+recur inside that check; a repro with the reporter's worksheet showed it
+every time before the change and never in ten runs after.
+
+The first explanation was wrong, and is worth recording as such: two layouts
+racing for one frame's `load` event. Instrumenting the repro disproved it.
+Only one document was ever assigned, and it never loaded.
 
 **Folio lays each page out from a clone of the source's `html` and `body`,
 attributes included, and rewrites `:root` to match the clone.** So the marker
@@ -4090,8 +4116,9 @@ Folio paginates every example, plain and typeset, with nothing overflowed and ev
 the pages once, in order; that the PDF has one A4 sheet per page; that an early print is blank and a
 finished one is not; that Folio's MATH-table probe accepts the shipped subset font; that the
 pages' prose is set in the shipped text face when it is served, in the editor's frame and in the
-standalone document; and that the editor's frame gets Folio from the service worker with the network
-off. Also verified: that the
+standalone document; that the editor's pages lay out with the network off, from what the editor
+fetched out of the precache; and that the frame requests nothing but the `blob:` URLs the editor
+hands it, which is what ended the stall in the service worker's first moments. Also verified: that the
 three Folio files used are reproducible from the pinned commit, by two clean builds and one from
 GitHub. **Not verified:** Firefox and Safari, which Folio claims and this machine cannot run; and
 where pages break on a machine with different fonts installed, which this note says is outside the

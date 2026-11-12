@@ -117,6 +117,48 @@ try {
     "Folio was fetched before anybody asked for pages; it should cost nothing until then",
   );
 
+  // ---- in the service worker's first moments --------------------------
+  // Pages asked for at once, while the worker this first visit installed is
+  // still taking over. The frame used to fetch Folio and the fonts through
+  // the worker, and here those requests stalled: Folio never arrived and the
+  // pages never finished, or the math font did not and Folio's probe refused
+  // the fallback face as having no MATH table. Reported as "reloading fixes
+  // it". The frame now requests nothing; the editor hands it blob: URLs.
+  // Typeset and Pages together, as it was reported: typeset pages are the
+  // ones that set formulas in the math font in the document itself.
+  await browser.evaluate(`document.querySelector("#typeset").click()`);
+  await browser.evaluate(`document.querySelector("#pages").click()`);
+  await waitFor(
+    browser,
+    `(() => {
+      const s = document.querySelector("#status").textContent;
+      if (/^pages:|could not lay out/.test(s)) throw new Error(s);
+      const p = ${PAGES};
+      return p !== null && p.math > 0;
+    })()`,
+    "typeset pages laid out in the service worker's first moments",
+  );
+  // Resource timing does not record blob: loads, so what is asserted is that
+  // nothing else was requested — with the pages laid out, which needed
+  // Folio's script, and the math font loaded, which is what the probe reads.
+  const frame = await browser.evaluate(`(() => {
+    const w = document.querySelector("#pages-frame").contentWindow;
+    return {
+      requested: w.performance.getEntriesByType("resource").map((e) => e.name)
+        .filter((name) => !name.startsWith("blob:")),
+      math: [...w.document.fonts].some(
+        (f) => f.family === "STIX Two Math Subset" && f.status === "loaded"),
+    };
+  })()`);
+  check(
+    frame.requested.length === 0,
+    `the frame should request nothing but blob: URLs: ${JSON.stringify(frame.requested)}`,
+  );
+  check(frame.math, "the math font did not load in the pages laid out first");
+  // Back to where the rest of this check starts: results, not typeset.
+  await browser.evaluate(`document.querySelector("#pages").click()`);
+  await browser.evaluate(`document.querySelector("#typeset").click()`);
+
   await browser.type(LONG);
   await waitFor(
     browser,

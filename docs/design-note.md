@@ -3745,10 +3745,17 @@ giving the document its fonts: the math font embedded or served, and the text
 face served (`--text-font-url`, below). The chrome itself is fixed — no date, no time — because a
 document whose bytes change with the clock cannot be compared with itself.
 
-**The page.** A4, with "Nomo" at the head's left as a *placeholder* where a
-logo will go — its own declaration, commented, so a real one replaces it
-through `content: url(…)` — and the worksheet's title at the head's right
-from the second page on. The foot is "Page n of N". The title is written into
+**The page.** A4. The head carries the worksheet's title at the left, from
+the second page on, since the first prints it in full; its right is empty.
+The foot carries, on every page, the name of the file the worksheet was read
+from, extension included, at the left, and "Page n of N" at the right. A sheet
+that comes loose from the rest still says where it belongs and where its
+source is. (The first version had "Nomo" at the head's left as a placeholder
+for a logo and the title at the right; that was changed on request, and the
+file name added.) The file name is an argument to `paged::render`, taken
+from the path by the CLI and from the open file by the editor; empty leaves
+the corner blank, and a never-saved buffer in the editor prints the name its
+header shows, `untitled.nomo`. The title is written into
 the stylesheet as a CSS string, with `<` escaped so a title cannot close the
 stylesheet, rather than read off the heading with `string-set`: a worksheet's
 later level-1 headings are sections, and `string-set` would make the running
@@ -3899,8 +3906,8 @@ risk.
 - **Chrome only.** Folio supports Firefox 115 and Safari 16.4, and neither is
   checked here, because this machine has one browser. That is the same gap
   `check-mathml.mjs` names.
-- **A4 only, and the logo is text.** Letter paper, and a real logo, are each
-  one declaration away; neither has anyone asking for it yet.
+- **A4 only.** Letter paper is one declaration away, and nobody has asked
+  for it yet.
 - **Not a gap any more: the text face.** The first version named the text
   face and did not carry it, as `nomo html` does, and so did the editor's
   pages. The frame is a document of its own, and the `@font-face` that gives

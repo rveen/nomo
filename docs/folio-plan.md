@@ -354,3 +354,31 @@ failed before it.
 It asserts that the frame requested nothing but `blob:` URLs and that the math
 font loaded. It fails against the old code, which fetched both over HTTP.
 `build-web.sh`: all 18 gates green.
+
+### Follow-up: the head and the foot
+
+*Asked for.* Remove "Nomo", move the title from the head's right to its left,
+and put the source file's name, extension included, at the foot's left.
+
+*Done.*
+- **The page.** The head carries the title at the left from the second page
+  on, and nothing at the right. The foot carries the file name at the left
+  and "Page n of N" at the right, on every page.
+- **Where the name comes from.** It is a new argument, threaded through
+  `paged::render`, `nomo_render_paged` (after the title) and `renderPaged`'s
+  `fileName`. The CLI takes it from the path; the editor passes the name in
+  its header, which is `untitled.nomo` for a buffer never saved. Empty leaves
+  the corner blank. It is escaped like the title.
+- **The margin boxes.** Each box gets its own rule: a margin rule is an
+  at-rule, and the first draft's `@top-left, @bottom-left { … }` was invalid
+  CSS that a browser would have dropped. The first page loses the title by a
+  rule written after the one that sets it, so it holds whether `:first` is
+  weighed by specificity or by order.
+
+*Gates.* The unit tests assert the new boxes, that nothing is at the head's
+right, and that "Nomo" is gone. `tests/paged.rs` and the module's test assert
+the file name in the foot. `compare-html.mjs` passes it on both sides.
+`check-paged` asserts, for all 58 documents, that the title (as `<title>`
+resolves it) heads every page but the first, that the head's right is empty,
+and that every foot names the file. `check-pages` asserts the same for
+`untitled.nomo`.

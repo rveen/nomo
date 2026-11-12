@@ -372,6 +372,9 @@ function assets() {
 function pagedDocument(urls) {
   const title = current.name.replace(/\.nomo$/, "");
   return engine.renderPaged(view.state.doc.toString(), title, {
+    // The name the editor shows in its header — the file opened or saved, or
+    // `untitled.nomo` for one never saved, which is what the header says too.
+    fileName: current.name,
     mathml: typeset.checked,
     fontUrl: urls.math,
     folio: { url: urls.folio },

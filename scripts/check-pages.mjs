@@ -83,13 +83,14 @@ const PAGES = `(() => {
     steps: doc.querySelectorAll(".pagedjs_page .step").length,
     math: doc.querySelectorAll(".pagedjs_page math").length,
     heads: pages.map((p) => box(p, "top-left")),
+    tops: pages.map((p) => box(p, "top-right")),
+    files: pages.map((p) => box(p, "bottom-left")),
     // The family the prose is set in, and whether that face actually loaded:
     // a stack that names a face nobody declared reports the same family
     // string as one that resolves to it.
     prose: getComputedStyle(doc.querySelector(".pagedjs_page p.prose")).fontFamily,
     textLoaded: [...doc.fonts].some(
       (f) => f.family === "STIX Two Text Subset" && f.status === "loaded"),
-    titles: pages.map((p) => box(p, "top-right")),
     feet: pages.map((p) => box(p, "bottom-right")),
   };
 })()`;
@@ -185,12 +186,16 @@ try {
   );
   check(laid.heads[0] === "", "the first page should not carry the running head");
   check(
-    laid.heads.slice(1).every((h) => h === "Nomo"),
-    `every page after the first should be headed "Nomo": ${JSON.stringify(laid.heads)}`,
+    laid.heads.slice(1).every((h) => h === "untitled"),
+    `every page after the first should be headed with the worksheet's title: ${JSON.stringify(laid.heads)}`,
   );
   check(
-    laid.titles.slice(1).every((t) => t === "untitled"),
-    `the running title should be the worksheet's name: ${JSON.stringify(laid.titles)}`,
+    laid.tops.every((t) => t === ""),
+    `nothing belongs at the head's right: ${JSON.stringify(laid.tops)}`,
+  );
+  check(
+    laid.files.every((f) => f === "untitled.nomo"),
+    `every page's foot should name the file, extension included: ${JSON.stringify(laid.files)}`,
   );
   check(
     laid.feet.every((f, i) => f === `Page ${i + 1} of ${laid.count}`),

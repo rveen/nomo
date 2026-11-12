@@ -287,7 +287,9 @@ pub unsafe extern "C" fn nomo_render_html(
 /// `--embed-folio` carries them. `text`/`text_italic` are where the prose's
 /// face is served, as `--text-font-url` and `--text-font-italic-url` take them;
 /// an empty `text` names the stack and fetches nothing, and an empty italic
-/// declares none. The rest is [`nomo_render_html`]'s.
+/// declares none. `file` is the worksheet's file name, extension included, for
+/// the foot of every page; empty leaves that corner blank. The rest is
+/// [`nomo_render_html`]'s.
 ///
 /// [`nomo_render_html`] did not gain the text face. It is called by a server
 /// that already exists (see above), and a C ABI cannot grow a parameter
@@ -313,6 +315,8 @@ pub unsafe extern "C" fn nomo_render_paged(
     src_len: usize,
     title_ptr: *const u8,
     title_len: usize,
+    file_ptr: *const u8,
+    file_len: usize,
     font_ptr: *const u8,
     font_len: usize,
     folio_ptr: *const u8,
@@ -329,6 +333,7 @@ pub unsafe extern "C" fn nomo_render_paged(
     let (
         Some(source),
         Some(title),
+        Some(file),
         Some(font),
         Some(folio),
         Some(notice),
@@ -337,6 +342,7 @@ pub unsafe extern "C" fn nomo_render_paged(
     ) = (
         str_from(src_ptr, src_len),
         str_from(title_ptr, title_len),
+        str_from(file_ptr, file_len),
         str_from(font_ptr, font_len),
         str_from(folio_ptr, folio_len),
         str_from(notice_ptr, notice_len),
@@ -373,7 +379,7 @@ pub unsafe extern "C" fn nomo_render_paged(
         },
         ..Default::default()
     };
-    into_buffer(paged::render(&sheet, &opts, title, &engine))
+    into_buffer(paged::render(&sheet, &opts, title, file, &engine))
 }
 
 // ---- importing an SMath worksheet ---------------------------------------
@@ -691,6 +697,8 @@ mod tests {
         (text, text_italic): (&str, &str),
         embed: bool,
     ) -> Option<String> {
+        // Every test document comes from a file named after its title.
+        let file = format!("{title}.nomo");
         // SAFETY: every slice outlives the call.
         let buffer = unsafe {
             nomo_render_paged(
@@ -698,6 +706,8 @@ mod tests {
                 source.len(),
                 title.as_ptr(),
                 title.len(),
+                file.as_ptr(),
+                file.len(),
                 font.as_ptr(),
                 font.len(),
                 folio.as_ptr(),
@@ -740,13 +750,20 @@ mod tests {
 
         let embedded = render_paged(source, title, font, "/* folio */", "MIT", true).unwrap();
         let engine = PagedEngine::embedded("/* folio */", "MIT").unwrap();
-        assert_eq!(embedded, paged::render(&sheet, &opts, title, &engine));
-        assert!(embedded.contains("content: \"Nomo\";"));
+        assert_eq!(
+            embedded,
+            paged::render(&sheet, &opts, title, "cone.nomo", &engine)
+        );
+        // The file name crossed the boundary into the foot.
+        assert!(embedded.contains("@bottom-left { content: \"cone.nomo\";"));
 
         // Linked: the notice is the server's business, not the document's.
         let linked = render_paged(source, title, font, "/f.js", "ignored", false).unwrap();
         let engine = PagedEngine::url("/f.js");
-        assert_eq!(linked, paged::render(&sheet, &opts, title, &engine));
+        assert_eq!(
+            linked,
+            paged::render(&sheet, &opts, title, "cone.nomo", &engine)
+        );
         assert!(!linked.contains("ignored"));
     }
 
@@ -775,7 +792,7 @@ mod tests {
         let sheet = nomo_core::Sheet::new(source);
         assert_eq!(
             got,
-            paged::render(&sheet, &opts, "x", &PagedEngine::url("/f.js"))
+            paged::render(&sheet, &opts, "x", "x.nomo", &PagedEngine::url("/f.js"))
         );
 
         // An empty italic declares none, rather than a rule with no source.

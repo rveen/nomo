@@ -10,8 +10,10 @@
 //   * Nothing is lost, doubled or split. The worked lines on the pages, in
 //     order, are the worked lines of the document, compared by their text —
 //     which a line split across two pages would fail, as two half-lines.
-//   * The page furniture is there: "Nomo" heading every page but the first,
-//     and "Page n of N" at the foot of each.
+//   * The page furniture is there: the worksheet's title heading every page
+//     but the first, at the left and nothing at the right; the file's name,
+//     extension included, at the left of every foot, and "Page n of N" at the
+//     right.
 //   * Printed, every line is visible and no page is still marked as being
 //     laid out — the guard that blanks an early print must not blank a late
 //     one, which its first version did.
@@ -175,7 +177,10 @@ const INSPECT = `(async () => {
     built: pages.length,
     expected: [...source.querySelectorAll("body .step")].map(text),
     found: [...document.querySelectorAll(".pagedjs_page .step")].map(text),
+    title: document.title,
     heads: pages.map((p) => box(p, "top-left")),
+    tops: pages.map((p) => box(p, "top-right")),
+    files: pages.map((p) => box(p, "bottom-left")),
     feet: pages.map((p) => box(p, "bottom-right")),
     prose: (() => {
       const p = document.querySelector(".pagedjs_page p.prose");
@@ -241,9 +246,21 @@ try {
             `${where}: the prose is not set in the served face first: ${got.prose}`,
           );
         }
+        // The title as the document resolved it — its own opening heading, or
+        // the file's stem — which is what <title> carries too. Compared after
+        // collapsing white space, as every box is read.
+        const title = got.title.replace(/\s+/g, " ").trim();
         check(
-          got.heads.slice(1).every((h) => h === "Nomo"),
-          `${where}: a page after the first is not headed "Nomo": ${JSON.stringify(got.heads)}`,
+          got.heads.slice(1).every((h) => h === title),
+          `${where}: a page after the first is not headed with the title "${title}": ${JSON.stringify(got.heads)}`,
+        );
+        check(
+          got.tops.every((t) => t === ""),
+          `${where}: something is at the head's right: ${JSON.stringify(got.tops)}`,
+        );
+        check(
+          got.files.every((f) => f === name),
+          `${where}: a foot does not name the file ${name}: ${JSON.stringify(got.files)}`,
         );
         check(
           got.feet.every((f, i) => f === `Page ${i + 1} of ${got.count}`),

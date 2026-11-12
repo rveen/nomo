@@ -231,24 +231,34 @@ export function bind(exports) {
      * `textFont` is `{ upright, italic }`, the URLs the prose's face is served
      * at, as `--text-font-url` and `--text-font-italic-url` take them; leave
      * it out to name the stack and fetch nothing.
+     *
+     * `fileName` is the worksheet's file name, extension included, for the foot
+     * of every page — `nomo html --paged` writes the name of the file it read.
+     * Empty leaves that corner blank.
      */
-    renderPaged(source, title, { mathml = false, fontUrl = "", folio, textFont = {} }) {
+    renderPaged(
+      source,
+      title,
+      { mathml = false, fontUrl = "", folio, textFont = {}, fileName = "" },
+    ) {
       const embed = folio.script !== undefined;
       const engine = embed ? folio.script : folio.url;
       const notice = embed ? (folio.notice ?? "") : "";
       const { upright = "", italic = "" } = textFont;
       return withText(source, (s) =>
         withText(title, (t) =>
-          withText(fontUrl, (f) =>
-            withText(engine, (e) =>
-              withText(notice, (n) =>
-                withText(upright, (u) =>
-                  withText(italic, (i) =>
-                    read(
-                      nomo_render_paged(
-                        s.ptr, s.len, t.ptr, t.len, f.ptr, f.len,
-                        e.ptr, e.len, n.ptr, n.len, u.ptr, u.len, i.ptr, i.len,
-                        embed ? 1 : 0, mathml ? 1 : 0,
+          withText(fileName, (fn) =>
+            withText(fontUrl, (f) =>
+              withText(engine, (e) =>
+                withText(notice, (n) =>
+                  withText(upright, (u) =>
+                    withText(italic, (i) =>
+                      read(
+                        nomo_render_paged(
+                          s.ptr, s.len, t.ptr, t.len, fn.ptr, fn.len, f.ptr, f.len,
+                          e.ptr, e.len, n.ptr, n.len, u.ptr, u.len, i.ptr, i.len,
+                          embed ? 1 : 0, mathml ? 1 : 0,
+                        ),
                       ),
                     ),
                   ),

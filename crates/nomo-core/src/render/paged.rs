@@ -17,11 +17,13 @@
 //!
 //! # The page
 //!
-//! A4, with a head and a foot. The head carries the placeholder `Nomo` where a
-//! logo will go, and the worksheet's title; the foot carries `Page n of N`.
-//! Nothing in the chrome varies between two renderings of one worksheet — no
-//! date, no time — because a document whose bytes change with the clock cannot
-//! be compared with itself.
+//! A4, with a head and a foot. The head carries the worksheet's title, at the
+//! left, from the second page on; the foot carries the name of the file it was
+//! rendered from at the left and `Page n of N` at the right, on every page — so
+//! a sheet that comes loose from the rest still says where it belongs and where
+//! to find its source. Nothing in the chrome varies between two renderings of
+//! one worksheet — no date, no time — because a document whose bytes change
+//! with the clock cannot be compared with itself.
 //!
 //! [Folio]: https://github.com/trukeio/folio
 
@@ -131,25 +133,26 @@ h1, h1.prose, h2.prose, h3.prose, h4.prose, h5.prose, h6.prose { break-after: av
 @page {
   size: A4;
   margin: 20mm 18mm 20mm;
-  /* The logo's place. A placeholder in text until there is a logo; a real one
-     replaces this declaration with `content: url(…)`, or with a running
-     element if it should be markup rather than an image. */
+  /* The title and the file name are per document, so their `content` is
+     written after this sheet; how they are set is the same for every one.
+     Each box is its own rule because a margin rule is an at-rule, and at-rules
+     take no selector list. A long title or file name is cut with an ellipsis
+     rather than running into the box beside it. */
   @top-left {
-    content: "Nomo";
-    font: 600 9pt/1 "STIX Two Text Subset", "STIX Two Text", Georgia, "Times New Roman", serif;
-    letter-spacing: 0.04em; color: #333;
+    font: 400 8pt/1 "STIX Two Text Subset", "STIX Two Text", Georgia, "Times New Roman", serif;
+    color: #555;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  @bottom-left {
+    font: 400 8pt/1 "STIX Two Text Subset", "STIX Two Text", Georgia, "Times New Roman", serif;
+    color: #555;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   @bottom-right {
     content: "Page " counter(page) " of " counter(pages);
     font: 400 8pt/1 "STIX Two Text Subset", "STIX Two Text", Georgia, "Times New Roman", serif;
     color: #555;
   }
-}
-/* The first page carries the title in full, so the running head would only
-   repeat it. The foot stays: "Page 1 of 3" is how a reader knows there is a
-   page 3. */
-@page :first {
-  @top-left { content: none; }
 }
 
 /* Around the pages on screen: a ground for the sheets to sit on. */
@@ -184,18 +187,38 @@ h1, h1.prose, h2.prose, h3.prose, h4.prose, h5.prose, h6.prose { break-after: av
 /// The worksheet's markup is [`html::body`], unchanged, so the golden suite
 /// covers this output's content exactly as it covers the standalone page's;
 /// what is added is the page and the engine.
-pub fn render(sheet: &Sheet, opts: &RenderOptions, title: &str, engine: &PagedEngine) -> String {
-    // The title runs in the head of every page after the first. Written into
-    // the stylesheet as a string rather than read off the heading with
-    // `string-set`: a worksheet's later level-1 headings are sections, and
-    // `string-set` would make the running head follow them.
-    let running = format!(
-        "@page {{ @top-right {{ content: {}; \
-         font: 400 8pt/1 \"STIX Two Text Subset\", \"STIX Two Text\", Georgia, \"Times New Roman\", serif; color: #555; \
-         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }} }}\n\
-         @page :first {{ @top-right {{ content: none; }} }}\n",
+///
+/// `file` is the name of the file the worksheet was read from, extension and
+/// all — `beam.nomo` — and goes in the foot of every page. Empty leaves that
+/// corner blank: a worksheet that never had a file has no name to print, and
+/// inventing one would put a name on paper that finds nothing.
+pub fn render(
+    sheet: &Sheet,
+    opts: &RenderOptions,
+    title: &str,
+    file: &str,
+    engine: &PagedEngine,
+) -> String {
+    // The title runs in the head of every page after the first. Written into the stylesheet as a string rather
+    // than read off the heading with `string-set`: a worksheet's later level-1
+    // headings are sections, and `string-set` would make the running head
+    // follow them.
+    let mut running = format!(
+        "@page {{ @top-left {{ content: {}; }} }}\n",
         css_string(&html::title_of(sheet, title))
     );
+    if !file.is_empty() {
+        running.push_str(&format!(
+            "@page {{ @bottom-left {{ content: {}; }} }}\n",
+            css_string(file)
+        ));
+    }
+    // The first page carries the title in full, so the running head would only
+    // repeat it. Written last, after the rule that sets the title, so the first
+    // page loses it whether `:first` is weighed by specificity or by order.
+    // The foot stays on every page: "Page 1 of 3" is how a reader knows there
+    // is a page 3, and the file name is how they find the source.
+    running.push_str("@page :first { @top-left { content: none; } }\n");
     let style = format!("{PAGE_STYLE}{running}");
     let head = format!("{}{}", config(&opts.font), script(engine));
     html::document(sheet, opts, title, &style, &head)
@@ -281,6 +304,7 @@ mod tests {
             &Sheet::new(source),
             &RenderOptions::default(),
             title,
+            &format!("{title}.nomo"),
             engine,
         )
     }
@@ -290,11 +314,37 @@ mod tests {
     }
 
     #[test]
-    fn the_logo_placeholder_heads_the_page() {
+    fn the_title_heads_the_page_and_the_file_and_page_number_foot_it() {
         let doc = paged("x = 1\n", "beam", &embedded());
-        assert!(doc.contains("@top-left {\n    content: \"Nomo\";"));
+        assert!(doc.contains("@page { @top-left { content: \"beam\"; } }"));
+        assert!(doc.contains("@page { @bottom-left { content: \"beam.nomo\"; } }"));
         assert!(doc.contains("\"Page \" counter(page) \" of \" counter(pages)"));
         assert!(doc.contains("size: A4;"));
+        // Nothing at the head's right any more, and no placeholder anywhere.
+        assert!(!doc.contains("@top-right"));
+        assert!(!doc.contains("\"Nomo\""));
+        // The first page loses the title, after the rule that sets it.
+        let title = doc.find("@top-left { content: \"beam\"").unwrap();
+        let first = doc
+            .find("@page :first { @top-left { content: none; } }")
+            .unwrap();
+        assert!(title < first);
+    }
+
+    #[test]
+    fn a_worksheet_without_a_file_has_no_name_in_its_foot() {
+        let opts = RenderOptions::default();
+        let doc = render(&Sheet::new("x = 1\n"), &opts, "untitled", "", &embedded());
+        assert!(!doc.contains("@bottom-left { content:"));
+        // A file name is text like a title, escaped the same way.
+        let doc = render(
+            &Sheet::new("x = 1\n"),
+            &opts,
+            "x",
+            "a</style>.nomo",
+            &embedded(),
+        );
+        assert!(doc.contains("@bottom-left { content: \"a\\3C /style>.nomo\"; }"));
     }
 
     #[test]
@@ -302,7 +352,7 @@ mod tests {
         // What lets the golden suite stand for this output too.
         let sheet = Sheet::new("' # Beam\nL = 2 m\nF = 3 kN\nM = F*L\n");
         let opts = RenderOptions::default();
-        let doc = render(&sheet, &opts, "beam", &embedded());
+        let doc = render(&sheet, &opts, "beam", "beam.nomo", &embedded());
         assert!(doc.contains(&html::body(&sheet, &opts)));
     }
 
@@ -310,9 +360,9 @@ mod tests {
     fn the_running_title_is_the_worksheets_own() {
         // An opening heading names the document, as it does the standalone one.
         let doc = paged("' # Shaft sizing\nd = 20 mm\n", "shaft", &embedded());
-        assert!(doc.contains("@top-right { content: \"Shaft sizing\";"));
+        assert!(doc.contains("@top-left { content: \"Shaft sizing\";"));
         let doc = paged("d = 20 mm\n", "shaft", &embedded());
-        assert!(doc.contains("@top-right { content: \"shaft\";"));
+        assert!(doc.contains("@top-left { content: \"shaft\";"));
     }
 
     #[test]
@@ -363,7 +413,7 @@ mod tests {
             font: MathFont::Url("math.woff2".into()),
             ..RenderOptions::default()
         };
-        let carried = render(&Sheet::new("x = 1\n"), &opts, "x", &embedded());
+        let carried = render(&Sheet::new("x = 1\n"), &opts, "x", "x.nomo", &embedded());
         assert!(carried.contains("mathFont: \"STIX Two Math Subset\""));
     }
 
@@ -389,7 +439,7 @@ mod tests {
             },
             ..RenderOptions::default()
         };
-        let doc = render(&Sheet::new("x = 1\n"), &opts, "x", &embedded());
+        let doc = render(&Sheet::new("x = 1\n"), &opts, "x", "x.nomo", &embedded());
         assert!(doc.contains("src: url(\"fonts/text.woff2\")"));
         assert!(doc.contains("src: url(\"fonts/text-italic.woff2\")"));
         assert!(doc.contains("body { font-family: \"STIX Two Text Subset\""));

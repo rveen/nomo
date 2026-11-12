@@ -5,10 +5,10 @@
 ### Added
 
 - **`nomo html --paged`: the worksheet as pages.** A4, laid out in the
-  browser by [Folio](https://github.com/trukeio/folio), with "Nomo" at the
-  head where a logo will go (a placeholder until there is one), the
-  worksheet's title running from the second page, and "Page n of N" at the
-  foot. Folio and its MIT notice are carried in the file, so it is still one
+  browser by [Folio](https://github.com/trukeio/folio), with the
+  worksheet's title at the top left from the second page on, and at the foot
+  of every page the source file's name (`beam.nomo`) at the left and
+  "Page n of N" at the right. Folio and its MIT notice are carried in the file, so it is still one
   self-contained document; `--folio-url` links a served copy instead, and
   `--embed-folio` carries a different build. Composes with `--mathml` and the
   font flags. A Ctrl-P taken before the pages are laid out prints blank

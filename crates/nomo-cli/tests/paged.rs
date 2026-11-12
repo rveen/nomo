@@ -70,8 +70,9 @@ fn the_default_engine_is_the_fetched_one() {
 
     assert!(doc.contains("/* the folio stand-in */"));
     assert!(doc.contains("<!--\nMIT License, the stand-in's\n-->"));
-    assert!(doc.contains("content: \"Nomo\";"));
-    assert!(doc.contains("@top-right { content: \"Spring rate\";"));
+    assert!(doc.contains("@top-left { content: \"Spring rate\";"));
+    // The foot names the file the document came from, extension and all.
+    assert!(doc.contains("@bottom-left { content: \"spring.nomo\";"));
     // --mathml still reaches the worksheet's markup.
     assert!(doc.contains("<math"));
 }

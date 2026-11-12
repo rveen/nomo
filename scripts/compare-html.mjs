@@ -63,19 +63,20 @@ const forms = [
     name: "paged, Folio embedded",
     flags: ["--paged", ...textFlags],
     carries: textFont.upright,
-    wasm: (source, title) =>
-      engine.renderPaged(source, title, { mathml: true, fontUrl, folio, textFont }),
+    wasm: (source, title, fileName) =>
+      engine.renderPaged(source, title, { mathml: true, fontUrl, folio, textFont, fileName }),
   },
   {
     name: "paged, Folio linked",
     flags: ["--folio-url", folioUrl, ...textFlags],
     carries: textFont.upright,
-    wasm: (source, title) =>
+    wasm: (source, title, fileName) =>
       engine.renderPaged(source, title, {
         mathml: true,
         fontUrl,
         folio: { url: folioUrl },
         textFont,
+        fileName,
       }),
   },
 ];
@@ -118,7 +119,7 @@ try {
       // given, so a form that names something must be seen to carry it.
       if (form.carries && !native.includes(form.carries)) {
         problems.push(`${name} (${form.name}): the page does not carry ${form.carries}`);
-      } else if (form.wasm(source, title) === native) matched += 1;
+      } else if (form.wasm(source, title, name) === native) matched += 1;
       else problems.push(`${name} (${form.name})`);
     }
   }

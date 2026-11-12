@@ -471,8 +471,13 @@ fn render_html(path: &str, source: &str) -> Verdict {
     let title = std::path::Path::new(path)
         .file_stem()
         .map_or_else(|| path.to_string(), |s| s.to_string_lossy().into_owned());
+    // The file's own name, extension included, for the foot of a paged
+    // document: it is what a reader holding one loose sheet would search for.
+    let file = std::path::Path::new(path)
+        .file_name()
+        .map_or_else(|| path.to_string(), |s| s.to_string_lossy().into_owned());
     let html = PAGED.with(|p| match p.borrow().as_ref() {
-        Some(engine) => nomo_core::render::paged::render(&sheet, &opts, &title, engine),
+        Some(engine) => nomo_core::render::paged::render(&sheet, &opts, &title, &file, engine),
         None => nomo_core::render::html::render(&sheet, &opts, &title),
     });
 

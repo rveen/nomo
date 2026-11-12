@@ -46,9 +46,9 @@ of those three arrive. The steps, in order:
 
 **The paged output is built, on the `nomo-folio` branch (2026-11-12).** A
 second typeset output: the worksheet as A4 pages, laid out in the browser by
-[Folio](https://github.com/trukeio/folio), with "Nomo" at the head where a
-logo will go (a placeholder), the title running from page 2 and "Page n of N"
-at the foot. `nomo html --paged` writes it, `nomo_render_paged` returns the
+[Folio](https://github.com/trukeio/folio), with the title at the top left
+from page 2, and the source file's name and "Page n of N" at the foot of every
+page. `nomo html --paged` writes it, `nomo_render_paged` returns the
 same bytes, and the editor gained **Pages** and **Print**. Nomo writes the
 document and Folio paginates it, so the numbers stay bit-reproducible and the
 page breaks are presentation — design note §8.55 draws that line, and
@@ -134,7 +134,7 @@ self-contained file. **Second phase:** a name that spells a Greek letter is set 
 | — Strings | **first phase done** | A literal, bindable, choosable by `if`, comparable with `==`. No arithmetic, no order, none inside a collection — which is what the 41 corpus markers for them needed and no more (§8.32) |
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Figures, pasted | **done** | Ctrl-V with an image on the clipboard writes the reference at the cursor and the base64 block in the trailer, in one transaction, so one undo takes both back. `resource::attach` writes what `Resources::scan` reads — one description of the format, which the SMath emitter now shares — and it decides *where* a reference may go, since everything under the marker is data. Wider than 700 px is scaled to 700 and the file carries the scaled bytes; below that they are carried byte for byte, which is what keeps an animated GIF animated. A clipboard holding a link and no bytes is refused in words rather than fetched. Design note §8.54, `scripts/check-paste.mjs` |
-| — Paged output | **done**, on `nomo-folio` | `nomo html --paged` (and `--folio-url`, `--embed-folio`), `nomo_render_paged`, and the editor's Pages view and Print. The document is `html::body()` with `@page`, margin boxes and Folio's drop-in around it, so no snapshot moved. A4; "Nomo" heads every page but the first as a placeholder for a logo; the title runs from page 2; "Page n of N" at the foot. An early Ctrl-P prints blank rather than unpaginated. The editor's pages are the CLI's document in a frame, fitted to the pane. Gated by `compare-html.mjs` (87 pages, both targets), `check-paged.mjs` (58 documents, one A4 sheet per page) and `check-pages.mjs`. Design note §8.55, `docs/folio-plan.md` |
+| — Paged output | **done**, on `nomo-folio` | `nomo html --paged` (and `--folio-url`, `--embed-folio`), `nomo_render_paged`, and the editor's Pages view and Print. The document is `html::body()` with `@page`, margin boxes and Folio's drop-in around it, so no snapshot moved. A4; the title at the top left from page 2; the source file's name (`beam.nomo`) at the bottom left and "Page n of N" at the bottom right of every page. An early Ctrl-P prints blank rather than unpaginated. The editor's pages are the CLI's document in a frame, fitted to the pane. Gated by `compare-html.mjs` (87 pages, both targets), `check-paged.mjs` (58 documents, one A4 sheet per page) and `check-pages.mjs`. Design note §8.55, `docs/folio-plan.md` |
 | — Prose as Markdown | **done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline is `` ` `` and `**`, and nothing else: `_` would eat identifiers and a single `*` is the multiplication operator — 61 corpus prose lines pair one and every pair encloses arithmetic. Design note §8.41 and §8.53, `examples/prose.nomo` |
 
 743 tests and 29 golden snapshots. `git log` is one commit per phase, and each
@@ -1085,8 +1085,9 @@ it fail, which was checked.
   requesting nothing but the `blob:` URLs the editor hands it (it used to
   fetch through the worker, and those requests could stall — design note
   §8.55); a long worksheet must take several pages, with every
-  worked line on them once, "Nomo" heading every page but the first and the
-  foot counting them; no page may run past the pane; typeset pages must pass
+  worked line on them once, the title heading every page but the first at the
+  left and nothing at the right, and the foot naming the file and counting
+  the pages; no page may run past the pane; typeset pages must pass
   Folio's MATH-table probe of the shipped subset font; and Print, and Ctrl+P
   in the editor *and* in the pages, must reach the frame's `print()`. That is
   stubbed with a counter, because a headless print dialogue would hang. The

@@ -278,6 +278,74 @@ pub unsafe extern "C" fn nomo_render_html(
     into_buffer(nomo_core::render::html::render(&sheet, &opts, title))
 }
 
+/// Evaluate a worksheet and return it as a paged document, for Folio to lay out.
+///
+/// Exactly what `nomo html --paged` writes for the same arguments. `folio` is
+/// the engine: with `embed` zero it is the URL Folio is served at, as
+/// `--folio-url` takes, and `notice` is ignored; with `embed` non-zero it is
+/// the script itself and `notice` the licence written ahead of it, as
+/// `--embed-folio` carries them. The rest is [`nomo_render_html`]'s.
+///
+/// The script crosses the boundary rather than living in the module. The
+/// module is the artifact whose reproducibility this project rests on, and
+/// carrying a page-layout engine inside it would make every Folio release a
+/// new engine build. A host that serves stored worksheets will usually link
+/// Folio rather than embed it, so one copy is cached for every page.
+///
+/// Null means the arguments were not UTF-8, or an embedded script could end
+/// the `<script>` element it would sit in — see
+/// `nomo_core::render::paged::PagedEngine::embedded`.
+///
+/// # Safety
+///
+/// Each pointer must address at least its length in readable bytes.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn nomo_render_paged(
+    src_ptr: *const u8,
+    src_len: usize,
+    title_ptr: *const u8,
+    title_len: usize,
+    font_ptr: *const u8,
+    font_len: usize,
+    folio_ptr: *const u8,
+    folio_len: usize,
+    notice_ptr: *const u8,
+    notice_len: usize,
+    embed: u32,
+    mathml: u32,
+) -> *mut u8 {
+    let (Some(source), Some(title), Some(font), Some(folio), Some(notice)) = (
+        str_from(src_ptr, src_len),
+        str_from(title_ptr, title_len),
+        str_from(font_ptr, font_len),
+        str_from(folio_ptr, folio_len),
+        str_from(notice_ptr, notice_len),
+    ) else {
+        return std::ptr::null_mut();
+    };
+    use nomo_core::render::paged::{self, PagedEngine};
+    let engine = if embed != 0 {
+        match PagedEngine::embedded(folio, notice) {
+            Ok(engine) => engine,
+            Err(_) => return std::ptr::null_mut(),
+        }
+    } else {
+        PagedEngine::url(folio)
+    };
+    let sheet = nomo_core::Sheet::new(source);
+    let opts = nomo_core::RenderOptions {
+        mathml: mathml != 0,
+        font: if font.is_empty() {
+            nomo_core::MathFont::Named
+        } else {
+            nomo_core::MathFont::Url(font.to_string())
+        },
+        ..Default::default()
+    };
+    into_buffer(paged::render(&sheet, &opts, title, &engine))
+}
+
 // ---- importing an SMath worksheet ---------------------------------------
 //
 // The alternative considered was a small server: an upload endpoint, the
@@ -570,6 +638,77 @@ mod tests {
             nomo_core::render::html::render(&nomo_core::Sheet::new(source), &opts, title);
         assert_eq!(page, expected);
         assert!(page.contains("<math"), "not typeset:\n{page}");
+    }
+
+    /// Call `nomo_render_paged` and take what it returns, or `None` for null.
+    fn render_paged(
+        source: &str,
+        title: &str,
+        font: &str,
+        folio: &str,
+        notice: &str,
+        embed: bool,
+    ) -> Option<String> {
+        // SAFETY: every slice outlives the call.
+        let buffer = unsafe {
+            nomo_render_paged(
+                source.as_ptr(),
+                source.len(),
+                title.as_ptr(),
+                title.len(),
+                font.as_ptr(),
+                font.len(),
+                folio.as_ptr(),
+                folio.len(),
+                notice.as_ptr(),
+                notice.len(),
+                u32::from(embed),
+                1,
+            )
+        };
+        if buffer.is_null() {
+            return None;
+        }
+        // SAFETY: the buffer is the layout `into_buffer` wrote.
+        unsafe {
+            let mut header = [0u8; HEADER];
+            std::ptr::copy_nonoverlapping(buffer, header.as_mut_ptr(), HEADER);
+            let len = u32::from_le_bytes(header) as usize;
+            let bytes = std::slice::from_raw_parts(buffer.add(HEADER), len).to_vec();
+            nomo_free(buffer, HEADER + len);
+            Some(String::from_utf8(bytes).expect("the page is UTF-8"))
+        }
+    }
+
+    #[test]
+    fn a_paged_document_is_what_nomo_html_paged_writes() {
+        use nomo_core::render::paged::{self, PagedEngine};
+        let source = "' # Cone\nr = 5 cm\nh = 12 cm\nV = r^2*h/3\n";
+        let (title, font) = ("cone", "fonts/math.woff2");
+        let opts = nomo_core::RenderOptions {
+            mathml: true,
+            font: nomo_core::MathFont::Url(font.to_string()),
+            ..Default::default()
+        };
+        let sheet = nomo_core::Sheet::new(source);
+
+        let embedded = render_paged(source, title, font, "/* folio */", "MIT", true).unwrap();
+        let engine = PagedEngine::embedded("/* folio */", "MIT").unwrap();
+        assert_eq!(embedded, paged::render(&sheet, &opts, title, &engine));
+        assert!(embedded.contains("content: \"Nomo\";"));
+
+        // Linked: the notice is the server's business, not the document's.
+        let linked = render_paged(source, title, font, "/f.js", "ignored", false).unwrap();
+        let engine = PagedEngine::url("/f.js");
+        assert_eq!(linked, paged::render(&sheet, &opts, title, &engine));
+        assert!(!linked.contains("ignored"));
+    }
+
+    #[test]
+    fn a_script_that_could_end_its_element_comes_back_null() {
+        assert!(render_paged("x = 1\n", "x", "", "a = '</script>'", "", true).is_none());
+        // As a URL the same text is only an attribute value, escaped.
+        assert!(render_paged("x = 1\n", "x", "", "a</script>", "", false).is_some());
     }
 
     #[test]

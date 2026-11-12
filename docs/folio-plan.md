@@ -134,7 +134,28 @@ Beside `nomo_render_html`, with the same "the page is what the CLI writes"
 test. `scripts/compare-html.mjs` covers the paged variant, so native and
 WebAssembly agree byte for byte.
 
-*Gate:* `node scripts/compare-html.mjs`, `scripts/compare-targets.sh`.
+One entry point for both forms of the engine: `embed` chooses whether `folio`
+is a URL or the script, with its licence in `notice`. The script crosses the
+boundary rather than living in the module. The module is the artifact the
+determinism claim rests on, and carrying a layout engine inside it would make
+every Folio release a new engine build. A script that could end its element
+comes back null, as non-UTF-8 input does. `boundary.mjs` gains
+`renderPaged(source, title, { mathml, fontUrl, folio })`, where `folio` is
+`{ url }` or `{ script, notice }`.
+
+`compare-html.mjs` compares three forms per worksheet: the standalone page,
+the paged document with Folio embedded, and with Folio linked. That is 87
+pages. Each output is removed before the CLI writes it, so a run that writes
+nothing cannot be compared against the previous form's page. Since the
+script compares the paged document, `compare-targets.sh` runs
+`fetch-folio.sh` before it. That script builds only if the files are
+missing, so CI's three `compare-targets.sh` jobs obtain Folio with nothing
+added to the workflows. They use Node 22, which still bundles corepack
+(Node 25 drops it; that is when `fetch-folio.sh` will need another way to
+the pinned pnpm).
+
+*Gate:* `node scripts/compare-html.mjs`, `scripts/compare-targets.sh` — all
+six of its gates green.
 
 ### 4. The editor: a Pages view, and printing through it
 

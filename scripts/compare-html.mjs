@@ -9,7 +9,14 @@
 // stylesheet, the title, the `@font-face` rule — which is exactly what the new
 // entry point is responsible for.
 //
-// Run after `cargo build --release -p nomo-cli` and the wasm build.
+// The paged document is held to the same rule, in both of its forms: Folio
+// carried in the page (`--paged`, which reads web/vendor/folio/) and Folio
+// linked (`--folio-url`). The embedded form is the stronger check, since
+// 115 kB of script and its licence cross the boundary and must come back
+// untouched; the linked form is what a server would actually serve.
+//
+// Run after `cargo build --release -p nomo-cli`, the wasm build, and
+// `scripts/fetch-folio.sh`.
 
 import { mkdtemp, readdir, readFile, copyFile, rm } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
@@ -18,8 +25,44 @@ import path from "node:path";
 import { load, repoRoot } from "./wasm-host.mjs";
 
 const fontUrl = "/.nomo/stix-two-math-subset.woff2";
+const folioUrl = "/.nomo/folio.polyfill.min.js";
 const nomo = path.join(repoRoot, "target/release/nomo");
 const examplesDir = path.join(repoRoot, "examples");
+const folioDir = path.join(repoRoot, "web/vendor/folio");
+
+// What `--paged` embeds, read the way the CLI reads it, so the WebAssembly
+// call is given the same bytes.
+let folio;
+try {
+  folio = {
+    script: await readFile(path.join(folioDir, "folio.polyfill.min.js"), "utf8"),
+    notice: await readFile(path.join(folioDir, "LICENSE"), "utf8"),
+  };
+} catch {
+  console.error("compare-html: no Folio in web/vendor/folio — run ./scripts/fetch-folio.sh");
+  process.exit(1);
+}
+
+// Each form of the page: the CLI's flags, and the WebAssembly call that must
+// return the same bytes.
+const forms = [
+  {
+    name: "standalone",
+    flags: [],
+    wasm: (source, title) => engine.renderHtml(source, title, { mathml: true, fontUrl }),
+  },
+  {
+    name: "paged, Folio embedded",
+    flags: ["--paged"],
+    wasm: (source, title) => engine.renderPaged(source, title, { mathml: true, fontUrl, folio }),
+  },
+  {
+    name: "paged, Folio linked",
+    flags: ["--folio-url", folioUrl],
+    wasm: (source, title) =>
+      engine.renderPaged(source, title, { mathml: true, fontUrl, folio: { url: folioUrl } }),
+  },
+];
 
 const engine = await load();
 const work = await mkdtemp(path.join(tmpdir(), "nomo-html-"));
@@ -32,16 +75,32 @@ try {
     // `nomo html` writes beside its input, so it is given a copy to write beside.
     const copy = path.join(work, name);
     await copyFile(path.join(examplesDir, name), copy);
-    try {
-      execFileSync(nomo, ["html", "--mathml", "--font-url", fontUrl, copy], { stdio: "ignore" });
-    } catch {
-      // A worksheet with errors exits non-zero and still writes its page.
-    }
-    const native = await readFile(copy.replace(/\.nomo$/, ".html"), "utf8");
     const source = await readFile(copy, "utf8");
-    const wasm = engine.renderHtml(source, path.basename(name, ".nomo"), { mathml: true, fontUrl });
-    if (wasm === native) matched += 1;
-    else problems.push(name);
+    const title = path.basename(name, ".nomo");
+    const out = copy.replace(/\.nomo$/, ".html");
+    for (const form of forms) {
+      // Removed first, so a run that writes nothing cannot be compared against
+      // the page the previous form left behind.
+      await rm(out, { force: true });
+      try {
+        // From the repository root, which is where `--paged` finds Folio.
+        execFileSync(nomo, ["html", "--mathml", "--font-url", fontUrl, ...form.flags, copy], {
+          cwd: repoRoot,
+          stdio: "ignore",
+        });
+      } catch {
+        // A worksheet with errors exits non-zero and still writes its page.
+      }
+      let native;
+      try {
+        native = await readFile(out, "utf8");
+      } catch {
+        problems.push(`${name} (${form.name}): \`nomo html\` wrote nothing`);
+        continue;
+      }
+      if (form.wasm(source, title) === native) matched += 1;
+      else problems.push(`${name} (${form.name})`);
+    }
   }
 } finally {
   await rm(work, { recursive: true, force: true });
@@ -51,4 +110,7 @@ if (problems.length > 0) {
   console.error(`compare-html: the page differs between native and WebAssembly:\n  ${problems.join("\n  ")}`);
   process.exit(1);
 }
-console.log(`ok: ${matched} typeset pages byte-identical between \`nomo html\` and nomo_render_html`);
+console.log(
+  `ok: ${matched} typeset pages byte-identical between \`nomo html\` and the module ` +
+    `(${forms.map((f) => f.name).join("; ")})`,
+);

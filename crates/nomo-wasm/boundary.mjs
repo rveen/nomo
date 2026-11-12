@@ -33,6 +33,7 @@ export function bind(exports) {
     nomo_document_update_as,
     nomo_document_free,
     nomo_render_html,
+    nomo_render_paged,
     nomo_for_saving,
     nomo_attach_image,
     nomo_smath_import,
@@ -213,6 +214,37 @@ export function bind(exports) {
           withText(fontUrl, (f) =>
             read(
               nomo_render_html(s.ptr, s.len, t.ptr, t.len, f.ptr, f.len, mathml ? 1 : 0),
+            ),
+          ),
+        ),
+      );
+    },
+
+    /**
+     * A worksheet as the paged document `nomo html --paged` writes. Stateless.
+     *
+     * `folio` is either `{ url }`, which links Folio as `--folio-url` does, or
+     * `{ script, notice }`, which carries it and its licence as `--embed-folio`
+     * does. Throws if the script could end the `<script>` element it would be
+     * embedded in — the engine refuses it rather than write a broken page.
+     */
+    renderPaged(source, title, { mathml = false, fontUrl = "", folio }) {
+      const embed = folio.script !== undefined;
+      const engine = embed ? folio.script : folio.url;
+      const notice = embed ? (folio.notice ?? "") : "";
+      return withText(source, (s) =>
+        withText(title, (t) =>
+          withText(fontUrl, (f) =>
+            withText(engine, (e) =>
+              withText(notice, (n) =>
+                read(
+                  nomo_render_paged(
+                    s.ptr, s.len, t.ptr, t.len, f.ptr, f.len,
+                    e.ptr, e.len, n.ptr, n.len,
+                    embed ? 1 : 0, mathml ? 1 : 0,
+                  ),
+                ),
+              ),
             ),
           ),
         ),

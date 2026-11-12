@@ -11,7 +11,12 @@
 #   5. compare-import   — an SMath worksheet translates identically on both.
 #   6. compare-html     — the typeset page `nomo html --mathml` writes is the
 #                         page nomo_render_html returns, which is what a server
-#                         showing stored worksheets (gserver's plugin) serves.
+#                         showing stored worksheets (gserver's plugin) serves;
+#                         and the paged document `--paged` writes is the one
+#                         nomo_render_paged returns, with Folio embedded and
+#                         linked. Folio is obtained first by fetch-folio.sh,
+#                         which builds it only if it is missing and verifies it
+#                         against its hashes either way.
 #
 # Native == snapshots and WebAssembly == snapshots together mean native ==
 # WebAssembly, byte for byte, across the whole corpus.
@@ -54,4 +59,5 @@ node scripts/compare-import.mjs
 
 echo "==> the typeset page on both targets"
 cargo build --quiet --release -p nomo-cli
+./scripts/fetch-folio.sh
 node scripts/compare-html.mjs

@@ -223,6 +223,12 @@ try {
     fit.right <= fit.width,
     `a page runs past the pane: its right edge at ${fit.right}px, the pane ${fit.width}px wide`,
   );
+  // White around the pages: the paged document's own grey ground showed as a
+  // band above the first page and below the last.
+  const ground = await browser.evaluate(
+    `getComputedStyle(document.querySelector("#pages-frame").contentDocument.documentElement).backgroundColor`,
+  );
+  check(ground === "rgb(255, 255, 255)", `the ground around the pages should be white, is ${ground}`);
 
   // ---- typeset pages --------------------------------------------------
   // The case Folio's MATH-table probe exists for: the editor names the font it

@@ -439,6 +439,7 @@ async function layOutPages() {
           finish(reject, event.reason ?? new Error("Folio failed")),
         );
         frame.addEventListener("keydown", onPrintKey, { capture: true });
+        frameStyle(pagesFrame.contentDocument);
         const check = () => {
           // A waiter a newer layout superseded still hears this load, since
           // both were listening for the frame's next one; it must not touch
@@ -496,16 +497,36 @@ function fitPages() {
   const doc = pagesFrame.contentDocument;
   const page = doc?.querySelector(".pagedjs_page");
   if (!page) return;
-  if (!doc.getElementById("nomo-fit")) {
-    const style = doc.createElement("style");
-    style.id = "nomo-fit";
-    style.textContent = "@media screen { .pagedjs_pages { zoom: var(--nomo-fit, 1); } }";
-    doc.head.append(style);
-  }
+  frameStyle(doc);
   // The page's own width, which zoom does not change; 32 px of ground beside it.
   const width = page.offsetWidth;
   const fit = Math.min(1, (pagesFrame.clientWidth - 32) / width);
   doc.documentElement.style.setProperty("--nomo-fit", String(Math.max(0.25, fit)));
+}
+
+/**
+ * The editor's own additions to the frame's document, both screen-only.
+ *
+ * The pages are scaled to the pane (see `fitPages`), and the ground they sit
+ * on is white. The paged document puts its pages on a grey ground, which
+ * suits a document opened on its own; in the pane it showed as a grey band
+ * above the first page and below the last, around white pages. Added here
+ * rather than written into the document, which is the one `nomo html --paged`
+ * writes and `compare-html.mjs` holds to it byte for byte. Added on load, not
+ * when Folio finishes, so the grey never shows while the pages are being laid
+ * out; Folio drops `@media screen` while it measures, so neither rule can move
+ * a page break.
+ */
+function frameStyle(doc) {
+  if (doc.getElementById("nomo-frame")) return;
+  const style = doc.createElement("style");
+  style.id = "nomo-frame";
+  style.textContent =
+    "@media screen {\n" +
+    "  html { background: #fff; }\n" +
+    "  .pagedjs_pages { zoom: var(--nomo-fit, 1); }\n" +
+    "}";
+  doc.head.append(style);
 }
 
 function schedulePages() {

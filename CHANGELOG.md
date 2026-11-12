@@ -60,6 +60,10 @@
   find, which is right for the results pane. The panel follows the light and
   dark schemes.
 
+- **The Pages view sits on white.** The paged document's grey ground showed
+  in the editor as a band above the first page and below the last. The
+  editor's frame now sets it white; `nomo html --paged` is unchanged.
+
 - **The line-number gutter is dark in the dark scheme.** It stayed a light
   strip, because CodeMirror's own theme outranked the editor's gutter rule and
   that rule never applied.

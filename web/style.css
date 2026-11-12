@@ -234,7 +234,11 @@ footer p { margin: 0; }
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
   line-height: 1.65;
 }
-.cm-gutters { background: var(--chrome); border-right: 1px solid var(--rule); color: var(--muted); }
+/* `#editor` for the same reason as the find panel below: CodeMirror's base
+   theme scopes its gutter rule with a generated class, which outranked a bare
+   `.cm-gutters` here, so this rule never applied and the line numbers sat on a
+   light strip in the dark scheme. */
+#editor .cm-gutters { background: var(--chrome); border-right: 1px solid var(--rule); color: var(--muted); }
 
 /* The find panel (Ctrl+F in the source), drawn in the editor's colours so it
    follows the light and dark schemes like the header it sits under; its own

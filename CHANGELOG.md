@@ -60,6 +60,10 @@
   find, which is right for the results pane. The panel follows the light and
   dark schemes.
 
+- **The line-number gutter is dark in the dark scheme.** It stayed a light
+  strip, because CodeMirror's own theme outranked the editor's gutter rule and
+  that rule never applied.
+
 Nothing a worksheet computes has moved: 29 golden snapshots and the mechanics
 corpus baseline are unchanged, and `nomo html` without `--paged` writes the same
 bytes it did. Where a page breaks depends on the fonts the browser has, and is

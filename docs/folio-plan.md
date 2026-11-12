@@ -224,6 +224,39 @@ invariant, checked from outside); and that no step is split across a page. A
 PDF of one worksheet through `page.pdf({ preferCSSPageSize: true })` is written
 for a human to look at.
 
+*As built.* All 29 examples, in two forms: the document as it stands, and
+typeset with the shipped math font embedded, which puts Folio's MATH-table
+probe in front of that font. Each of the 58 documents is rendered by the CLI
+itself, and the check asserts:
+
+- Folio finished, built as many pages as it reported, and none overflowed.
+- The worked lines on the pages, compared by text and in order, are exactly
+  the document's. The document is re-parsed without running it to get them.
+  A line split across two pages would fail this as two half-lines.
+- "Nomo" heads every page but the first, and each page's foot reads
+  "Page n of N".
+- Under print media, nothing is hidden and no element still carries the
+  marker.
+- The PDF has exactly one A4 sheet per page. The sheets are counted from the
+  bytes, since Chrome writes one uncompressed `/MediaBox` per page. A blank
+  sheet in front of page 1, or Chrome's own margin boxes around Folio's,
+  would show up here.
+
+`chrome.mjs` gains `pdf()` for this. Every typeset PDF is left in
+`target/paged/`, not just one.
+
+The early print is checked too. The math font is served from a route that
+holds it back, and Folio waits for fonts, so the body is parsed and nothing
+is laid out yet. In that state the body must be hidden in print, and visible
+once the font is released. Holding back Folio itself does not create that
+state: a classic script in the head stops the parser, so there is no body to
+print. That is how the first version of this check timed out.
+
+The gate was tested by breaking what it guards. With the phase 1 bug put
+back, so the marker is cleared from the root but not from the pages' clones,
+it reports 117 problems. With the print guard removed, it reports the early
+print. It runs in `build-web.sh`; all 18 gates pass.
+
 ### 6. Documentation
 
 A design-note entry (§8.55). It knowingly revisits two parts of §8.48:

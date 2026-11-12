@@ -237,6 +237,21 @@ async function start(binary, profile) {
       return result.result.value;
     },
 
+    /**
+     * Print the page to PDF, as the print dialogue would, and return the bytes.
+     *
+     * `preferCSSPageSize` so the sheet is the size the page's own `@page`
+     * asks for rather than the printer default: a paged document is laid out
+     * for a sheet, and the check is that it comes out on that sheet.
+     */
+    async pdf() {
+      const { data } = await call("Page.printToPDF", {
+        preferCSSPageSize: true,
+        printBackground: true,
+      });
+      return Buffer.from(data, "base64");
+    },
+
     /** Render the page as it would be printed, or back as it is on screen. */
     setPrintMedia(on) {
       return call("Emulation.setEmulatedMedia", { media: on ? "print" : "" });

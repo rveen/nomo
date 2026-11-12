@@ -55,6 +55,7 @@ echo "==> in a browser"
 node scripts/check-browser.mjs
 node scripts/check-print.mjs
 node scripts/check-pages.mjs
+node scripts/check-paged.mjs
 node scripts/check-files.mjs
 node scripts/check-recovery.mjs
 node scripts/check-figures.mjs

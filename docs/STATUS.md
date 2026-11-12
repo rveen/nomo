@@ -174,8 +174,9 @@ cargo run --release -p nomo-cli -- bench               # timings; a report, exit
 ./scripts/compare-arch.sh                               # x86-64 vs aarch64 (needs qemu-user)
 ./scripts/build-gallery.sh                              # the worked examples as a
                                                         # browsable set of pages
-./scripts/build-web.sh                                  # front end; also runs the twelve
+./scripts/build-web.sh                                  # front end; also runs the thirteen
                                                         # browser checks, including
+                                                        # check-find.mjs,
                                                         # check-figures.mjs,
                                                         # check-paste.mjs,
                                                         # check-plots.mjs,
@@ -1053,6 +1054,14 @@ it fail, which was checked.
   bytes is refused in words and changes nothing, and that ordinary text still
   pastes, since the handler sees every paste in the application. Confirmed to
   fail when the 700 px limit is changed.
+- `check-find.mjs` — Ctrl+F in the source. The editor renders only the lines
+  near the viewport, so the browser's own find cannot see a line scrolled out
+  of view; reported from use. Ctrl+F with the focus in the source opens
+  CodeMirror's find (`@codemirror/search`), which searches the document. The
+  check first asserts that a word near the end of a 400-line worksheet is
+  *absent* from the page, or it would prove nothing, then that Ctrl+F, the word
+  and Enter select it and scroll it into view. Confirmed to fail without the
+  editor's find.
 - `check-recovery.mjs` — sabotages the engine so that one `update` throws, as a
   trap would, and asserts the editor replaces the instance and carries on with
   the buffer intact. It exists because the failure it guards against was

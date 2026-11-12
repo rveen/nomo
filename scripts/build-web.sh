@@ -56,6 +56,7 @@ node scripts/check-paste.mjs
 node scripts/check-plots.mjs
 node scripts/check-mathml.mjs
 node scripts/check-assist.mjs
+node scripts/check-find.mjs
 node scripts/check-import.mjs
 node scripts/check-offline.mjs
 # Last, because it packages what everything above just checked. It is also the

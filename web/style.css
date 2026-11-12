@@ -236,6 +236,31 @@ footer p { margin: 0; }
 }
 .cm-gutters { background: var(--chrome); border-right: 1px solid var(--rule); color: var(--muted); }
 
+/* The find panel (Ctrl+F in the source), drawn in the editor's colours so it
+   follows the light and dark schemes like the header it sits under; its own
+   theme is light only, and its close button vanished on a dark page.
+   `#editor` because CodeMirror scopes its theme with a generated class, which
+   outranks a bare `.cm-…` rule here. */
+#editor .cm-panels { background: var(--chrome); color: var(--ink); }
+#editor .cm-panels-top { border-bottom: 1px solid var(--rule); }
+#editor .cm-search input,
+#editor .cm-search button {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 0.3rem;
+}
+#editor .cm-search button:hover { border-color: var(--muted); }
+#editor .cm-search label { font-size: 0.8rem; color: var(--muted); }
+#editor .cm-search button[name="close"] {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
 /* Token classes come from the engine; see web/src/highlight.js. */
 .tok-comment    { color: var(--muted); font-style: italic; }
 .tok-number     { color: var(--number); }

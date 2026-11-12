@@ -12,6 +12,12 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 // extension owns the diagnostic set and would overwrite the engine's with the
 // result of its own source on the next tick.
 import { lintGutter, setDiagnostics } from "@codemirror/lint";
+// CodeMirror's own find, because the browser's cannot do the job here. The
+// editor renders only the lines near the viewport — that is what keeps a
+// worksheet carrying megabytes of figures responsive — so a line scrolled out
+// of view is not in the page, and Ctrl+F in the browser never finds it. This
+// searches the document rather than the page.
+import { search, searchKeymap } from "@codemirror/search";
 
 import { assist, goToDefinition, setSymbols, setVocabulary } from "./assist.js";
 import { loadEngine } from "./engine.js";
@@ -867,6 +873,9 @@ async function main() {
         lintGutter(),
         highlightActiveLine(),
         history(),
+        // The panel at the top, where the eye already is when it looks for the
+        // toolbar, rather than below a long worksheet.
+        search({ top: true }),
         keymap.of([
           {
             key: "Mod-s",
@@ -887,6 +896,10 @@ async function main() {
               return true;
             },
           },
+          // Ctrl+F with the focus in the source opens the editor's find, which
+          // sees the whole document; elsewhere it stays the browser's, which
+          // is right for the results pane, since that pane is rendered whole.
+          ...searchKeymap,
           ...defaultKeymap,
           ...historyKeymap,
         ]),

@@ -42,6 +42,18 @@
   exported beside `MathFont`. Code outside `nomo-core` that builds
   `RenderOptions` literally must add it, or use `..Default::default()`.
 
+### Fixed
+
+- **Ctrl+F in the source finds text that is scrolled out of view.** The
+  editor renders only the lines near the viewport, which is what keeps a
+  worksheet carrying megabytes of figures responsive, so the browser's own
+  find could not see the rest of the source. Ctrl+F with the focus in the
+  source now opens the editor's find (`@codemirror/search`), which searches
+  the whole document, highlights every match, steps with Enter and F3, and
+  can replace. With the focus anywhere else, Ctrl+F is still the browser's
+  find, which is right for the results pane. The panel follows the light and
+  dark schemes.
+
 Nothing a worksheet computes has moved: 29 golden snapshots and the corpus
 baselines are unchanged, and `nomo html` without `--paged` writes the same
 bytes it did. Where a page breaks depends on the fonts the browser has, and is

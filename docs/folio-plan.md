@@ -60,9 +60,12 @@ bundles).
 ### 1. Core: `render/paged.rs`
 
 `pub fn render(sheet, opts, title, engine: &PagedEngine) -> String`, which
-reuses `html::body()` unchanged, so **no golden file moves**. `PagedEngine`
-follows `MathFont`: `Url(String)` or `Embedded(Vec<u8>)`, the bytes read by the
-caller so that `nomo-core` still does no I/O.
+reuses `html::body()` unchanged, so **no golden file moves**. `PagedEngine` is
+built by `PagedEngine::url` or `PagedEngine::embedded(script)`. The second
+takes the script as text, read by the caller so that `nomo-core` still does no
+I/O, and returns an error if the script could close its own `<script>` element.
+`html::render` now shares a `document()` with it, and its output was checked
+byte-identical for every example, plain and `--mathml`, before and after.
 
 The page chrome is fixed CSS — nothing in it varies, not even a date — so the
 document stays byte-reproducible:
@@ -88,6 +91,17 @@ cannot slip through either.
 
 *Gate:* `cargo test --workspace`, `nomo test` (unchanged), clippy, fmt,
 `check-no-host-math.sh`.
+
+*Found while doing it.* Folio builds each page from a **clone of the source's
+`html` and `body`, attributes included**, and rewrites `:root` to match the
+clone. So a marker attribute set on the root while pagination runs is copied
+into every page, and the print guard keyed on it hid the content of every
+finished page. Only the margin boxes printed. Neither `:root` nor a child
+combinator scopes the rule away from the clones; the `after` hook clears the
+attribute from every element that carries it. Smoke-tested before committing:
+all 29 examples paginate with nothing overflowed, every step is visible under
+print media, and a PDF printed from Chrome shows the head, the running title
+and the foot.
 
 ### 2. CLI: `nomo html --paged`
 
@@ -146,9 +160,11 @@ command list.
   only display math, so a very wide line still overflows. Emitting
   `display="block"` changes `body()` and every golden file; that is its own
   decision, not part of this branch.
-- **Ctrl-P before pagination finishes** in a standalone file. Hide the content
-  in print until Folio's `after` hook sets a class, so an early print is empty
-  rather than unpaginated.
+- **Ctrl-P before pagination finishes** in a standalone file. Settled in
+  phase 1: the content is hidden in print while `data-nomo-paging` is on the
+  root, and Folio's `after` hook removes it, so an early print is empty rather
+  than unpaginated. The hook also sets `data-nomo-pages` and
+  `data-nomo-overflowed`, which phase 5 waits on and reads.
 
 ## Decided
 

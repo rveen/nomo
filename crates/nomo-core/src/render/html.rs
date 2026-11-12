@@ -185,6 +185,28 @@ figcaption { font-size: 0.8rem; opacity: 0.55; margin-top: 0.3rem; }
 /// `<h1>` is dropped rather than printed above it. Two titles on one page, one
 /// of them a file name, is what showing both would mean.
 pub fn render(sheet: &Sheet, opts: &RenderOptions, title: &str) -> String {
+    document(sheet, opts, title, "", "")
+}
+
+/// The title a document goes by: the worksheet's own opening heading if it has
+/// one, otherwise what the caller knows it as.
+pub(super) fn title_of(sheet: &Sheet, fallback: &str) -> String {
+    opening_heading(sheet).unwrap_or_else(|| fallback.to_string())
+}
+
+/// The standalone document, with room for another output to add to it.
+///
+/// `style` is appended after [`STYLE`], so a rule in it overrides one there of
+/// the same specificity; `head` goes last in the `<head>`. Both are empty for
+/// [`render`], which is what keeps its output byte-identical to what it was
+/// before a second output shared this function.
+pub(super) fn document(
+    sheet: &Sheet,
+    opts: &RenderOptions,
+    title: &str,
+    style: &str,
+    head: &str,
+) -> String {
     let body = body(sheet, opts);
     let (title, heading) = match opening_heading(sheet) {
         Some(own) => (own, String::new()),
@@ -195,7 +217,7 @@ pub fn render(sheet: &Sheet, opts: &RenderOptions, title: &str) -> String {
         "<!doctype html>\n<html lang=\"en\">\n<head>\n\
          <meta charset=\"utf-8\">\n\
          <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\
-         <title>{}</title>\n{notice}<style>{face}{STYLE}</style>\n</head>\n<body>\n\
+         <title>{}</title>\n{notice}<style>{face}{STYLE}{style}</style>\n{head}</head>\n<body>\n\
          {heading}{}</body>\n</html>\n",
         escape(&title),
         body

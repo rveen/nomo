@@ -26,6 +26,7 @@ pub mod base64;
 pub mod html;
 pub mod mathml;
 pub mod number;
+pub mod paged;
 pub mod plot;
 pub mod text;
 

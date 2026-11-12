@@ -63,7 +63,11 @@ const buttons = {
   save: document.querySelector("#save"),
   saveAs: document.querySelector("#save-as"),
   new: document.querySelector("#new"),
+  pages: document.querySelector("#pages"),
+  print: document.querySelector("#print"),
 };
+const outputPane = document.querySelector("#pane-output");
+const pagesFrame = document.querySelector("#pages-frame");
 
 /**
  * The engine.
@@ -166,6 +170,7 @@ function analyse() {
     return;
   }
   output.innerHTML = result.html;
+  if (pages.shown) schedulePages();
   // What the engine now knows about this worksheet's names, for completion,
   // hover and go-to-definition. Replaced wholesale rather than merged: a name
   // deleted from the worksheet must stop being offered.
@@ -279,6 +284,210 @@ function setDocument(text, name, handle, dirty = false) {
     changes: { from: 0, to: view.state.doc.length, insert: text },
   });
   analyse();
+}
+
+// ---- pages ---------------------------------------------------------------
+//
+// The worksheet as the pages it prints on. The frame is given the document
+// `nomo_render_paged` returns — the one `nomo html --paged` writes, which
+// `compare-html.mjs` holds byte-identical across targets — with Folio linked
+// from `folio/`, so the frame fetches it the first time pages are asked for
+// and the editor costs nothing more until then.
+//
+// Laid out on a longer debounce than the results pane. Paginating is the
+// browser laying the whole worksheet out more than once, which is far more
+// than the engine's recalculation costs, and pages that reflow under every
+// keystroke are not something anybody reads while typing.
+
+/** Where the frame's document finds Folio and the math font, relative to it. */
+const FOLIO_URL = "folio/folio.polyfill.min.js";
+const MATH_FONT_URL = "fonts/stix-two-math-subset.woff2";
+
+/** Milliseconds of quiet before laying the pages out again. */
+const PAGES_SETTLE = 600;
+
+/** How long Folio gets before the view says it did not finish. */
+const PAGES_TIMEOUT = 30000;
+
+const pages = {
+  /** Whether the Pages view is showing in place of the results. */
+  shown: false,
+  timer: 0,
+  /** The document the frame holds or is laying out, to skip one unchanged. */
+  document: null,
+  /** Settles with the page count once the frame's document is laid out. */
+  done: null,
+  /** Settles the previous `done` when a newer layout replaces it. */
+  supersede: null,
+};
+
+/** The paged document for the buffer as it stands. */
+function pagedDocument() {
+  const title = current.name.replace(/\.nomo$/, "");
+  return engine.renderPaged(view.state.doc.toString(), title, {
+    mathml: typeset.checked,
+    fontUrl: MATH_FONT_URL,
+    folio: { url: FOLIO_URL },
+  });
+}
+
+/**
+ * Put the current worksheet into the frame and wait for Folio to finish.
+ *
+ * Resolves with the number of pages. The paged document marks the end of
+ * pagination on its root — `data-nomo-pages`, set by Folio's `after` hook — so
+ * this watches for that rather than guessing a duration. An unchanged
+ * worksheet is not laid out again: typesetting toggled twice, or a save,
+ * should not reflow the pages someone is reading.
+ */
+function layOutPages() {
+  let html;
+  try {
+    html = pagedDocument();
+  } catch (error) {
+    void restartEngine(error);
+    return Promise.reject(error);
+  }
+  if (html === pages.document && pages.done) return pages.done;
+  pages.document = html;
+
+  // Where the reader was, so new pages do not throw them back to page 1.
+  const scroll = pagesFrame.contentWindow?.scrollY ?? 0;
+  const previous = pages.supersede;
+
+  const done = new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      fn(value);
+    };
+    const timer = setTimeout(
+      () => finish(reject, new Error("the pages did not finish laying out")),
+      PAGES_TIMEOUT,
+    );
+    // A newer layout took over: whoever waits on this one waits on that.
+    pages.supersede = (next) => finish(resolve, next);
+
+    pagesFrame.addEventListener(
+      "load",
+      () => {
+        const frame = pagesFrame.contentWindow;
+        const root = pagesFrame.contentDocument.documentElement;
+        // Folio reports a failure — a math font without a MATH table, say — by
+        // rejecting, which in the frame is an unhandled rejection.
+        frame.addEventListener("unhandledrejection", (event) =>
+          finish(reject, event.reason ?? new Error("Folio failed")),
+        );
+        frame.addEventListener("keydown", onPrintKey, { capture: true });
+        const check = () => {
+          // A waiter a newer layout superseded still hears this load, since
+          // both were listening for the frame's next one; it must not touch
+          // the frame on the newer layout's behalf.
+          if (settled) return true;
+          if (!root.hasAttribute("data-nomo-pages")) return false;
+          fitPages();
+          frame.scrollTo(0, scroll);
+          finish(resolve, Number(root.getAttribute("data-nomo-pages")));
+          return true;
+        };
+        if (!check()) {
+          new MutationObserver((_, observer) => {
+            if (check()) observer.disconnect();
+          }).observe(root, { attributes: true, attributeFilter: ["data-nomo-pages"] });
+        }
+      },
+      { once: true },
+    );
+  });
+  pages.done = done;
+  previous?.(done);
+  pagesFrame.srcdoc = html;
+  return done;
+}
+
+/**
+ * Ctrl+P prints the pages rather than the browser's view of the editor.
+ *
+ * Listened for in the capture phase, so it is caught wherever the focus is in
+ * the editor — and in the frame too, once a reader has clicked into the pages,
+ * which is a different document whose key events never reach this window. The
+ * browser's own menu still prints the results pane, which `check-print.mjs`
+ * keeps honest.
+ */
+function onPrintKey(event) {
+  if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "p") {
+    event.preventDefault();
+    void commandPrint();
+  }
+}
+
+/**
+ * Scale the pages to the width of the pane, never up.
+ *
+ * An A4 page is about 800 CSS pixels wide and the results pane is half a
+ * screen, so at full size a page is cut at its right edge. The scaling is the
+ * editor's, added to the frame after Folio has finished, rather than written
+ * into the paged document: that document is the one `nomo html --paged`
+ * writes and `compare-html.mjs` holds to it byte for byte. It is screen-only
+ * and set on the pages' container, so it changes neither what Folio measured
+ * nor the size anything prints at.
+ */
+function fitPages() {
+  const doc = pagesFrame.contentDocument;
+  const page = doc?.querySelector(".pagedjs_page");
+  if (!page) return;
+  if (!doc.getElementById("nomo-fit")) {
+    const style = doc.createElement("style");
+    style.id = "nomo-fit";
+    style.textContent = "@media screen { .pagedjs_pages { zoom: var(--nomo-fit, 1); } }";
+    doc.head.append(style);
+  }
+  // The page's own width, which zoom does not change; 32 px of ground beside it.
+  const width = page.offsetWidth;
+  const fit = Math.min(1, (pagesFrame.clientWidth - 32) / width);
+  doc.documentElement.style.setProperty("--nomo-fit", String(Math.max(0.25, fit)));
+}
+
+function schedulePages() {
+  clearTimeout(pages.timer);
+  pages.timer = setTimeout(() => {
+    layOutPages().catch((error) => status(`pages: ${error.message}`, "bad"));
+  }, PAGES_SETTLE);
+}
+
+/** Show or hide the Pages view. Showing lays the pages out at once. */
+function showPages(shown) {
+  pages.shown = shown;
+  buttons.pages.setAttribute("aria-pressed", String(shown));
+  output.hidden = shown;
+  pagesFrame.hidden = !shown;
+  outputPane.classList.toggle("paged", shown);
+  clearTimeout(pages.timer);
+  if (!shown) return Promise.resolve(0);
+  return layOutPages();
+}
+
+/**
+ * Print the worksheet as pages.
+ *
+ * Shows the Pages view first, so what prints is what the reader can see, and
+ * prints only once Folio has finished: a print taken mid-pagination is the
+ * one thing this view exists to prevent. The frame prints itself, which gives
+ * the pages and nothing of the editor around them.
+ */
+async function commandPrint() {
+  status("laying out pages…");
+  let count;
+  try {
+    count = await showPages(true);
+  } catch (error) {
+    status(`could not lay out the pages: ${error.message}`, "bad");
+    return;
+  }
+  status(`${count} page${count === 1 ? "" : "s"}`, "good", true);
+  pagesFrame.contentWindow.print();
 }
 
 // ---- commands ------------------------------------------------------------
@@ -649,6 +858,15 @@ async function main() {
   buttons.saveAs.addEventListener("click", () => void commandSaveAs());
   buttons.new.addEventListener("click", () => void commandNew());
   importPanel.dismiss.addEventListener("click", hideImportReport);
+  buttons.pages.addEventListener("click", () => {
+    showPages(!pages.shown).catch((error) => status(`pages: ${error.message}`, "bad"));
+  });
+  buttons.print.addEventListener("click", () => void commandPrint());
+  // The pane changes width with the window and with the layout's breakpoint.
+  new ResizeObserver(() => {
+    if (pages.shown) fitPages();
+  }).observe(pagesFrame);
+  window.addEventListener("keydown", onPrintKey, { capture: true });
   // Re-render rather than recompute: typesetting changes how the answer is
   // drawn and not what it is.
   typeset.addEventListener("change", analyse);

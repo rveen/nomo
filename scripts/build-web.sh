@@ -34,6 +34,11 @@ echo "==> fonts"
 # companion comes with it, for the prose around the mathematics.
 ./scripts/fetch-font.sh
 
+echo "==> Folio"
+# The paged-media engine the Pages view lays the worksheet out with. Built at a
+# pinned commit and hash-verified, like the fonts; see THIRD-PARTY.md.
+./scripts/fetch-folio.sh
+
 echo "==> front end"
 if [ ! -d web/node_modules ]; then
     (cd web && npm install --no-audit --no-fund)
@@ -49,6 +54,7 @@ node scripts/check-session.mjs
 echo "==> in a browser"
 node scripts/check-browser.mjs
 node scripts/check-print.mjs
+node scripts/check-pages.mjs
 node scripts/check-files.mjs
 node scripts/check-recovery.mjs
 node scripts/check-figures.mjs

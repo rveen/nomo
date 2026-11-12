@@ -206,6 +206,9 @@ const from = (sources) =>
  */
 export async function buildNotice(dist, metafiles) {
   const own = (await readFile(join(repoRoot, "LICENSE"), "utf8")).trim();
+  // Read from the copy beside the script in dist/, which is the one that
+  // ships — not restated, for the same reason as every other text here.
+  const folio = (await readFile(join(dist, "folio", "LICENSE"), "utf8")).trim();
   const packages = await bundledPackages(metafiles);
   const linked = await crates("nomo-wasm", "wasm32-unknown-unknown");
 
@@ -213,10 +216,11 @@ export async function buildNotice(dist, metafiles) {
     "Nomo — licences for everything in this directory",
     "",
     "This directory is the whole application: index.html, style.css, bundle.js,",
-    "nomo_wasm.wasm, sw.js, the fonts under fonts/ and the worked examples under",
-    "examples/. It is redistributable, and this file is part of what makes it so —",
-    "the MIT licences below require their notices to travel with the code, exactly",
-    "as the OFL requires fonts/OFL.txt to travel with the fonts.",
+    "nomo_wasm.wasm, sw.js, the fonts under fonts/, Folio under folio/ and the",
+    "worked examples under examples/. It is redistributable, and this file is part",
+    "of what makes it so — the MIT licences below require their notices to travel",
+    "with the code, exactly as the OFL requires fonts/OFL.txt to travel with the",
+    "fonts.",
     "",
     from("the bundler's metafile and cargo's\nresolve graph"),
     "",
@@ -234,6 +238,14 @@ export async function buildNotice(dist, metafiles) {
     "Compiled into nomo_wasm.wasm.",
     "",
     linked.map(section).join(`\n${RULE}\n`),
+    RULE,
+    "folio/folio.polyfill.min.js is Folio (https://github.com/trukeio/folio), the",
+    "paged-media engine that lays out the Pages view, unmodified, built from the",
+    "commit pinned in the source repository's scripts/folio/. Its licence is also",
+    "folio/LICENSE, beside it.",
+    "",
+    folio,
+    "",
     RULE,
     "The fonts under fonts/ are subsets of STIX Two Math and STIX Two Text,",
     "renamed because a subset is a Modified Version under their licence and",

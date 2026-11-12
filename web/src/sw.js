@@ -39,6 +39,10 @@ const SHELL = [
   // offline.
   "./fonts/stix-two-text-subset.woff2",
   "./fonts/stix-two-text-italic-subset.woff2",
+  // Folio, which lays out the Pages view. Requested only when that view is
+  // first opened, so it is precached for the same reason as the math font:
+  // a reader who goes offline and then asks for pages should get them.
+  "./folio/folio.polyfill.min.js",
 ];
 
 self.addEventListener("install", (event) => {

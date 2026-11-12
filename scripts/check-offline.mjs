@@ -138,6 +138,29 @@ try {
       "so this did not test what it claims to",
   );
 
+  // Pages, asked for for the first time with the network already off. Folio
+  // has never been requested in this profile, so it can only come from the
+  // precache — and the frame that asks for it is an `about:srcdoc` document,
+  // which reaches the worker only because it inherits the editor's. Both are
+  // claims worth a check rather than a belief.
+  await browser.evaluate(`document.querySelector("#pages").click()`);
+  await waitFor(
+    browser,
+    `document.querySelector("#pages-frame").contentDocument?.documentElement
+       .hasAttribute("data-nomo-pages") === true`,
+    "the pages to be laid out with the network off",
+  );
+  check(
+    (await browser.evaluate(
+      `document.querySelector("#pages-frame").contentDocument.querySelectorAll(".pagedjs_page").length`,
+    )) > 0,
+    "the Pages view laid out nothing with the network off",
+  );
+  check(
+    requests === requestsBefore,
+    `the Pages view reached the server ${requests - requestsBefore} time(s) while offline`,
+  );
+
   await browser.setOffline(false);
 } catch (error) {
   failures.push(`could not drive the browser: ${error.message}`);

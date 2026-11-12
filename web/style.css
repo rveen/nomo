@@ -192,6 +192,18 @@ main {
 #pane-editor { border-right: 1px solid var(--rule); min-width: 0; overflow: auto; }
 #pane-output { min-width: 0; overflow: auto; padding: 1rem 1.5rem; }
 
+/* The Pages view replaces the results pane's content rather than adding a
+   third pane: the pages are the same results, drawn as they print. The frame
+   scrolls itself, so the pane neither pads nor scrolls around it. */
+#pane-output.paged { padding: 0; overflow: hidden; }
+#pages-frame { display: block; width: 100%; height: 100%; border: 0; }
+#pages-frame[hidden] { display: none; }
+header button[aria-pressed="true"] {
+  background: var(--chrome);
+  border-color: var(--muted);
+  font-weight: 600;
+}
+
 footer {
   grid-row: 4;
   padding: 0.5rem 1rem;
@@ -452,6 +464,11 @@ footer p { margin: 0; }
   body { height: auto; display: block; background: #fff; color: #000; }
   main { display: block; }
   #pane-output { overflow: visible; padding: 0; }
+  /* Print from the browser's own menu, in the Pages view, prints the results
+     as before: the frame is a window onto a document of its own and would
+     print as one clipped screenful. Print and Ctrl+P print the frame itself. */
+  #pages-frame { display: none !important; }
+  #output[hidden] { display: block !important; }
 
   #output .step {
     /* Long expressions must wrap rather than be clipped at the page edge: a

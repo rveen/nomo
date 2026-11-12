@@ -18,6 +18,12 @@
   <label id="typeset-label" title="Draw the mathematics as formulas">
     <input type="checkbox" id="typeset"> Typeset
   </label>
+  <nav aria-label="Pages">
+    <button type="button" id="pages" aria-pressed="false"
+            title="Show the worksheet as the pages it prints on">Pages</button>
+    <button type="button" id="print"
+            title="Print the worksheet as pages (Ctrl+P)">Print</button>
+  </nav>
   <p id="file-name">untitled.nomo</p>
   <p id="status">loading…</p>
 </header>
@@ -39,6 +45,14 @@
   </section>
   <section id="pane-output" aria-label="Results">
     <div id="output"></div>
+    <!--
+      The Pages view: the paged document `nomo html --paged` writes, laid out
+      by Folio in a frame of its own. A frame because Folio installs @page
+      rules and a print stylesheet for the whole document it runs in, which in
+      this one would collide with the editor's; and because a frame prints
+      itself, so Print gives exactly the pages on screen.
+    -->
+    <iframe id="pages-frame" title="The worksheet as printed pages" hidden></iframe>
   </section>
 </main>
 

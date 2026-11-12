@@ -30,6 +30,9 @@ const wasm = join(
 
 const serve = process.argv.includes("--serve");
 
+/** The Folio build the Pages view loads, under `folio/` in dist/. */
+const FOLIO_FILE = "folio.polyfill.min.js";
+
 // Emptied first, not merged into. A build directory that only ever gains files
 // ships whatever anybody ever put there: this one was still carrying a
 // `sheaf_wasm.wasm` from before the project was renamed — 650 kB of a dead
@@ -55,6 +58,22 @@ await cp(join(here, "style.css"), join(dist, "style.css"));
 // The fonts, subset here rather than committed. `dist/` is emptied above, so
 // this has to run on every build rather than only when the files are missing.
 const fontBytes = await buildFont(dist);
+
+// Folio, which lays out the Pages view. Built and hash-verified by
+// scripts/fetch-folio.sh, and copied rather than bundled: the Pages view runs
+// the paged document `nomo_render_paged` writes, in a frame of its own, and
+// that document loads Folio by URL — the same document `nomo html --paged`
+// writes, which is what makes the frame's pages the CLI's pages. Its licence
+// travels beside it, as the OFL does beside the fonts.
+await mkdir(join(dist, "folio"), { recursive: true });
+try {
+  for (const name of [FOLIO_FILE, "LICENSE"]) {
+    await cp(join(repoRoot, "web/vendor/folio", name), join(dist, "folio", name));
+  }
+} catch {
+  console.error("error: no Folio in web/vendor/folio\n  run ./scripts/fetch-folio.sh");
+  process.exit(1);
+}
 
 // The language reference, rendered from docs/language.md. The one document a
 // person using the editor reaches for, and until now it was only in the
@@ -100,6 +119,9 @@ async function shellVersion() {
     `fonts/${FONT_FILE}`,
     `fonts/${TEXT_FILES.upright}`,
     `fonts/${TEXT_FILES.italic}`,
+    // Precached too, so the Pages view works offline; and so a new Folio
+    // build is fetched by a returning browser rather than never asked for.
+    `folio/${FOLIO_FILE}`,
   ]) {
     hash.update(await readFile(join(dist, name)));
   }

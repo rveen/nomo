@@ -159,14 +159,60 @@ six of its gates green.
 
 ### 4. The editor: a Pages view, and printing through it
 
-`web/build.mjs` copies `folio.mjs` into `dist/`; the editor `import()`s it the
-first time the Pages view opens or the worksheet is printed, so the editor
-costs nothing more until then. It goes in `sw.js`'s cache list and in the
-notice `scripts/notice.mjs` writes. The view runs
-`new Previewer({ pageDefaults, mathFont: "STIX Two Math Subset" })` into its own
-container beside `#output`, and Print awaits that before `window.print()`.
+*Changed from the first draft.* The draft had the editor import `folio.mjs`
+and drive a `Previewer` in its own page. What was built instead puts the
+document `nomo_render_paged` returns into an `<iframe srcdoc>`, with Folio
+linked from `folio/folio.polyfill.min.js`. Three reasons:
 
-*Gate:* `scripts/build-web.sh`, `check-offline.mjs`, `check-print.mjs`.
+- Folio installs `@page` rules and a print stylesheet for the whole document
+  it runs in. In the editor's page those collide with the editor's own.
+- A frame prints itself, so Print gives exactly the pages on screen with
+  nothing of the editor around them.
+- The editor's pages are then byte-for-byte the document phase 3 gates.
+
+The frame only fetches Folio when Pages is first opened, so nothing extra is
+needed to load it on demand.
+
+What was built:
+
+- **Buttons.** *Pages* toggles the results pane between results and pages.
+  *Print*, and Ctrl+P, show the pages, wait for Folio to finish, and call the
+  frame's `print()`. Ctrl+P is caught in the frame as well as the editor: after
+  a click into the pages, the key events go to the frame's document and never
+  reach the editor's window. `check-pages` found this on its first run.
+  Printing from the browser's own menu still prints the results pane, as
+  `check-print` has always required.
+- **Layout timing.** The pages are laid out again on a 600 ms debounce. An
+  unchanged document is not laid out again, and the reader's scroll position
+  survives a re-layout.
+- **Fitting the pane.** An A4 page is about 800 px wide, wider than the pane.
+  The editor scales the pages down to fit with a screen-only `zoom` that it
+  adds to the frame after Folio has finished. It is not written into the
+  document, which has to stay the CLI's byte for byte.
+- **Build and licence.** `web/build.mjs` copies the script and its `LICENSE`
+  to `dist/folio/` and includes them in the service worker's cache digest.
+  `sw.js` precaches the script, and `NOTICE.txt` carries Folio's licence
+  verbatim, read from the shipped copy. `build-web.sh` runs `fetch-folio.sh`.
+- **Math font.** The math font is the shipped subset, named to Folio as
+  `mathFont`. The plan's first risk is settled: Folio's MATH-table probe
+  accepts `STIX Two Math Subset`.
+
+*Gate:* `scripts/build-web.sh`, which now runs `check-pages.mjs`. That check
+covers:
+
+- Folio is not fetched before Pages is asked for.
+- A long worksheet lays out on more than one page, with nothing overflowed,
+  every step exactly once, the "Nomo" head, the running title and the foot.
+- No page is wider than the pane.
+- Typeset pages pass the math-font probe.
+- Print, Ctrl+P in the editor and Ctrl+P in the pages each reach the frame's
+  `print()`. A headless print dialogue cannot be opened, so `print` is
+  replaced by a counter.
+- The browser menu's print prints the results.
+
+`check-offline.mjs` adds the Pages view opened for the first time with the
+network already off. That works only because the `about:srcdoc` frame
+inherits the editor's service worker, and the check proves it does.
 
 ### 5. A browser gate: `scripts/check-paged.mjs`
 
@@ -189,7 +235,7 @@ command list.
 
 ## Risks to settle on the way
 
-- **The subset math font.** Folio's `mathFont` probe throws if the family has
+- **The subset math font.** Settled in phase 4: Folio accepts it. Its `mathFont` probe throws if the family has
   no usable `MATH` table. That `STIX Two Math Subset` keeps one is to be
   verified, not assumed.
 - **Wide formulas.** `.step` lines carry *inline* `<math>`, and Folio breaks

@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased — pages
+## 0.9.0 — pages
+
+A minor release: nothing a worksheet computes has moved. The worksheet can now
+be laid out as printed pages, in the editor and from the command line.
 
 ### Added
 

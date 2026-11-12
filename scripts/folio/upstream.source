@@ -1,0 +1,11 @@
+# The Folio build web/vendor/folio/ is made from. Two lines that matter:
+# where the repository is, and the commit to build.
+#
+# A commit rather than a tag or a branch: a branch moves, and a tag can be
+# re-pointed. The hashes in upstream.sha256 are what make the build trustworthy,
+# but naming the exact tree is what makes a mismatch explainable.
+#
+# Changing the commit is a deliberate act: re-run scripts/fetch-folio.sh
+# --force, look at what moved, and regenerate upstream.sha256 as it says.
+repo   https://github.com/trukeio/folio.git
+commit a73682f5ed09493b91ee93cbb2869c16cbe9523d

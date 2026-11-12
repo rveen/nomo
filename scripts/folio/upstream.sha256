@@ -1,0 +1,18 @@
+# The Folio files Nomo uses, by SHA-256, relative to web/vendor/folio/.
+#
+# Built rather than downloaded: Folio publishes no release assets, so
+# scripts/fetch-folio.sh builds it at the commit in upstream.source. Two clean
+# builds of that commit gave these bytes both times — measured, because a hash
+# over a build is only a pin if the build is reproducible.
+#
+#   folio.polyfill.min.js  what `nomo html --paged` embeds
+#   folio.polyfill.js      the same, readable, for debugging a layout
+#   folio.mjs              the Previewer the editor imports
+#   LICENSE                Folio's MIT terms, which travel with its code
+#
+# Regenerate after a deliberate change of commit:
+#   (cd web/vendor/folio && sha256sum folio.polyfill.min.js folio.polyfill.js folio.mjs LICENSE)
+4354d516ae95d22a332eace7f2c5ae85dd4c6be837756fde8b9836a29fa03bf0  folio.polyfill.min.js
+7da3f5c75283c120ad66a37416808c67fd4c8f62ff074d88a8272f0c2a35d69c  folio.polyfill.js
+fc74c06b09bbeb7e273a650f0218a22289071ca8c612876bcb431610a8f90634  folio.mjs
+cc88f3423c939e1b83bd836463c3416693015936684e8a03c241ac47ea95f278  LICENSE

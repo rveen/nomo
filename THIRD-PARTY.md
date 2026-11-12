@@ -96,6 +96,31 @@ out from ordinary text metrics and the mathematics is wrong, while a missing
 text face gives Georgia. A standalone `nomo html` therefore names the text face
 and carries nothing.
 
+## Folio
+
+The paged output (`docs/folio-plan.md`) is laid out as pages by **Folio**, a
+client-side paged-media engine. Folio is MIT licensed and by the same author,
+but it is a separate project in its own repository, so it is treated like the
+fonts: obtained, verified, and not committed.
+
+```bash
+./scripts/fetch-folio.sh          # build and verify
+./scripts/fetch-folio.sh --verify # check what is already there
+```
+
+Folio publishes no built files, so the script clones it at a pinned commit and
+builds it. What is committed is the provenance, under `scripts/folio/`: the
+repository and the commit, and the SHA-256 of every file used. The build is
+reproducible for those files — two clean builds of the commit gave identical
+bytes — which is what makes a hash over a build a pin.
+
+| File | Source | Terms |
+|---|---|---|
+| `folio.polyfill.min.js`, `folio.polyfill.js`, `folio.mjs` | <https://github.com/trukeio/folio> at commit `a73682f`, built | MIT, Copyright (c) 2026 Rolf Veen. These bundles hold only Folio's own code (Folio's `THIRD-PARTY-LICENSES.md`). |
+
+Folio's `LICENSE` is copied into `web/vendor/folio/` beside the bundles, and it
+travels with them into anything that ships one.
+
 ## Two industrial worksheets, no longer here
 
 Development used two real engineering worksheets from an on-board-charger

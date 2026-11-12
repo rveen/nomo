@@ -299,9 +299,19 @@ function setDocument(text, name, handle, dirty = false) {
 // than the engine's recalculation costs, and pages that reflow under every
 // keystroke are not something anybody reads while typing.
 
-/** Where the frame's document finds Folio and the math font, relative to it. */
+/** Where the frame's document finds Folio and the fonts, relative to it. */
 const FOLIO_URL = "folio/folio.polyfill.min.js";
 const MATH_FONT_URL = "fonts/stix-two-math-subset.woff2";
+/**
+ * The prose's face: the files `web/style.css` declares for the editor. The
+ * frame is a document of its own and cannot see that declaration, so without
+ * these the pages were set in Georgia beside an editor set in STIX Two Text —
+ * and, since a page breaks where its text does, broke in Georgia's places.
+ */
+const TEXT_FONT = {
+  upright: "fonts/stix-two-text-subset.woff2",
+  italic: "fonts/stix-two-text-italic-subset.woff2",
+};
 
 /** Milliseconds of quiet before laying the pages out again. */
 const PAGES_SETTLE = 600;
@@ -328,6 +338,7 @@ function pagedDocument() {
     mathml: typeset.checked,
     fontUrl: MATH_FONT_URL,
     folio: { url: FOLIO_URL },
+    textFont: TEXT_FONT,
   });
 }
 

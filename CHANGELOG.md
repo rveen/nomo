@@ -14,8 +14,16 @@
   font flags. A Ctrl-P taken before the pages are laid out prints blank
   rather than an unpaginated page that looks finished.
 
+- **`--text-font-url` and `--text-font-italic-url`: the prose in the shipped
+  text face, served beside the document.** For `nomo html` with or without
+  `--paged`. Referenced, never embedded: a missing text face gives Georgia,
+  not wrong mathematics. Without them the document is byte-identical to what
+  it was. The editor's Pages view uses them, which is what sets its pages in
+  STIX Two Text rather than Georgia.
+
 - **`nomo_render_paged`**, the module's twin of it, returning the same bytes
-  as the CLI on both targets; and `renderPaged` in `boundary.mjs`.
+  as the CLI on both targets, text face included; and `renderPaged` in
+  `boundary.mjs`. `nomo_render_html` is unchanged, since a server calls it.
 
 - **Pages and Print in the editor.** Pages shows the worksheet as the pages it
   prints on, fitted to the pane; Print and Ctrl+P lay them out and print them,
@@ -25,6 +33,12 @@
 - **`scripts/fetch-folio.sh`**, which builds Folio at a pinned commit and
   verifies it against committed hashes, like the fonts. `build-web.sh` and
   `compare-targets.sh` run it.
+
+### Changed
+
+- **`RenderOptions` has a new public field, `text_font`**, and `TextFont` is
+  exported beside `MathFont`. Code outside `nomo-core` that builds
+  `RenderOptions` literally must add it, or use `..Default::default()`.
 
 Nothing a worksheet computes has moved: 29 golden snapshots and the corpus
 baselines are unchanged, and `nomo html` without `--paged` writes the same

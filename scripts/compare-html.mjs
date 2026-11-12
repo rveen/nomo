@@ -26,6 +26,14 @@ import { load, repoRoot } from "./wasm-host.mjs";
 
 const fontUrl = "/.nomo/stix-two-math-subset.woff2";
 const folioUrl = "/.nomo/folio.polyfill.min.js";
+// The prose's face, which the paged forms carry as the editor's pages do.
+// `nomo_render_html` has no text face — its ABI predates it and a server calls
+// it — so the standalone form is compared without one.
+const textFont = {
+  upright: "/.nomo/stix-two-text-subset.woff2",
+  italic: "/.nomo/stix-two-text-italic-subset.woff2",
+};
+const textFlags = ["--text-font-url", textFont.upright, "--text-font-italic-url", textFont.italic];
 const nomo = path.join(repoRoot, "target/release/nomo");
 const examplesDir = path.join(repoRoot, "examples");
 const folioDir = path.join(repoRoot, "web/vendor/folio");
@@ -53,14 +61,22 @@ const forms = [
   },
   {
     name: "paged, Folio embedded",
-    flags: ["--paged"],
-    wasm: (source, title) => engine.renderPaged(source, title, { mathml: true, fontUrl, folio }),
+    flags: ["--paged", ...textFlags],
+    carries: textFont.upright,
+    wasm: (source, title) =>
+      engine.renderPaged(source, title, { mathml: true, fontUrl, folio, textFont }),
   },
   {
     name: "paged, Folio linked",
-    flags: ["--folio-url", folioUrl],
+    flags: ["--folio-url", folioUrl, ...textFlags],
+    carries: textFont.upright,
     wasm: (source, title) =>
-      engine.renderPaged(source, title, { mathml: true, fontUrl, folio: { url: folioUrl } }),
+      engine.renderPaged(source, title, {
+        mathml: true,
+        fontUrl,
+        folio: { url: folioUrl },
+        textFont,
+      }),
   },
 ];
 
@@ -98,7 +114,11 @@ try {
         problems.push(`${name} (${form.name}): \`nomo html\` wrote nothing`);
         continue;
       }
-      if (form.wasm(source, title) === native) matched += 1;
+      // Agreement alone would pass two sides that both dropped what they were
+      // given, so a form that names something must be seen to carry it.
+      if (form.carries && !native.includes(form.carries)) {
+        problems.push(`${name} (${form.name}): the page does not carry ${form.carries}`);
+      } else if (form.wasm(source, title) === native) matched += 1;
       else problems.push(`${name} (${form.name})`);
     }
   }

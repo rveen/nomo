@@ -18,9 +18,10 @@
 //   * The PDF has one A4 sheet per page. A blank sheet in front of page 1, or
 //     the browser's own margin boxes around Folio's, would both show here.
 //
-// Twice over: the document as it stands, which names a math font and fetches
-// none, and typeset with the shipped math font embedded — which also puts
-// Folio's MATH-table probe in front of the font this project ships.
+// Twice over: the document as it stands, which names its fonts and fetches
+// none, and typeset with the shipped math font embedded and the shipped text
+// face served beside it — which puts Folio's MATH-table probe in front of the
+// font this project ships, and checks the prose is set in the face it names.
 //
 // And one thing no finished document can show: that a print taken *before*
 // Folio has finished is blank rather than an unpaginated page that looks
@@ -46,6 +47,7 @@ const run = promisify(execFile);
 
 const examples = join(repoRoot, "examples");
 const font = join(repoRoot, "web/dist/fonts/stix-two-math-subset.woff2");
+const TEXT_FILES = ["stix-two-text-subset.woff2", "stix-two-text-italic-subset.woff2"];
 const folio = join(repoRoot, "web/vendor/folio/folio.polyfill.min.js");
 const pdfDir = join(repoRoot, "target/paged");
 
@@ -72,12 +74,24 @@ const names = (await readdir(examples)).filter((n) => n.endsWith(".nomo")).sort(
 // checked is what `nomo html --paged` writes. All worksheets in one run per
 // form; a worksheet with errors exits non-zero and still writes its page.
 const forms = [
-  { name: "plain", flags: [] },
-  { name: "typeset", flags: ["--mathml", "--embed-font", font] },
+  { name: "plain", flags: [], text: false },
+  {
+    name: "typeset",
+    // The text face by relative URL, served from beside the documents, as
+    // the editor serves it to its frame.
+    flags: ["--mathml", "--embed-font", font,
+            "--text-font-url", TEXT_FILES[0], "--text-font-italic-url", TEXT_FILES[1]],
+    text: true,
+  },
 ];
 for (const form of forms) {
   const dir = join(work, form.name);
   await mkdir(dir);
+  if (form.text) {
+    for (const file of TEXT_FILES) {
+      await writeFile(join(dir, file), await readFile(join(repoRoot, "web/dist/fonts", file)));
+    }
+  }
   for (const name of names) {
     await writeFile(join(dir, name), await readFile(join(examples, name)));
   }
@@ -114,7 +128,9 @@ const server = createServer(async (request, response) => {
   try {
     const body = await readFile(join(work, path));
     response.writeHead(200, {
-      "content-type": extname(path) === ".html" ? "text/html; charset=utf-8" : "application/octet-stream",
+      "content-type":
+        { ".html": "text/html; charset=utf-8", ".woff2": "font/woff2" }[extname(path)] ??
+        "application/octet-stream",
     });
     response.end(body);
   } catch {
@@ -161,6 +177,12 @@ const INSPECT = `(async () => {
     found: [...document.querySelectorAll(".pagedjs_page .step")].map(text),
     heads: pages.map((p) => box(p, "top-left")),
     feet: pages.map((p) => box(p, "bottom-right")),
+    prose: (() => {
+      const p = document.querySelector(".pagedjs_page p.prose");
+      return p ? getComputedStyle(p).fontFamily : null;
+    })(),
+    textLoaded: [...document.fonts].some(
+      (f) => f.family === "STIX Two Text Subset" && f.status === "loaded"),
   };
 })()`;
 
@@ -212,6 +234,13 @@ try {
             `(${got.found.length} on the pages, ${got.expected.length} in the document)`,
         );
         check(got.heads[0] === "", `${where}: the first page carries the running head`);
+        if (form.text) {
+          check(got.textLoaded, `${where}: the served text face did not load`);
+          check(
+            got.prose === null || got.prose.startsWith('"STIX Two Text Subset"'),
+            `${where}: the prose is not set in the served face first: ${got.prose}`,
+          );
+        }
         check(
           got.heads.slice(1).every((h) => h === "Nomo"),
           `${where}: a page after the first is not headed "Nomo": ${JSON.stringify(got.heads)}`,

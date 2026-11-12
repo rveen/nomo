@@ -83,6 +83,12 @@ const PAGES = `(() => {
     steps: doc.querySelectorAll(".pagedjs_page .step").length,
     math: doc.querySelectorAll(".pagedjs_page math").length,
     heads: pages.map((p) => box(p, "top-left")),
+    // The family the prose is set in, and whether that face actually loaded:
+    // a stack that names a face nobody declared reports the same family
+    // string as one that resolves to it.
+    prose: getComputedStyle(doc.querySelector(".pagedjs_page p.prose")).fontFamily,
+    textLoaded: [...doc.fonts].some(
+      (f) => f.family === "STIX Two Text Subset" && f.status === "loaded"),
     titles: pages.map((p) => box(p, "top-right")),
     feet: pages.map((p) => box(p, "bottom-right")),
   };
@@ -152,6 +158,13 @@ try {
     (await browser.evaluate(`document.querySelector("#output").hidden`)) === true,
     "the results should give way to the pages",
   );
+  // The frame cannot see the editor's @font-face, so the pages carry their
+  // own; before they did, the prose here was set in Georgia.
+  check(
+    laid.prose.startsWith('"STIX Two Text Subset"'),
+    `the pages' prose should be set in the shipped face first: ${laid.prose}`,
+  );
+  check(laid.textLoaded, "the shipped text face did not load in the pages");
   // An A4 page is wider than half a screen. The editor scales the pages to the
   // pane, so none is cut at its right edge.
   const fit = await browser.evaluate(`(() => {

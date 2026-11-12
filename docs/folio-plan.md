@@ -272,6 +272,31 @@ Georgia on a machine without STIX Two Text. The remedy is a
 `--text-font-url` beside `--font-url`, and it is the first thing worth doing
 next on this branch.
 
+### Follow-up: the text face
+
+*Done.* `TextFont` in `nomo-core`, a policy beside `MathFont`, with a URL form
+and no embedded one; `--text-font-url` and `--text-font-italic-url`, which
+work with or without `--paged`; and two more arguments to
+`nomo_render_paged`, which the editor fills with the files it already serves.
+
+- **The document.** It gets the editor's two `@font-face` rules and a body
+  stack with the subset first, after `STYLE`'s own body rule. The margin boxes
+  name the subset first too. With no text face nothing is added, and `nomo
+  html` was re-checked byte-identical to before the branch across all 58
+  plain and `--mathml` documents.
+- **The module.** `nomo_render_html` keeps its signature, because a server
+  calls it.
+- **`compare-html.mjs`.** The two paged forms carry the face on both targets.
+  The script now also asserts that the face is in the page, since two sides
+  that both dropped it would still agree.
+- **`check-pages.mjs`.** Asserts the face loaded in the frame and is first in
+  the prose's stack. Removing the editor's argument fails both assertions.
+- **`check-paged.mjs`.** Serves the face beside the typeset documents and
+  asserts the same.
+
+*Gates:* 743 tests, `compare-targets.sh` with all six gates green, and
+`build-web.sh` with all 18 green.
+
 The original intent of this phase:
 
 A design-note entry (§8.55). It knowingly revisits two parts of §8.48:

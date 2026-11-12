@@ -94,7 +94,9 @@ the same text into any document it embeds a font into.
 is what each does when it is missing: a font with no MATH table lays a fraction
 out from ordinary text metrics and the mathematics is wrong, while a missing
 text face gives Georgia. A standalone `nomo html` therefore names the text face
-and carries nothing.
+and carries nothing. `--text-font-url` can point a document at a served copy,
+which is how the editor's Pages view gets it, but it references the face and
+never embeds it.
 
 ## Folio
 

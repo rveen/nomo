@@ -13,7 +13,7 @@
 //! signed and filed, and retrofitting print styles is much harder than keeping
 //! them.
 
-use super::{base64, escape, mathml, plot, MathFont, RenderOptions, Renderer};
+use super::{base64, escape, mathml, plot, MathFont, RenderOptions, Renderer, TextFont};
 use crate::doc::Sheet;
 use crate::eval::OutcomeKind;
 use crate::prose::{self, Block};
@@ -213,11 +213,12 @@ pub(super) fn document(
         None => (title.to_string(), format!("<h1>{}</h1>\n", escape(title))),
     };
     let (notice, face) = font_face(&opts.font);
+    let (text_face, text_stack) = text_face(&opts.text_font);
     format!(
         "<!doctype html>\n<html lang=\"en\">\n<head>\n\
          <meta charset=\"utf-8\">\n\
          <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\
-         <title>{}</title>\n{notice}<style>{face}{STYLE}{style}</style>\n{head}</head>\n<body>\n\
+         <title>{}</title>\n{notice}<style>{face}{text_face}{STYLE}{text_stack}{style}</style>\n{head}</head>\n<body>\n\
          {heading}{}</body>\n</html>\n",
         escape(&title),
         body
@@ -265,6 +266,43 @@ fn font_face(font: &MathFont) -> (String, String) {
         ),
     }
 }
+
+/// The `@font-face` rules for the prose's face, and the stack that puts it first.
+///
+/// Two halves because they go on either side of [`STYLE`]: the rules before it,
+/// like the math font's, and the stack *after* it, since it has to win over
+/// `STYLE`'s own `body` rule. Both are empty for [`TextFont::Named`], which is
+/// what keeps a document rendered without a text face byte-identical to one
+/// rendered before this existed.
+///
+/// Declared exactly as `web/style.css` declares it — the same family name and
+/// the variable face's whole weight range — so a worksheet looks the same in
+/// the editor's pages as in the editor.
+fn text_face(font: &TextFont) -> (String, String) {
+    let TextFont::Url { upright, italic } = font else {
+        return (String::new(), String::new());
+    };
+    let rule = |url: &str, style: &str| {
+        format!(
+            "\n@font-face {{\n  font-family: \"{TEXT_FAMILY}\";\n  \
+             src: url(\"{}\") format(\"woff2\");\n  \
+             font-weight: 400 700;\n  font-style: {style};\n  font-display: swap;\n}}\n",
+            escape(url)
+        )
+    };
+    let mut rules = rule(upright, "normal");
+    if let Some(italic) = italic {
+        rules.push_str(&rule(italic, "italic"));
+    }
+    let stack = format!(
+        "\nbody {{ font-family: \"{TEXT_FAMILY}\", \"STIX Two Text\", Georgia, \"Times New Roman\", serif; }}\n"
+    );
+    (rules, stack)
+}
+
+/// The CSS family name the shipped text face is declared under. Kept in step
+/// with `web/font.mjs` and `web/style.css`, as [`FONT_FAMILY`] is.
+pub(super) const TEXT_FAMILY: &str = "STIX Two Text Subset";
 
 /// The CSS family name the shipped font is declared under.
 ///
@@ -704,6 +742,45 @@ mod tests {
 
     fn body_of(source: &str) -> String {
         super::body(&Sheet::new(source), &RenderOptions::default())
+    }
+
+    fn page_with(text_font: crate::render::TextFont) -> String {
+        let opts = RenderOptions {
+            text_font,
+            ..RenderOptions::default()
+        };
+        super::render(&Sheet::new("x = 1\n"), &opts, "x")
+    }
+
+    #[test]
+    fn a_named_text_face_adds_nothing() {
+        // The default must leave the document as it was before a text face
+        // could be served: no rule, no stack, nothing fetched.
+        let page = page_with(crate::render::TextFont::Named);
+        assert!(!page.contains("STIX Two Text Subset"));
+        assert_eq!(page.matches("\n@font-face {").count(), 0);
+    }
+
+    #[test]
+    fn a_served_text_face_is_declared_and_put_first() {
+        let page = page_with(crate::render::TextFont::Url {
+            upright: "t.woff2?a&b".into(),
+            italic: None,
+        });
+        // One rule — no italic was given, so none is declared — with the
+        // variable face's whole weight range, as web/style.css declares it.
+        assert_eq!(page.matches("\n@font-face {").count(), 1);
+        assert!(page.contains("src: url(\"t.woff2?a&amp;b\")"));
+        assert!(page.contains("font-weight: 400 700;\n  font-style: normal;"));
+        // The stack comes after the stylesheet's own body rule, or that rule
+        // would win and the face would load and go unused.
+        let stack = page
+            .find("body { font-family: \"STIX Two Text Subset\"")
+            .unwrap();
+        let own = page
+            .find("font-family: \"STIX Two Text\", Georgia")
+            .unwrap();
+        assert!(own < stack);
     }
 
     const GAUGE: &str = "' image gauge\n\n' --- resources ---\n' image gauge png 6\n'   SGVsbG8h\n";

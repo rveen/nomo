@@ -284,7 +284,14 @@ pub unsafe extern "C" fn nomo_render_html(
 /// the engine: with `embed` zero it is the URL Folio is served at, as
 /// `--folio-url` takes, and `notice` is ignored; with `embed` non-zero it is
 /// the script itself and `notice` the licence written ahead of it, as
-/// `--embed-folio` carries them. The rest is [`nomo_render_html`]'s.
+/// `--embed-folio` carries them. `text`/`text_italic` are where the prose's
+/// face is served, as `--text-font-url` and `--text-font-italic-url` take them;
+/// an empty `text` names the stack and fetches nothing, and an empty italic
+/// declares none. The rest is [`nomo_render_html`]'s.
+///
+/// [`nomo_render_html`] did not gain the text face. It is called by a server
+/// that already exists (see above), and a C ABI cannot grow a parameter
+/// without breaking every caller; this entry point is new, so it can.
 ///
 /// The script crosses the boundary rather than living in the module. The
 /// module is the artifact whose reproducibility this project rests on, and
@@ -312,16 +319,31 @@ pub unsafe extern "C" fn nomo_render_paged(
     folio_len: usize,
     notice_ptr: *const u8,
     notice_len: usize,
+    text_ptr: *const u8,
+    text_len: usize,
+    text_italic_ptr: *const u8,
+    text_italic_len: usize,
     embed: u32,
     mathml: u32,
 ) -> *mut u8 {
-    let (Some(source), Some(title), Some(font), Some(folio), Some(notice)) = (
+    let (
+        Some(source),
+        Some(title),
+        Some(font),
+        Some(folio),
+        Some(notice),
+        Some(text),
+        Some(text_italic),
+    ) = (
         str_from(src_ptr, src_len),
         str_from(title_ptr, title_len),
         str_from(font_ptr, font_len),
         str_from(folio_ptr, folio_len),
         str_from(notice_ptr, notice_len),
-    ) else {
+        str_from(text_ptr, text_len),
+        str_from(text_italic_ptr, text_italic_len),
+    )
+    else {
         return std::ptr::null_mut();
     };
     use nomo_core::render::paged::{self, PagedEngine};
@@ -340,6 +362,14 @@ pub unsafe extern "C" fn nomo_render_paged(
             nomo_core::MathFont::Named
         } else {
             nomo_core::MathFont::Url(font.to_string())
+        },
+        text_font: if text.is_empty() {
+            nomo_core::TextFont::Named
+        } else {
+            nomo_core::TextFont::Url {
+                upright: text.to_string(),
+                italic: (!text_italic.is_empty()).then(|| text_italic.to_string()),
+            }
         },
         ..Default::default()
     };
@@ -649,6 +679,18 @@ mod tests {
         notice: &str,
         embed: bool,
     ) -> Option<String> {
+        render_paged_with_text(source, title, font, folio, notice, ("", ""), embed)
+    }
+
+    fn render_paged_with_text(
+        source: &str,
+        title: &str,
+        font: &str,
+        folio: &str,
+        notice: &str,
+        (text, text_italic): (&str, &str),
+        embed: bool,
+    ) -> Option<String> {
         // SAFETY: every slice outlives the call.
         let buffer = unsafe {
             nomo_render_paged(
@@ -662,6 +704,10 @@ mod tests {
                 folio.len(),
                 notice.as_ptr(),
                 notice.len(),
+                text.as_ptr(),
+                text.len(),
+                text_italic.as_ptr(),
+                text_italic.len(),
                 u32::from(embed),
                 1,
             )
@@ -702,6 +748,52 @@ mod tests {
         let engine = PagedEngine::url("/f.js");
         assert_eq!(linked, paged::render(&sheet, &opts, title, &engine));
         assert!(!linked.contains("ignored"));
+    }
+
+    #[test]
+    fn the_text_face_crosses_the_boundary() {
+        use nomo_core::render::paged::{self, PagedEngine};
+        let source = "x = 1\n";
+        let got = render_paged_with_text(
+            source,
+            "x",
+            "",
+            "/f.js",
+            "",
+            ("fonts/t.woff2", "fonts/ti.woff2"),
+            false,
+        )
+        .unwrap();
+        let opts = nomo_core::RenderOptions {
+            mathml: true,
+            text_font: nomo_core::TextFont::Url {
+                upright: "fonts/t.woff2".into(),
+                italic: Some("fonts/ti.woff2".into()),
+            },
+            ..Default::default()
+        };
+        let sheet = nomo_core::Sheet::new(source);
+        assert_eq!(
+            got,
+            paged::render(&sheet, &opts, "x", &PagedEngine::url("/f.js"))
+        );
+
+        // An empty italic declares none, rather than a rule with no source.
+        let upright_only =
+            render_paged_with_text(source, "x", "", "/f.js", "", ("fonts/t.woff2", ""), false)
+                .unwrap();
+        // Matched on the rule's own text: the stylesheet has italics of its own.
+        assert_eq!(
+            upright_only
+                .matches("font-weight: 400 700;\n  font-style: italic;")
+                .count(),
+            0
+        );
+        assert_eq!(
+            got.matches("font-weight: 400 700;\n  font-style: italic;")
+                .count(),
+            1
+        );
     }
 
     #[test]

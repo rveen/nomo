@@ -3740,8 +3740,9 @@ examples, with Folio embedded and linked. Where its pages end depends on the
 fonts the browser sets the text in and on the browser's own line breaking. A
 page break is presentation, the same class of thing as the colour of a link,
 so this is the right place for the line to fall; it is written here so that
-nobody finds it later and takes it for a hole. Embedding the math font narrows
-it in practice. The chrome itself is fixed — no date, no time — because a
+nobody finds it later and takes it for a hole. What narrows it in practice is
+giving the document its fonts: the math font embedded or served, and the text
+face served (`--text-font-url`, below). The chrome itself is fixed — no date, no time — because a
 document whose bytes change with the clock cannot be compared with itself.
 
 **The page.** A4, with "Nomo" at the head's left as a *placeholder* where a
@@ -3874,14 +3875,38 @@ risk.
   `check-mathml.mjs` names.
 - **A4 only, and the logo is text.** Letter paper, and a real logo, are each
   one declaration away; neither has anyone asking for it yet.
-- **The paged document names the text face rather than carrying it**, as
-  `nomo html` does — and so do the editor's pages. The frame is a document of
-  its own, and the `@font-face` that gives the editor STIX Two Text Subset is
-  in the editor's stylesheet, not the frame's. On a machine without STIX Two
-  Text, both are set in Georgia, and their pages break differently from a
-  machine that has it. That is consistent with the boundary above. The remedy
-  is a `--text-font-url` beside `--font-url`, which the editor would pass the
-  way it passes the math font. It is the first thing worth doing next here.
+- **Not a gap any more: the text face.** The first version named the text
+  face and did not carry it, as `nomo html` does, and so did the editor's
+  pages. The frame is a document of its own, and the `@font-face` that gives
+  the editor STIX Two Text Subset lives in the editor's stylesheet, not the
+  frame's. So on a machine without STIX Two Text the pages were set in Georgia
+  beside an editor set in STIX, and broke in Georgia's places. Writing this
+  entry found it, and a first draft had wrongly said the editor was the better
+  place to print from.
+
+  Fixed by `TextFont`, a policy beside `MathFont`: `--text-font-url` and
+  `--text-font-italic-url`, and two more arguments to `nomo_render_paged`,
+  which the editor fills with the files it already serves. The document gets
+  the editor's two `@font-face` rules, the same family and the variable face's
+  400–700 range, and a body stack with the subset first, placed *after*
+  `STYLE`'s own body rule so it wins. The margin boxes name the subset first
+  too. With no text face given nothing is added, so `nomo html` still writes
+  the bytes it wrote before this branch, checked across all 58 plain and
+  `--mathml` documents.
+
+  There is still no *embedded* text face. "Only the math font is ever
+  embedded" (THIRD-PARTY.md) stands, because a missing math font gives wrong
+  mathematics and a missing text face gives a different page break, which is
+  presentation by the boundary above. `nomo_render_html` did not gain the
+  parameter either: a server already calls it, and a C ABI cannot grow an
+  argument without breaking its callers.
+
+  The difference is visible. In the editor, `column`'s title broke before "at
+  a slenderness" in Georgia and breaks before "a slenderness" in STIX.
+  `check-pages` now asserts the face loaded in the frame and is first in the
+  prose's stack, and fails both with the editor's argument removed. The
+  typeset form of `check-paged` serves it beside the documents and asserts the
+  same.
 - **`fetch-folio.sh` gets the pinned pnpm through corepack.** Node 25 stops
   bundling corepack, so CI's move past Node 22 will need another way to that
   pnpm.
@@ -4063,8 +4088,10 @@ remote.
 **Verified in a browser (2026-11-12) — the paged output, §8.55.** In headless Chrome 143: that
 Folio paginates every example, plain and typeset, with nothing overflowed and every worked line on
 the pages once, in order; that the PDF has one A4 sheet per page; that an early print is blank and a
-finished one is not; that Folio's MATH-table probe accepts the shipped subset font; and that the
-editor's frame gets Folio from the service worker with the network off. Also verified: that the
+finished one is not; that Folio's MATH-table probe accepts the shipped subset font; that the
+pages' prose is set in the shipped text face when it is served, in the editor's frame and in the
+standalone document; and that the editor's frame gets Folio from the service worker with the network
+off. Also verified: that the
 three Folio files used are reproducible from the pinned commit, by two clean builds and one from
 GitHub. **Not verified:** Firefox and Safari, which Folio claims and this machine cannot run; and
 where pages break on a machine with different fonts installed, which this note says is outside the

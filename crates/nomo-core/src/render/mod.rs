@@ -55,6 +55,36 @@ pub struct RenderOptions {
     pub show_substitution: bool,
     /// Where the mathematics gets the font it is laid out with.
     pub font: MathFont,
+    /// Where the prose gets the text face it is set in.
+    pub text_font: TextFont,
+}
+
+/// How a rendered document obtains the face its prose is set in.
+///
+/// A separate policy from [`MathFont`], and one with no embedded form, because
+/// the two fail differently. A missing math font lays a fraction out from text
+/// metrics and the mathematics is *wrong*; a missing text face gives Georgia,
+/// which is a perfectly good book face. So a standalone document names the face
+/// and carries nothing — THIRD-PARTY.md, "Only the math font is ever embedded".
+///
+/// What a URL is for is the pages. Where a paged document breaks depends on
+/// the face its prose is set in, and the editor's frame is a document of its
+/// own that cannot see the editor's `@font-face`; without this, the editor's
+/// pages were set in Georgia beside an editor set in STIX Two Text, and broke
+/// where Georgia breaks. The editor serves the face, and this is how it says
+/// where.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum TextFont {
+    /// Name a stack the reader's machine may have, and fetch nothing.
+    #[default]
+    Named,
+    /// Reference the shipped subset, served beside the document: the upright
+    /// file and, if there is one, the italic. Without an italic the browser
+    /// slants the upright, which is worse but not wrong.
+    Url {
+        upright: String,
+        italic: Option<String>,
+    },
 }
 
 /// How a rendered document obtains the font its mathematics is set in.
@@ -99,6 +129,7 @@ impl Default for RenderOptions {
             mathml: false,
             show_substitution: true,
             font: MathFont::Named,
+            text_font: TextFont::Named,
         }
     }
 }

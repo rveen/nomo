@@ -125,6 +125,9 @@ p.prose { orphans: 2; widows: 2; }
 figure { break-inside: avoid; }
 h1, h1.prose, h2.prose, h3.prose, h4.prose, h5.prose, h6.prose { break-after: avoid; }
 
+/* The margin boxes name the shipped text subset first. It resolves only when
+   the document declares it (`--text-font-url`, which the editor passes), and
+   otherwise falls through to the stack the body uses. */
 @page {
   size: A4;
   margin: 20mm 18mm 20mm;
@@ -133,12 +136,12 @@ h1, h1.prose, h2.prose, h3.prose, h4.prose, h5.prose, h6.prose { break-after: av
      element if it should be markup rather than an image. */
   @top-left {
     content: "Nomo";
-    font: 600 9pt/1 "STIX Two Text", Georgia, "Times New Roman", serif;
+    font: 600 9pt/1 "STIX Two Text Subset", "STIX Two Text", Georgia, "Times New Roman", serif;
     letter-spacing: 0.04em; color: #333;
   }
   @bottom-right {
     content: "Page " counter(page) " of " counter(pages);
-    font: 400 8pt/1 "STIX Two Text", Georgia, "Times New Roman", serif;
+    font: 400 8pt/1 "STIX Two Text Subset", "STIX Two Text", Georgia, "Times New Roman", serif;
     color: #555;
   }
 }
@@ -188,7 +191,7 @@ pub fn render(sheet: &Sheet, opts: &RenderOptions, title: &str, engine: &PagedEn
     // `string-set` would make the running head follow them.
     let running = format!(
         "@page {{ @top-right {{ content: {}; \
-         font: 400 8pt/1 \"STIX Two Text\", Georgia, \"Times New Roman\", serif; color: #555; \
+         font: 400 8pt/1 \"STIX Two Text Subset\", \"STIX Two Text\", Georgia, \"Times New Roman\", serif; color: #555; \
          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }} }}\n\
          @page :first {{ @top-right {{ content: none; }} }}\n",
         css_string(&html::title_of(sheet, title))
@@ -373,6 +376,23 @@ mod tests {
         // A linked engine is not redistributed by the document, so it carries
         // nothing.
         assert!(!paged("x = 1\n", "x", &PagedEngine::url("folio.js")).contains("<!--"));
+    }
+
+    #[test]
+    fn the_pages_can_be_set_in_the_shipped_text_face() {
+        // What the editor's frame needed: it is a document of its own, so the
+        // face the editor declares never reached its pages.
+        let opts = RenderOptions {
+            text_font: crate::render::TextFont::Url {
+                upright: "fonts/text.woff2".into(),
+                italic: Some("fonts/text-italic.woff2".into()),
+            },
+            ..RenderOptions::default()
+        };
+        let doc = render(&Sheet::new("x = 1\n"), &opts, "x", &embedded());
+        assert!(doc.contains("src: url(\"fonts/text.woff2\")"));
+        assert!(doc.contains("src: url(\"fonts/text-italic.woff2\")"));
+        assert!(doc.contains("body { font-family: \"STIX Two Text Subset\""));
     }
 
     #[test]

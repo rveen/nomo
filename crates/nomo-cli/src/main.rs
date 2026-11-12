@@ -33,7 +33,7 @@ fn main() -> ExitCode {
             // typeset is a fact about the rendering asked for, not about the
             // engineering in it.
             let mathml = rest.iter().any(|a| a == "--mathml");
-            let (font, files) = match font_option(rest) {
+            let (font, text_font, files) = match font_option(rest) {
                 Ok(pair) => pair,
                 Err(message) => {
                     eprintln!("nomo: {message}");
@@ -49,6 +49,7 @@ fn main() -> ExitCode {
             };
             MATHML.with(|m| m.set(mathml));
             FONT.with(|f| *f.borrow_mut() = font);
+            TEXT_FONT.with(|f| *f.borrow_mut() = text_font);
             PAGED.with(|p| *p.borrow_mut() = paged);
             run_over(&files, render_html)
         }
@@ -85,6 +86,8 @@ fn usage() {
          nomo html --mathml <file>    the same, with the mathematics typeset\n    \
          nomo html --font-url <url>   ...laid out with a font served beside it\n    \
          nomo html --embed-font <f>   ...with the font carried in the document\n    \
+         nomo html --text-font-url <url> [--text-font-italic-url <url>]\n\
+         \x20                                ...and the prose in a text face served beside it\n    \
          nomo html --paged <file>     laid out as pages, by Folio carried in it\n    \
          nomo html --folio-url <url>  ...by Folio served beside the document\n    \
          nomo html --embed-folio <f>  ...by the Folio script at <f>\n    \
@@ -266,6 +269,10 @@ thread_local! {
     static FONT: std::cell::RefCell<nomo_core::MathFont> =
         const { std::cell::RefCell::new(nomo_core::MathFont::Named) };
 
+    /// The face `html` was asked to set the prose in. Same reason.
+    static TEXT_FONT: std::cell::RefCell<nomo_core::TextFont> =
+        const { std::cell::RefCell::new(nomo_core::TextFont::Named) };
+
     /// The engine `html --paged` lays the pages out with, read once for every
     /// worksheet rather than once per worksheet. `None` for the plain page.
     static PAGED: std::cell::RefCell<Option<PagedEngine>> =
@@ -353,15 +360,25 @@ fn embed_folio(path: &std::path::Path, default: bool) -> Result<PagedEngine, Str
     PagedEngine::embedded(script, notice).map_err(|e| format!("{}: {e}", path.display()))
 }
 
-/// Read `--font-url` and `--embed-font` out of the argument list.
+/// Read the font flags out of the argument list: `--font-url` and
+/// `--embed-font` for the mathematics, `--text-font-url` and
+/// `--text-font-italic-url` for the prose.
 ///
-/// Returns the font policy and the arguments with the flags removed. Two flags
+/// The text face can be referenced and not carried. A missing text face gives
+/// Georgia rather than wrong mathematics, so a standalone document names it and
+/// fetches nothing unless told where it is served (`nomo_core::TextFont`).
+///
+/// Returns the two font policies and the arguments with the flags removed. Two flags
 /// rather than one that guesses from its argument: referencing a font and
 /// carrying one are different decisions with different costs, and a flag whose
 /// meaning depends on whether a path happens to exist is a flag that does the
 /// wrong thing quietly.
-fn font_option(args: &[String]) -> Result<(nomo_core::MathFont, Vec<String>), String> {
+fn font_option(
+    args: &[String],
+) -> Result<(nomo_core::MathFont, nomo_core::TextFont, Vec<String>), String> {
     let mut font = nomo_core::MathFont::Named;
+    let mut upright: Option<String> = None;
+    let mut italic: Option<String> = None;
     let mut files = Vec::new();
     let mut rest = args.iter();
     while let Some(arg) = rest.next() {
@@ -379,10 +396,31 @@ fn font_option(args: &[String]) -> Result<(nomo_core::MathFont, Vec<String>), St
                     .ok_or("--embed-font needs a path to a .woff2 file")?;
                 font = embed(std::path::Path::new(path))?;
             }
+            "--text-font-url" => {
+                let url = rest.next().ok_or(
+                    "--text-font-url needs a URL, as in `--text-font-url fonts/text.woff2`",
+                )?;
+                upright = Some(url.clone());
+            }
+            "--text-font-italic-url" => {
+                let url = rest
+                    .next()
+                    .ok_or("--text-font-italic-url needs a URL to the italic face")?;
+                italic = Some(url.clone());
+            }
             other => files.push(other.to_string()),
         }
     }
-    Ok((font, files))
+    // An italic on its own would declare a family whose upright is whatever
+    // the browser falls back to, which is a mixed page that looks deliberate.
+    let text_font = match (upright, italic) {
+        (Some(upright), italic) => nomo_core::TextFont::Url { upright, italic },
+        (None, None) => nomo_core::TextFont::Named,
+        (None, Some(_)) => {
+            return Err("--text-font-italic-url needs --text-font-url for the upright face".into())
+        }
+    };
+    Ok((font, text_font, files))
 }
 
 /// Read a font file, and the licence that has to travel with it.
@@ -427,6 +465,7 @@ fn render_html(path: &str, source: &str) -> Verdict {
     let opts = nomo_core::RenderOptions {
         mathml: MATHML.with(std::cell::Cell::get),
         font: FONT.with(|f| f.borrow().clone()),
+        text_font: TEXT_FONT.with(|f| f.borrow().clone()),
         ..Default::default()
     };
     let title = std::path::Path::new(path)
@@ -502,6 +541,36 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         Scratch(dir)
+    }
+
+    #[test]
+    fn the_text_face_flags_are_read_and_removed() {
+        let (_, text, files) = font_option(&args(&[
+            "--text-font-url",
+            "t.woff2",
+            "a.nomo",
+            "--text-font-italic-url",
+            "ti.woff2",
+        ]))
+        .unwrap();
+        assert_eq!(
+            text,
+            nomo_core::TextFont::Url {
+                upright: "t.woff2".into(),
+                italic: Some("ti.woff2".into())
+            }
+        );
+        assert_eq!(files, args(&["a.nomo"]));
+
+        let (_, text, _) = font_option(&args(&["a.nomo"])).unwrap();
+        assert_eq!(text, nomo_core::TextFont::Named);
+    }
+
+    #[test]
+    fn an_italic_without_its_upright_is_an_error() {
+        let err = font_option(&args(&["--text-font-italic-url", "ti.woff2"])).unwrap_err();
+        assert!(err.contains("--text-font-url"), "{err}");
+        assert!(font_option(&args(&["--text-font-url"])).is_err());
     }
 
     #[test]

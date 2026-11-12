@@ -54,9 +54,10 @@ document and Folio paginates it, so the numbers stay bit-reproducible and the
 page breaks are presentation — design note §8.55 draws that line, and
 `docs/folio-plan.md` records the six phases and what each one found. Folio is
 built at a pinned commit and hash-verified by `scripts/fetch-folio.sh`, like the
-fonts; `build-web.sh` and `compare-targets.sh` run it. The next thing worth
-doing there is carrying the *text* face into the paged document, which neither
-the standalone file nor the editor's frame does yet (§8.55, "Gaps").
+fonts; `build-web.sh` and `compare-targets.sh` run it. The editor's pages are
+set in the text face the editor ships, which it passes to `nomo_render_paged`
+as `--text-font-url` passes it to the CLI; the first version set them in
+Georgia, and §8.55 says how that was found and fixed.
 
 **Where the last session stopped, and what it left.** Everything below is
 committed and pushed, and every gate named here is green. Three things are
@@ -136,7 +137,7 @@ self-contained file. **Second phase:** a name that spells a Greek letter is set 
 | — Paged output | **done**, on `nomo-folio` | `nomo html --paged` (and `--folio-url`, `--embed-folio`), `nomo_render_paged`, and the editor's Pages view and Print. The document is `html::body()` with `@page`, margin boxes and Folio's drop-in around it, so no snapshot moved. A4; "Nomo" heads every page but the first as a placeholder for a logo; the title runs from page 2; "Page n of N" at the foot. An early Ctrl-P prints blank rather than unpaginated. The editor's pages are the CLI's document in a frame, fitted to the pane. Gated by `compare-html.mjs` (87 pages, both targets), `check-paged.mjs` (58 documents, one A4 sheet per page) and `check-pages.mjs`. Design note §8.55, `docs/folio-plan.md` |
 | — Prose as Markdown | **done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline is `` ` `` and `**`, and nothing else: `_` would eat identifiers and a single `*` is the multiplication operator — 61 corpus prose lines pair one and every pair encloses arithmetic. Design note §8.41 and §8.53, `examples/prose.nomo` |
 
-737 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+743 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -173,7 +174,7 @@ does not survive it, and then:
 
 ```bash
 cd /files/work/nomo
-cargo test --workspace                                  # 737 tests
+cargo test --workspace                                  # 743 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ./scripts/check-no-host-math.sh                         # determinism guard

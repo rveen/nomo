@@ -2,7 +2,7 @@
 //!
 //! ```text
 //! smath-import worksheet.sm                    # write the Nomo source to stdout
-//! smath-import --check corpora/nomo-corpus/sm   # check a whole corpus
+//! smath-import --check corpora/technical-mechanics-samples   # a whole corpus
 //! ```
 //!
 //! `--check` is the interesting mode: it imports every worksheet, evaluates it,

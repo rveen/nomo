@@ -44,6 +44,15 @@ of those three arrive. The steps, in order:
    it is now marked `step typeset` and set whole.
 4. **No MathJax.**
 
+**The SMath wiki corpus is retired (2026-11-12).** The wiki was replaced by
+docs.smath.com, which publishes none of the 48 examples; every old download
+link now answers with that site's home page, which is what turned CI's
+`corpus` job red, by its hash check. No public source holds them — the Wayback
+Machine has 3. The corpus gate and CI now fetch and check the mechanics
+corpus from GitHub alone; the wiki's provenance is kept, retired, under
+`scripts/corpora/`, and roadmap step 23 is finding the files again. A local
+copy fetched before the change still verifies against `wiki.sha256`.
+
 **The paged output is built, on the `nomo-folio` branch (2026-11-12).** A
 second typeset output: the worksheet as A4 pages, laid out in the browser by
 [Folio](https://github.com/trukeio/folio), with the title at the top left
@@ -222,9 +231,9 @@ cargo run --release -p nomo-cli -- bench               # timings; a report, exit
 ./scripts/fetch-corpora.sh --verify                     # check what is already there
 
 cargo run -p nomo-smath --bin smath-coverage -- \
-    corpora/nomo-corpus/sm                        # what the .sm reader cannot yet read
+    corpora/technical-mechanics-samples           # what the .sm reader cannot yet read
 cargo run -p nomo-smath --bin smath-import -- --check \
-    corpora/nomo-corpus/sm                        # Nomo's answers against SMath's own
+    corpora/technical-mechanics-samples           # Nomo's answers against SMath's own
 cargo run -p nomo-smath --bin smath-import -- x.sm     # write one worksheet as .nomo,
                                                         # figures included, at the size SMath
                                                         # drew them (docs/language.md,
@@ -2458,9 +2467,12 @@ statement and this is the summary.
 - **`reference/` is gitignored and has never been committed.** A gigabyte, and
   design note §10 says what it is for.
 
-- `corpora/nomo-corpus/` — 54 SMath worksheets, all 48 published wiki examples,
-  versions 0.82–0.98. **553 stored answers across 51 of them.** Third-party
-  worksheets by named authors; the examples page states no terms.
+- `corpora/nomo-corpus/` — **retired (2026-11-12): no longer fetched or
+  gated.** 54 SMath worksheets, all 48 published wiki examples, versions
+  0.82–0.98, 553 stored answers across 51 of them. The wiki was replaced by
+  docs.smath.com and the examples are not published anywhere public; the
+  provenance is kept in `scripts/corpora/wiki.sources` and `wiki.sha256`, and
+  roadmap step 23 is finding another source.
 - `corpora/technical-mechanics-samples/` — 60 worksheets from Kraska's
   *Technische Mechanik mit SMath Studio*, SMath 1.3–1.5. **877 stored answers**,
   and the only current-era corpus there is. Not representative of SMath usage:

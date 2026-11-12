@@ -170,8 +170,10 @@ jobs:
       # The worksheets are third-party and are not in this repository. Fetching
       # verifies every file against scripts/corpora/files.sha256, so what this
       # job measures is provably the corpus the baselines were recorded against.
-      # NOMO_CORPORA_MIRROR points at a mirror of the same archives when one is
-      # configured; without it the upstream sites are used directly.
+      # NOMO_CORPORA_MIRROR points at a mirror of the same archive when one is
+      # configured; without it GitHub is used directly. One corpus, the
+      # mechanics worksheets: the SMath wiki examples went away with the wiki
+      # (scripts/corpora/wiki.sources).
       - name: Fetch the corpora
         env:
           NOMO_CORPORA_MIRROR: ${{ secrets.NOMO_CORPORA_MIRROR }}
@@ -181,9 +183,7 @@ jobs:
       # machine that does not have the worksheets and wrong here: their absence
       # would turn this job green while it guarded nothing.
       - name: The corpora are present
-        run: |
-          test -d "corpora/nomo-corpus/sm"
-          test -d "corpora/technical-mechanics-samples"
+        run: test -d "corpora/technical-mechanics-samples"
 
       - name: SMath corpus baselines
         run: ./scripts/check-corpus.sh
@@ -193,6 +193,4 @@ jobs:
       # is what decides the importer's next phase, and having it per push means
       # nobody has to run it to find out where the work moved.
       - name: Coverage report
-        run: |
-          cargo run -q -p nomo-smath --bin smath-coverage -- corpora/nomo-corpus/sm
-          cargo run -q -p nomo-smath --bin smath-coverage -- corpora/technical-mechanics-samples
+        run: cargo run -q -p nomo-smath --bin smath-coverage -- corpora/technical-mechanics-samples

@@ -18,6 +18,11 @@
 # a fresh checkout still runs the rest of the suite; CI fetches first and then
 # asserts they are there, so absence cannot turn that job green. Point
 # CORPUS_ROOT elsewhere if they live somewhere else.
+#
+# The mechanics corpus only. The SMath wiki examples were gated here too until
+# the wiki went away in November 2026 and no public source of them was left;
+# their baseline went with them, and scripts/corpora/wiki.sources says what
+# finding another source would need.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 root=${CORPUS_ROOT:-corpora}
@@ -32,7 +37,7 @@ check() {
         --check "$@" --baseline "tests/corpus/$name.txt" "${extra[@]}" | tail -1 || fail=1
 }
 
-for pair in "$root/nomo-corpus/sm:wiki" "$root/technical-mechanics-samples:mechanics"; do
+for pair in "$root/technical-mechanics-samples:mechanics"; do
     dir=${pair%%:*}
     name=${pair##*:}
     if [ ! -d "$dir" ]; then

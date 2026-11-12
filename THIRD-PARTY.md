@@ -24,20 +24,27 @@ fetched corpus is demonstrably the same one the baselines in `tests/corpus/`
 were recorded against. A corpus that drifted upstream fails the check rather
 than quietly moving the numbers.
 
-| Set | 54 + 60 worksheets | Source | Terms |
+| Set | Worksheets | Source | Terms |
 |---|---|---|---|
-| `nomo-corpus/` | All 48 published SMath wiki examples, unpacking to 54 `.sm` files, versions 0.82–0.98 | <https://smath.com/wiki/Examples.ashx> | Third-party worksheets by named authors. No redistribution terms are stated on the examples page. |
+| `nomo-corpus/` — **retired, not fetched** | All 48 published SMath wiki examples, unpacking to 54 `.sm` files, versions 0.82–0.98 | formerly <https://smath.com/wiki/Examples.ashx>; the wiki was replaced by docs.smath.com in November 2026, which publishes none of them | Third-party worksheets by named authors. No redistribution terms were stated on the examples page. |
 | `technical-mechanics-samples/` | 60 worksheets from Martin Kraska's *Technische Mechanik mit SMath Studio*, SMath 1.3–1.5 | <https://github.com/sn-code-inside/Technische-Mechanik-mit-SMath> | Springer Nature book-companion material ([ISBN 978-3-658-50591-2](https://doi.org/10.1007/978-3-658-50592-9)). The repository states no licence, so all rights are reserved. |
 
-Both are used here as **measurement inputs** — the importer reads them, and
+Only the mechanics corpus is fetched and gated now. The wiki's download links
+all answer with the new site's home page, and no public source holds the files
+— the Wayback Machine has 3 of the 48. Their provenance is kept, retired, in
+`scripts/corpora/wiki.sources` and `wiki.sha256`: the names to look for, and
+the hashes that would prove a copy found elsewhere is the same file.
+`docs/roadmap.md` step 23 is finding one.
+
+Both were used here as **measurement inputs** — the importer reads them, and
 their stored answers act as an oracle for the engine. No part of either is
 copied into Nomo's own code or examples. Design note §8 is the analysis built
 on them; the numbers it quotes are measurements, not excerpts.
 
 If you are running CI, you may set `NOMO_CORPORA_MIRROR` to a location holding
-the same archives by name. It is optional — the script fetches from the sites
-above unaided — but it is the reliable route: the wiki serves files behind a
-cookie-detection redirect, and GitHub's generated tarballs are not byte-stable.
+the same archive by name. It is optional — the script fetches from GitHub
+unaided — and every file is hash-checked either way, because GitHub's generated
+tarballs are not byte-stable.
 Per-file hashes are checked either way, which is what makes a mirror
 trustworthy. A `file://` mirror built from corpora already on disk is also how
 the fetch path is tested without asking anything of the upstream sites; the

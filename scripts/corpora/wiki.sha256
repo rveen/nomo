@@ -1,0 +1,63 @@
+# RETIRED — not fetched, not verified, not gated. See wiki.sources.
+#
+# The SHA-256 of every file the 48 SMath wiki examples unpacked to, relative
+# to CORPUS_ROOT, as scripts/corpora/files.sha256 held them until the wiki was
+# replaced by docs.smath.com in November 2026. Kept because a copy of these
+# files found anywhere else is proven to be the same corpus by these hashes
+# and by nothing else. To check a local copy:
+#   (cd corpora && sha256sum -c ../scripts/corpora/wiki.sha256)
+1d8ae9497325a572ae8cdec7cc7e29282f98e59246f5811024f826b370218c6e  nomo-corpus/sm/Batchreactor.sm
+ebe5eba8d0febe3bc2a7d030ae3ce8d0fb468764c47db7a7dac5d61f2b16fffa  nomo-corpus/sm/BilinearInterpolation.sm
+c93d55d4b1d4daf7765590dfce727cda4a0127a383cf81b03d796d60ebb571f9  nomo-corpus/sm/Broyden-method.sm
+132ef562f58b9bda31f6faa9c6eb1c0432f97ffef49faec2193cebd0c9d9b510  nomo-corpus/sm/CEE2500Test02Problem[1].sm
+ece3471a9e596ce150573ad03ca041bb6c86efac0f815ff70ef493d341440cde  nomo-corpus/sm/CEE2500Test02Problem[2].sm
+09d17ec1f18fcb3d28c9b3742766fe75d0582172c21c824469b2a57003cb6120  nomo-corpus/sm/CEE2500Test02Problem[3].sm
+ce6b1c449719dd10519ed2f4d04e5308fda2d7e199d7882e784048fd3998826e  nomo-corpus/sm/CEE2500Test02Problem[4].sm
+afd8f3a1f6bc8b9a73c23be109b683fbd46aff1be708c3c7073a51446cb89b99  nomo-corpus/sm/CEE3030Fall2009SolutionTest2.sm
+e8c7811a3275574199822a30988f66ec7e86e537b27d22ab2d29894f2fc6a69c  nomo-corpus/sm/CEE3500Fall2009Test03Problem[1].sm
+ae30e003019dc3498c9384ad13bdf14134e641eaa1da52fbcc566fbd2d95a65a  nomo-corpus/sm/CEE3500Fall2009Test03Problem[2].sm
+f6cb2d4e8d710e3c8a1fa575816d6a0cf62721620f54e76c9f098213bedd393b  nomo-corpus/sm/CEE3500Fall2009Test03Problem[3].sm
+6700f47bc2f90b8abc3043c013fdf51bb096b2613aff4cf69c346999674db641  nomo-corpus/sm/CEE3500Fall2009Test03Problem[4].sm
+4c9168d0bd192dd97f734e906fb0343fa3054a0e5843b8ae7558bba45a08c8ee  nomo-corpus/sm/CEE3500Test01Problem01.sm
+464de0e058e3110a352f6ac7769652b6967e4b635813891167a9a10b7f046ba9  nomo-corpus/sm/CEE3500Test01Problem02.sm
+3cb78467af64b049881bfaf01421990f770f9a8a04c19f60ea192fa0622e4b6c  nomo-corpus/sm/CEE3500Test01Problem03.sm
+0e67e05ce0031c9b125dc71c8ef5c1f4bee0a0d46b34c37d352d131c4da76c95  nomo-corpus/sm/Calc Area Properties of Composite Rectangular Areas.sm
+366e9cda041f1ca4f06644c13d0eeb7b9e72b231dc1b7507bd915a82ed53db8b  nomo-corpus/sm/DesignReinforcedConcreteSlabACI318.sm
+8a79f1f42de66306ced48a73aa9b98b55c6ed75a901f0abf23e37dc4480dbdef  nomo-corpus/sm/ElecEngExample.sm
+295bf2c64b51b65a9c250dfe0d2b3beb2072283a9a015e7c6c02484ac61fc6e8  nomo-corpus/sm/EndPlateConnectionKrishnamurthy1978.sm
+5fba25506c081a5d35bc22796ff42a8ca36cd108f84750277ef2300067de9afa  nomo-corpus/sm/Engine Heat Rejection Calcs.sm
+17d55bc3c54ec3959a211c7724953964232f5ca0cd187882144426cd3f28fe64  nomo-corpus/sm/Engineering Calculations - Column Design.sm
+c97f58fd289fdb6b36e20cb326b1283f11c18c17305daed4c654e8e7f5e9db85  nomo-corpus/sm/Engineering Calculations - Ramp Design.sm
+335564fb0bb9d51e760ed1b7cb7a5e8c5954825ecb9db54d1dfe37f431e5833b  nomo-corpus/sm/Finite differences.sm
+92a403797f2572dee798c8827b5016a6a543869c9cd43c50bd4fad91fefcae7d  nomo-corpus/sm/HL-93.sm
+054e4d02afa3a593fee0e305dc19c5aa897637e3838ac26d334c5c92a524f25d  nomo-corpus/sm/Hydraulic Geometry of Rivers 120704.sm
+be91fc836341a5d1ddf94ee4f9ab286feb25d82012ee732058453ab1baefbf07  nomo-corpus/sm/ImplicitFunctionGrapher.sm
+34b59182223429b4e951d1a9ac7b085af7a07f5b857c631dbdc5a7167ba53eae  nomo-corpus/sm/NASA_atmosphere.sm
+5f36ad9bab42e51497e30a5a4d9bb5eaada25b93a013dc199a90ded07a38ea63  nomo-corpus/sm/NewtonRaphsonApplications.sm
+4ea1b1b1ad56075e946fed5e96d0706d5cba7effcf6ff0a0442fc2cdeb668662  nomo-corpus/sm/Newtoninterp.sm
+af9a3594bc6ecfda90b12c8464dafbba6aed93e3ce5909481772431d4b28a5ad  nomo-corpus/sm/Newtoninterpb.sm
+4e61a461d1ba5d7a3721b7e6b31820d674b18affbd652da5cdd9deeeb1ad74bd  nomo-corpus/sm/PolyProperties_2013.02.01.sm
+4b74e0ed4478a25e0e686038f10f1541443a3830ad6cc983001ce0e3e641d9e9  nomo-corpus/sm/RCBeamDesignNZS3101.sm
+8f62e258cfcafbcb1602062712569933944b4fd8f2045917dd30ace867586f2a  nomo-corpus/sm/RK4-2ndOrderODE.sm
+43f46f7a6ae0a989d3ee4c32ba3b3bf920a8a133d989eed429b30a7d0a7ea02b  nomo-corpus/sm/RK4SingleEquation.sm
+abf0f577d07de06ec6cf136ce4e32777091f14536b1e112756817693b76c539b  nomo-corpus/sm/RK4SystemEquations.sm
+0ed6a211775ec46488795660c52a2d07608868cd44eacb01b8a20298f19b1094  nomo-corpus/sm/SimplySupportedTimberBeam_Eurocode5_v1.0.sm
+b9ea7c79dfcf28b80981dfc86a53ded6d76c9be7aa8980916df6a0d75c937e2f  nomo-corpus/sm/Swamee-Jain friction factor for pipe flow 121231.sm
+9c279a2f8ee1c3f1bfba8da50b2b06d0b0d88dec1b9bc1b0532bc32264d23a8c  nomo-corpus/sm/Vertical Velocity Distribution in a Hydraulically Smooth OCF 120704.sm
+4c68dc5bd38149964e0dcb8fc1f5a68d5da5173bfee0039b098662ea84f63d0f  nomo-corpus/sm/Weir Flow using the Rehbock Equation 120704.sm
+46461eb319f8c3db44ee0848db515634b7a15044bd5f436967e7d978664a1e9a  nomo-corpus/sm/aircraft_performance.sm
+aa318273ad7aeafd8d9a9a5dad0a86f4e2ee00d602c79f2ebf62a4286443adb1  nomo-corpus/sm/chisquareddist.sm
+ac7f0327093d0a33bab0bbbc24325cdb40d35e1a59c219966eb4838fb852f66f  nomo-corpus/sm/fdist.sm
+1756fae642cc00daf14701c74911af79b308b8b91ea8184f762c3bee130ff5e6  nomo-corpus/sm/financial.sm
+a2ecd30784fe241c8c29856558b325ecaff7e2d40244e8e862cbc40fca939160  nomo-corpus/sm/finger4.sm
+5b75ca33191966cf9d1daa1c67d940b12b59341c01c2e20f6f001efa05db2304  nomo-corpus/sm/gauss-legendre.sm
+9e75a06b5868edac1522e610d766854a6e158806095c493fa7fba17df4067171  nomo-corpus/sm/importDataCSV.sm
+800e29d40b7b16f503f6ef1b42f3a8cf963d4d556edb1f5a3ddc5d5ff79855c3  nomo-corpus/sm/lagrange.sm
+ba618461f7f6aaf0cc9d4311844f05ecb26f6695fb6893976f4fb46f63038e5e  nomo-corpus/sm/linfit.sm
+9fdcd206d80fabe6d2a510e87b9fe56bed9a7d5d57ee18dccff5f31a7997d015  nomo-corpus/sm/linfit_multiple.sm
+1986d5fbbd00e92f59efe29ad6055fefd732e46574dfd3ac23c5e554cd9cf859  nomo-corpus/sm/ling.sm
+dc013015f4a72b5487a2896e2bb7a1330ecb084f26e937aa35adff0c6e463fb8  nomo-corpus/sm/myDataFile.csv
+6143da6d6c05b99d9fb78539ed812b465d97ffaa396aa94d5691b5868e0f6191  nomo-corpus/sm/normaldist.sm
+4e3880249e216d0beccb131d172f891a0293b9a280667c2dc5f289f2b38f2a32  nomo-corpus/sm/pacejka.sm
+5616c8ea37d952494b8039d0d7922fcc9886ff3efe38c70a91d9e5fba37ae29b  nomo-corpus/sm/simpsonrichardson.sm
+c92f90046adb8db8a1112286df87deb907bd466563676ccad61f6a4bb29f4fa3  nomo-corpus/sm/studentdist.sm

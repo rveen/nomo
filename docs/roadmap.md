@@ -506,6 +506,48 @@ this project has of why a name is not evidence.
 
 Still refused, with the marker saying so, and `cases` waits with it.
 
+### 23. Another source for the SMath wiki examples — **to do**
+
+The importer was measured against two corpora, and one of them is gone. In
+November 2026 the SMath wiki was replaced by docs.smath.com. Every
+`GetFile.aspx` link now answers with that site's home page, which CI's hash
+check rejected, and the 48 examples are published nowhere public:
+
+- **docs.smath.com** has no examples collection. All 84 English pages and its
+  search index were checked; none links a worksheet or an archive.
+- **smath.com/en-US/files** needs a login.
+- **The Wayback Machine** captured 3 of the 48 — `ap.zip`, `finger4.zip`
+  and `importDataCSV.zip` — each byte-identical to the committed hash. The
+  full list of its `GetFile.aspx` captures has no others.
+
+So the corpus gate runs on the mechanics worksheets alone. That loses the
+older half of the evidence: versions 0.82–0.98, which is where the 0.x format,
+`style="unit"`, the imperial units and most of the plot cases were measured.
+
+What to try, in order:
+
+1. **Ask SMath** (`support@smath.com`, the address their docs give) whether
+   the examples were moved or can be republished. An answer either way
+   settles more than any search.
+2. **Look for copies elsewhere** — forum attachments on smath.com, the
+   authors' own pages (they are named), course pages for the `CEE3500`
+   worksheets, other archives. `scripts/corpora/wiki.sources` has every
+   archive's name and `wiki.sha256` every file's hash, so a copy found
+   anywhere is proven the same file or not; the three Wayback files can join
+   the moment a source for the rest is settled.
+3. **Failing both, a private mirror.** All 48 archives still exist on the
+   development machine that fetched them, and they verify. CI already reads
+   `NOMO_CORPORA_MIRROR` from a secret; it needs a location `curl` can fetch
+   that is not public, since the worksheets carry no redistribution terms.
+
+When a source is settled: restore the wiki half of `fetch-corpora.sh` from
+history (it is in the commit that retired it), move `wiki.sha256` back into
+`files.sha256`, and regenerate `tests/corpus/wiki.txt` with
+`check-corpus.sh --write` — reading the diff, since the baseline was last
+recorded by an older importer.
+
+*Gate:* the `corpus` CI job, with both corpora present again.
+
 ## What this list does not contain
 
 - **A CAS.** §8.40 costed it against the built engine and the recommendation

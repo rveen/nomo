@@ -1,11 +1,11 @@
 //! Read every `.sm` worksheet given and report what the importer cannot handle.
 //!
 //! ```text
-//! smath-coverage corpora/nomo-corpus/sm
+//! smath-coverage corpora/technical-mechanics-samples
 //! ```
 //!
-//! Directories are walked recursively: the wiki corpus is one flat directory,
-//! the mechanics corpus is a repository with a directory per edition.
+//! Directories are walked recursively: the mechanics corpus is a repository
+//! with a directory per edition, and a flat directory of worksheets works too.
 //! Everything is read in sorted order so that two runs over the same input
 //! produce the same report.
 

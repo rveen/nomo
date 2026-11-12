@@ -1,3 +1,12 @@
+# RETIRED (2026-11-12) — not fetched. The SMath wiki was replaced by
+# docs.smath.com, and every GetFile.aspx link below now answers with that
+# site's home page, which is HTML, not the archive. docs.smath.com publishes
+# no examples, smath.com/en-US/files needs a login, and the Wayback Machine
+# holds 3 of the 48 (ap.zip, finger4.zip and importDataCSV.zip, each
+# byte-identical to the hash below). Kept as the record of what to look for:
+# the names, and the hashes that prove a copy found elsewhere is the same
+# file. docs/roadmap.md has the item.
+#
 # The 48 published SMath wiki examples: SHA-256, the path the wiki serves it
 # under, and the local archive name. Tab-separated.
 #

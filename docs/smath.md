@@ -125,7 +125,7 @@ worksheet that translated completely, 33 in one that did not**.
 is in these files at all, and which gaps are worth work:
 
 ```bash
-cargo run -p nomo-smath --bin smath-coverage -- corpora/nomo-corpus/sm
+cargo run -p nomo-smath --bin smath-coverage -- corpora/technical-mechanics-samples
 ```
 
 It counts regions by kind, math statements by kind, stored answers, function
@@ -463,9 +463,13 @@ at the top and evaluates trigonometry in radians — never silently multiplied b
 
 ## Where the corpus stands
 
-Two corpora, both fetched into `corpora/` rather than committed, both
-third-party (design note §8.6 on what they are and what they are not; run
-`./scripts/fetch-corpora.sh` before any of the numbers below can be reproduced).
+Two corpora, both third-party (design note §8.6 on what they are and what they
+are not). **Only the mechanics corpus can still be fetched**: the SMath wiki
+was replaced by docs.smath.com in November 2026 and its examples are no longer
+published anywhere public, so `./scripts/fetch-corpora.sh` brings down the
+mechanics worksheets alone and the gate checks them alone. The wiki numbers
+below are the last measurement, kept as a record; `docs/roadmap.md` step 23 is
+finding another source.
 
 **Wiki corpus** — 54 worksheets, SMath 0.82–0.98:
 

@@ -42,6 +42,12 @@
   exported beside `MathFont`. Code outside `nomo-core` that builds
   `RenderOptions` literally must add it, or use `..Default::default()`.
 
+- **The corpus gate checks the mechanics worksheets only.** The SMath wiki
+  was replaced by docs.smath.com, which publishes none of the 48 examples the
+  importer was also measured against, and no public source holds them. They
+  are no longer fetched or gated. Their provenance is kept, retired, under
+  `scripts/corpora/`, and `docs/roadmap.md` step 23 is finding another source.
+
 ### Fixed
 
 - **Ctrl+F in the source finds text that is scrolled out of view.** The
@@ -54,8 +60,8 @@
   find, which is right for the results pane. The panel follows the light and
   dark schemes.
 
-Nothing a worksheet computes has moved: 29 golden snapshots and the corpus
-baselines are unchanged, and `nomo html` without `--paged` writes the same
+Nothing a worksheet computes has moved: 29 golden snapshots and the mechanics
+corpus baseline are unchanged, and `nomo html` without `--paged` writes the same
 bytes it did. Where a page breaks depends on the fonts the browser has, and is
 presentation rather than part of the determinism claim — design note §8.55.
 

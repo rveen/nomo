@@ -15,12 +15,20 @@
     <button type="button" id="save">Save</button>
     <button type="button" id="save-as">Save as</button>
   </nav>
-  <label id="typeset-label" title="Draw the mathematics as formulas">
-    <input type="checkbox" id="typeset"> Typeset
-  </label>
-  <nav aria-label="Pages">
-    <button type="button" id="pages" aria-pressed="false"
-            title="Show the worksheet as the pages it prints on">Pages</button>
+  <!--
+    Buttons do things; checkboxes say how the results are shown. Typeset and
+    Pages are both the latter, so they are the same kind of control, side by
+    side. Print is an action, and stays a button.
+  -->
+  <div id="view" role="group" aria-label="View">
+    <label title="Draw the mathematics as formulas">
+      <input type="checkbox" id="typeset"> Typeset
+    </label>
+    <label title="Show the worksheet as the pages it prints on">
+      <input type="checkbox" id="pages"> Pages
+    </label>
+  </div>
+  <nav aria-label="Print">
     <button type="button" id="print"
             title="Print the worksheet as pages (Ctrl+P)">Print</button>
   </nav>

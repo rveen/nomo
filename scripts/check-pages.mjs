@@ -284,8 +284,7 @@ try {
   await browser.evaluate(`document.querySelector("#print").click()`);
   await waitFor(browser, `window.__printed === 4`, "Print from the results view");
   check(
-    (await browser.evaluate(`document.querySelector("#pages").getAttribute("aria-pressed")`)) ===
-      "true",
+    (await browser.evaluate(`document.querySelector("#pages").checked`)) === true,
     "Print should show the pages it prints",
   );
 } catch (error) {

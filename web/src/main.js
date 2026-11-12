@@ -539,7 +539,7 @@ function schedulePages() {
 /** Show or hide the Pages view. Showing lays the pages out at once. */
 function showPages(shown) {
   pages.shown = shown;
-  buttons.pages.setAttribute("aria-pressed", String(shown));
+  buttons.pages.checked = shown;
   output.hidden = shown;
   pagesFrame.hidden = !shown;
   outputPane.classList.toggle("paged", shown);
@@ -944,8 +944,8 @@ async function main() {
   buttons.saveAs.addEventListener("click", () => void commandSaveAs());
   buttons.new.addEventListener("click", () => void commandNew());
   importPanel.dismiss.addEventListener("click", hideImportReport);
-  buttons.pages.addEventListener("click", () => {
-    showPages(!pages.shown).catch((error) => status(`pages: ${error.message}`, "bad"));
+  buttons.pages.addEventListener("change", () => {
+    showPages(buttons.pages.checked).catch((error) => status(`pages: ${error.message}`, "bad"));
   });
   buttons.print.addEventListener("click", () => void commandPrint());
   // The pane changes width with the window and with the layout's breakpoint.

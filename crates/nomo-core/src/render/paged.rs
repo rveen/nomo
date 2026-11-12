@@ -42,7 +42,7 @@ pub struct PagedEngine(Engine);
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Engine {
     Url(String),
-    Embedded(String),
+    Embedded { script: String, notice: String },
 }
 
 impl PagedEngine {
@@ -63,7 +63,16 @@ impl PagedEngine {
     /// from outside without parsing JavaScript, so a script containing either
     /// is not embedded at all. The pinned Folio build contains neither; this is
     /// what keeps a later one honest.
-    pub fn embedded(script: impl Into<String>) -> Result<Self, UnsafeScript> {
+    ///
+    /// `notice` is the licence the script is offered under, written into the
+    /// document as a comment ahead of it. A document that carries the engine
+    /// redistributes it, and Folio's MIT licence asks that its notice travel
+    /// with copies — the same obligation, met the same way, as an embedded
+    /// font's.
+    pub fn embedded(
+        script: impl Into<String>,
+        notice: impl Into<String>,
+    ) -> Result<Self, UnsafeScript> {
         let script = script.into();
         let lower = script.to_ascii_lowercase();
         if lower.contains("</script") {
@@ -72,7 +81,10 @@ impl PagedEngine {
         if lower.contains("<!--") {
             return Err(UnsafeScript("<!--"));
         }
-        Ok(PagedEngine(Engine::Embedded(script)))
+        Ok(PagedEngine(Engine::Embedded {
+            script,
+            notice: notice.into(),
+        }))
     }
 }
 
@@ -223,7 +235,13 @@ fn config(font: &MathFont) -> String {
 fn script(engine: &PagedEngine) -> String {
     match &engine.0 {
         Engine::Url(url) => format!("<script src=\"{}\"></script>\n", escape(url)),
-        Engine::Embedded(source) => format!("<script>\n{source}\n</script>\n"),
+        Engine::Embedded { script, notice } if notice.is_empty() => {
+            format!("<script>\n{script}\n</script>\n")
+        }
+        Engine::Embedded { script, notice } => format!(
+            "<!--\n{}\n-->\n<script>\n{script}\n</script>\n",
+            html::escape_comment(notice)
+        ),
     }
 }
 
@@ -265,7 +283,7 @@ mod tests {
     }
 
     fn embedded() -> PagedEngine {
-        PagedEngine::embedded("/* folio */").unwrap()
+        PagedEngine::embedded("/* folio */", "").unwrap()
     }
 
     #[test]
@@ -306,15 +324,18 @@ mod tests {
     #[test]
     fn a_script_that_could_end_its_element_is_refused() {
         assert_eq!(
-            PagedEngine::embedded("s = '</script>'"),
+            PagedEngine::embedded("s = '</script>'", ""),
             Err(UnsafeScript("</script"))
         );
         assert_eq!(
-            PagedEngine::embedded("s = '</SCRIPT '"),
+            PagedEngine::embedded("s = '</SCRIPT '", ""),
             Err(UnsafeScript("</script"))
         );
-        assert_eq!(PagedEngine::embedded("a <!-- b"), Err(UnsafeScript("<!--")));
-        assert!(PagedEngine::embedded("if (a < b) c--").is_ok());
+        assert_eq!(
+            PagedEngine::embedded("a <!-- b", ""),
+            Err(UnsafeScript("<!--"))
+        );
+        assert!(PagedEngine::embedded("if (a < b) c--", "").is_ok());
     }
 
     #[test]
@@ -341,6 +362,17 @@ mod tests {
         };
         let carried = render(&Sheet::new("x = 1\n"), &opts, "x", &embedded());
         assert!(carried.contains("mathFont: \"STIX Two Math Subset\""));
+    }
+
+    #[test]
+    fn an_embedded_engine_carries_its_licence() {
+        let engine = PagedEngine::embedded("/* folio */", "MIT -- with a --> in it").unwrap();
+        let doc = paged("x = 1\n", "x", &engine);
+        let notice = doc.find("<!--\nMIT - - with a - -> in it\n-->").unwrap();
+        assert!(notice < doc.find("/* folio */").unwrap());
+        // A linked engine is not redistributed by the document, so it carries
+        // nothing.
+        assert!(!paged("x = 1\n", "x", &PagedEngine::url("folio.js")).contains("<!--"));
     }
 
     #[test]

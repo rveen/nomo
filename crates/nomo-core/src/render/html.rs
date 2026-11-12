@@ -277,7 +277,7 @@ const FONT_FAMILY: &str = "STIX Two Math Subset";
 /// A comment ends at the first `-->`, so a licence containing one would close
 /// the comment early and spill its remainder into the document as markup. No
 /// font licence does, but this is not the place to rely on that.
-fn escape_comment(text: &str) -> String {
+pub(super) fn escape_comment(text: &str) -> String {
     text.replace("--", "- -")
 }
 

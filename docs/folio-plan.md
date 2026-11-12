@@ -108,10 +108,25 @@ and the foot.
 A flag beside `--mathml`, `--font-url` and `--embed-font` rather than a new
 subcommand, because it composes with them. Embeds
 `web/vendor/folio/folio.polyfill.min.js` by default, so the output is still
-one self-contained file; `--folio-url <url>` links it instead. A missing
-bundle names `fetch-folio.sh`.
+one self-contained file; `--folio-url <url>` links it instead, and
+`--embed-folio <file>` carries a different build. Either of the two implies
+`--paged`. A missing bundle names `fetch-folio.sh`.
 
-*Gate:* `cargo test --workspace`.
+The default path is relative to the working directory, the convention
+`nomo test` already follows, rather than baked in at build time, which would
+have put the build machine's layout into every release binary.
+
+Embedding Folio redistributes it, so the `LICENSE` beside the script is
+written into the document as a comment, as `--embed-font` does with a font's
+OFL. Unlike the font, a missing licence is **refused** rather than warned
+about: Folio's terms are known and they ask for the notice, so there is
+nothing to be unsure of. `PagedEngine::embedded` takes the notice for that
+reason.
+
+*Gate:* `cargo test --workspace`. An end-to-end test (`tests/paged.rs`) runs
+the binary against a stand-in script. Smoke-tested as well: the documents the
+real CLI writes for all 29 examples paginate in Chrome, with nothing hidden
+in print and nothing overflowed.
 
 ### 3. WebAssembly: `nomo_render_paged`
 

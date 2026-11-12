@@ -40,8 +40,16 @@ fn main() -> ExitCode {
                     return ExitCode::FAILURE;
                 }
             };
+            let (paged, files) = match paged_option(&files) {
+                Ok(pair) => pair,
+                Err(message) => {
+                    eprintln!("nomo: {message}");
+                    return ExitCode::FAILURE;
+                }
+            };
             MATHML.with(|m| m.set(mathml));
             FONT.with(|f| *f.borrow_mut() = font);
+            PAGED.with(|p| *p.borrow_mut() = paged);
             run_over(&files, render_html)
         }
         "test" => harness::run(rest),
@@ -77,6 +85,9 @@ fn usage() {
          nomo html --mathml <file>    the same, with the mathematics typeset\n    \
          nomo html --font-url <url>   ...laid out with a font served beside it\n    \
          nomo html --embed-font <f>   ...with the font carried in the document\n    \
+         nomo html --paged <file>     laid out as pages, by Folio carried in it\n    \
+         nomo html --folio-url <url>  ...by Folio served beside the document\n    \
+         nomo html --embed-folio <f>  ...by the Folio script at <f>\n    \
          nomo ast    <file.nomo>...   print the syntax tree\n    \
          nomo test   [--write]        check every example against its snapshot\n    \
          nomo bench                   time the engine on worksheets of fixed shape\n    \
@@ -84,7 +95,8 @@ fn usage() {
          nomo units                   the unit table as exact data, in JSON\n    \
          nomo version                 this build, and the formats it speaks\n\n\
          `test` runs from the repository root; --examples and --golden override\n\
-         the directories it uses.\n\n\
+         the directories it uses. So does --paged, which carries\n\
+         web/vendor/folio/folio.polyfill.min.js: ./scripts/fetch-folio.sh builds it.\n\n\
          EXIT: 0 all well; 1 the worksheet does not evaluate; 2 it evaluates and\n\
          a `check` statement failed — the arithmetic is right and the design is\n\
          not, which is a different thing and gets a different code.\n"
@@ -253,6 +265,92 @@ thread_local! {
     /// The font `html` was asked to lay the mathematics out with. Same reason.
     static FONT: std::cell::RefCell<nomo_core::MathFont> =
         const { std::cell::RefCell::new(nomo_core::MathFont::Named) };
+
+    /// The engine `html --paged` lays the pages out with, read once for every
+    /// worksheet rather than once per worksheet. `None` for the plain page.
+    static PAGED: std::cell::RefCell<Option<PagedEngine>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+use nomo_core::render::paged::PagedEngine;
+
+/// Where `--paged` finds Folio when nothing else is named: where
+/// `scripts/fetch-folio.sh` puts it, relative to the repository root, the same
+/// convention `nomo test` follows for `examples/`. A path baked into the
+/// binary at build time would have been more convenient and would have put
+/// the build machine's directory layout into every release.
+const FOLIO_DEFAULT: &str = "web/vendor/folio/folio.polyfill.min.js";
+
+/// Read `--paged`, `--folio-url` and `--embed-folio` out of the argument list.
+///
+/// The second and third say *which* Folio and imply the first, since naming an
+/// engine is only meaningful for a document that is laid out by one. Two flags
+/// for the same reason the font has two: linking a script and carrying one
+/// are different decisions with different costs.
+fn paged_option(args: &[String]) -> Result<(Option<PagedEngine>, Vec<String>), String> {
+    enum Source {
+        Plain,
+        Default,
+        Url(String),
+        File(String),
+    }
+    let mut source = Source::Plain;
+    let mut files = Vec::new();
+    let mut rest = args.iter();
+    while let Some(arg) = rest.next() {
+        match arg.as_str() {
+            "--paged" => {
+                if let Source::Plain = source {
+                    source = Source::Default;
+                }
+            }
+            "--folio-url" => {
+                let url = rest
+                    .next()
+                    .ok_or("--folio-url needs a URL, as in `--folio-url folio.polyfill.min.js`")?;
+                source = Source::Url(url.clone());
+            }
+            "--embed-folio" => {
+                let path = rest
+                    .next()
+                    .ok_or("--embed-folio needs a path to Folio's folio.polyfill.min.js")?;
+                source = Source::File(path.clone());
+            }
+            other => files.push(other.to_string()),
+        }
+    }
+    let engine = match source {
+        Source::Plain => None,
+        Source::Url(url) => Some(PagedEngine::url(url)),
+        Source::Default => Some(embed_folio(std::path::Path::new(FOLIO_DEFAULT), true)?),
+        Source::File(path) => Some(embed_folio(std::path::Path::new(&path), false)?),
+    };
+    Ok((engine, files))
+}
+
+/// Read a Folio script, and the licence that has to travel with it.
+///
+/// The licence is `LICENSE` beside the script, which is where
+/// `scripts/fetch-folio.sh` puts it. Unlike a font, a missing one is refused
+/// rather than warned about: this program knows exactly what Folio's terms are
+/// and that they ask for the notice to accompany copies, so there is nothing to
+/// be unsure of.
+fn embed_folio(path: &std::path::Path, default: bool) -> Result<PagedEngine, String> {
+    let hint = if default {
+        "\n  Run ./scripts/fetch-folio.sh from the repository root, or name a build with --embed-folio."
+    } else {
+        ""
+    };
+    let script = std::fs::read_to_string(path)
+        .map_err(|e| format!("cannot read Folio at {}: {e}{hint}", path.display()))?;
+    let licence = path.with_file_name("LICENSE");
+    let notice = std::fs::read_to_string(&licence).map_err(|e| {
+        format!(
+            "cannot read Folio's licence at {}: {e}\n  A document that carries Folio redistributes it, and its MIT terms must travel with it.",
+            licence.display()
+        )
+    })?;
+    PagedEngine::embedded(script, notice).map_err(|e| format!("{}: {e}", path.display()))
 }
 
 /// Read `--font-url` and `--embed-font` out of the argument list.
@@ -334,7 +432,10 @@ fn render_html(path: &str, source: &str) -> Verdict {
     let title = std::path::Path::new(path)
         .file_stem()
         .map_or_else(|| path.to_string(), |s| s.to_string_lossy().into_owned());
-    let html = nomo_core::render::html::render(&sheet, &opts, &title);
+    let html = PAGED.with(|p| match p.borrow().as_ref() {
+        Some(engine) => nomo_core::render::paged::render(&sheet, &opts, &title, engine),
+        None => nomo_core::render::html::render(&sheet, &opts, &title),
+    });
 
     let out = std::path::Path::new(path).with_extension("html");
     match std::fs::write(&out, html) {
@@ -373,6 +474,99 @@ fn dump_ast(path: &str, source: &str) -> Verdict {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn args(list: &[&str]) -> Vec<String> {
+        list.iter().map(|s| s.to_string()).collect()
+    }
+
+    /// A scratch directory of the test's own, named the way the harness
+    /// tests name theirs, so two tests — or two runs — never share one, and
+    /// removed when the test is done with it.
+    struct Scratch(std::path::PathBuf);
+
+    impl std::ops::Deref for Scratch {
+        type Target = std::path::PathBuf;
+        fn deref(&self) -> &std::path::PathBuf {
+            &self.0
+        }
+    }
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn scratch(name: &str) -> Scratch {
+        let dir = std::env::temp_dir().join(format!("nomo-cli-{}-{name}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        Scratch(dir)
+    }
+
+    #[test]
+    fn without_paged_the_page_is_plain() {
+        let (engine, files) = paged_option(&args(&["a.nomo", "b.nomo"])).unwrap();
+        assert!(engine.is_none());
+        assert_eq!(files, args(&["a.nomo", "b.nomo"]));
+    }
+
+    #[test]
+    fn naming_an_engine_implies_paged() {
+        let (engine, files) = paged_option(&args(&["--folio-url", "f.js", "a.nomo"])).unwrap();
+        assert_eq!(engine, Some(PagedEngine::url("f.js")));
+        assert_eq!(files, args(&["a.nomo"]));
+        // --paged beside it does not put the default back.
+        let (engine, _) = paged_option(&args(&["--folio-url", "f.js", "--paged"])).unwrap();
+        assert_eq!(engine, Some(PagedEngine::url("f.js")));
+    }
+
+    #[test]
+    fn a_flag_without_its_value_is_an_error() {
+        assert!(paged_option(&args(&["--folio-url"])).is_err());
+        assert!(paged_option(&args(&["--embed-folio"])).is_err());
+    }
+
+    #[test]
+    fn an_embedded_folio_brings_its_licence() {
+        let dir = scratch("embedded-folio");
+        let script = dir.join("folio.polyfill.min.js");
+        std::fs::write(&script, "/* folio */").unwrap();
+        let path = script.to_string_lossy().into_owned();
+
+        // No licence beside it: refused, and the message says why.
+        let err = paged_option(&args(&["--embed-folio", &path])).unwrap_err();
+        assert!(err.contains("licence"), "{err}");
+
+        std::fs::write(dir.join("LICENSE"), "MIT License").unwrap();
+        let (engine, _) = paged_option(&args(&["--embed-folio", &path])).unwrap();
+        assert_eq!(
+            engine,
+            Some(PagedEngine::embedded("/* folio */", "MIT License").unwrap())
+        );
+    }
+
+    #[test]
+    fn a_script_that_could_end_its_element_is_not_embedded() {
+        let dir = scratch("unsafe-folio");
+        let script = dir.join("folio.js");
+        std::fs::write(&script, "x = '</script>'").unwrap();
+        std::fs::write(dir.join("LICENSE"), "MIT License").unwrap();
+        let err = paged_option(&args(&["--embed-folio", &script.to_string_lossy()])).unwrap_err();
+        assert!(err.contains("</script"), "{err}");
+    }
+
+    #[test]
+    fn a_missing_engine_names_the_script_that_builds_one() {
+        let err = paged_option(&args(&["--embed-folio", "/nonexistent/folio.js"])).unwrap_err();
+        assert!(!err.contains("fetch-folio"), "{err}");
+        // The default is relative to the working directory, so from a crate's
+        // own directory it is never there, and the hint is what a user sees.
+        if !std::path::Path::new(FOLIO_DEFAULT).exists() {
+            let err = paged_option(&args(&["--paged"])).unwrap_err();
+            assert!(err.contains("fetch-folio.sh"), "{err}");
+        }
+    }
 
     #[test]
     fn check_evaluates_rather_than_only_parsing() {

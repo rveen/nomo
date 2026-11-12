@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased — pages
+
+### Added
+
+- **`nomo html --paged`: the worksheet as pages.** A4, laid out in the
+  browser by [Folio](https://github.com/trukeio/folio), with "Nomo" at the
+  head where a logo will go (a placeholder until there is one), the
+  worksheet's title running from the second page, and "Page n of N" at the
+  foot. Folio and its MIT notice are carried in the file, so it is still one
+  self-contained document; `--folio-url` links a served copy instead, and
+  `--embed-folio` carries a different build. Composes with `--mathml` and the
+  font flags. A Ctrl-P taken before the pages are laid out prints blank
+  rather than an unpaginated page that looks finished.
+
+- **`nomo_render_paged`**, the module's twin of it, returning the same bytes
+  as the CLI on both targets; and `renderPaged` in `boundary.mjs`.
+
+- **Pages and Print in the editor.** Pages shows the worksheet as the pages it
+  prints on, fitted to the pane; Print and Ctrl+P lay them out and print them,
+  and only once they exist. Folio is fetched the first time pages are asked
+  for, and works offline.
+
+- **`scripts/fetch-folio.sh`**, which builds Folio at a pinned commit and
+  verifies it against committed hashes, like the fonts. `build-web.sh` and
+  `compare-targets.sh` run it.
+
+Nothing a worksheet computes has moved: 29 golden snapshots and the corpus
+baselines are unchanged, and `nomo html` without `--paged` writes the same
+bytes it did. Where a page breaks depends on the fonts the browser has, and is
+presentation rather than part of the determinism claim — design note §8.55.
+
 ## 0.8.0 — the unit table as exact data
 
 ### Added

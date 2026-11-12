@@ -3713,6 +3713,179 @@ An animated GIF *wider* than 700 px loses its animation, because the canvas
 re-encode writes one frame. Below 700 it is carried whole and animates. This is
 a consequence of the shrink rather than a decision about GIFs.
 
+### 8.55 Pages, laid out by Folio (2026-11-12)
+
+Until this, a worksheet printed as one long column that the browser broke
+wherever the paper ran out. There were no page numbers, no running head and
+nowhere for a letterhead to go — all things that a calculation that gets
+signed and filed is expected to carry. This adds a second typeset output: the
+worksheet as pages, laid out by [Folio](https://github.com/trukeio/folio), a
+client-side CSS Paged Media engine. `nomo html --paged` writes it,
+`nomo_render_paged` returns it, and the editor shows and prints it. The work
+was planned and carried out in six phases; `docs/folio-plan.md` is the record,
+with what each phase found.
+
+**Nomo writes the document and Folio paginates it.** `render/paged.rs` emits
+the standalone page with `@page` rules, margin boxes and break properties
+added, and Folio's drop-in after the configuration it reads. The engine never
+paginates, so nothing in `nomo-core` measures a box or reads a font metric,
+and `check-no-host-math.sh` has nothing new to guard. The worksheet's markup is
+`html::body()` unchanged, so the golden suite covers this output's content
+exactly as it covers the standalone page's, and not one snapshot moved.
+
+**The numbers are bit-reproducible and the page breaks are not.** That is the
+boundary this draws. The document is the same bytes on every machine and
+target — `compare-html.mjs` holds the CLI and the module to that across all 29
+examples, with Folio embedded and linked. Where its pages end depends on the
+fonts the browser sets the text in and on the browser's own line breaking. A
+page break is presentation, the same class of thing as the colour of a link,
+so this is the right place for the line to fall; it is written here so that
+nobody finds it later and takes it for a hole. Embedding the math font narrows
+it in practice. The chrome itself is fixed — no date, no time — because a
+document whose bytes change with the clock cannot be compared with itself.
+
+**The page.** A4, with "Nomo" at the head's left as a *placeholder* where a
+logo will go — its own declaration, commented, so a real one replaces it
+through `content: url(…)` — and the worksheet's title at the head's right
+from the second page on. The foot is "Page n of N". The title is written into
+the stylesheet as a CSS string, with `<` escaped so a title cannot close the
+stylesheet, rather than read off the heading with `string-set`: a worksheet's
+later level-1 headings are sections, and `string-set` would make the running
+head follow them.
+
+#### What it revisits in §8.48
+
+§8.48 declined MathJax on three grounds, and named the condition for looking
+again. Folio meets the grounds differently, and the condition is met only in
+part.
+
+- **Size.** `folio.polyfill.min.js` is 115 kB, 40 kB gzipped, and fetches
+  nothing at run time — against MathJax's 850 kB and a 1.8 MB font set. An
+  embedded copy keeps `nomo html --paged` the one self-contained file
+  `nomo html` has always been.
+- **Asynchrony.** Typesetting asynchronously where printing is synchronous
+  was the objection, and pagination is asynchronous too. It is answered rather
+  than accepted. The standalone document hides its body under print media while
+  Folio is at work — `data-nomo-paging`, removed by Folio's `after` hook — so a
+  Ctrl-P taken too early prints blank rather than an unpaginated page that
+  looks finished. The editor's Print waits for the pages before it prints.
+- **What it buys.** MathJax's case was cross-browser consistency, which MathML
+  Core already gives. Folio's is a different thing that no browser does on
+  screen: pages. It also leaves glyph placement to MathML Core — it is built on
+  the same premise as §8.48, that the browser is a good math renderer when it
+  is given a font with a MATH table.
+- **The condition — line breaking.** Folio breaks *display* equations that are
+  wider than the measure. Nomo's worked lines carry *inline* `<math>`, so none
+  of them benefits yet, and a very long line still runs to the edge. Emitting
+  `display="block"` would change `body()` and every golden snapshot, and it is
+  its own decision; it was left out of this work on purpose.
+
+#### Three decisions inside it
+
+**Fetched, built and hash-verified, not committed.** Folio is by the same
+author under the same licence, but it is a separate project in its own
+repository, and "nothing third-party gets committed" is easier to keep as a
+rule with no exceptions. It publishes no built files, so `fetch-folio.sh`
+builds it at a pinned commit. A hash over a build is a pin only if the build is
+reproducible, and that was measured before it was relied on: two clean builds
+gave identical bytes for the three files used, and a third, fetched from
+GitHub, matched them. A document that carries Folio redistributes it, so its
+MIT notice is written in as a comment, as `--embed-font` carries a font's OFL.
+Unlike a font's, a missing licence is refused: Folio's terms are known and ask
+for the notice, so there is nothing to be unsure of.
+
+**The script crosses the module boundary rather than living in the module.**
+`nomo_render_paged` takes Folio as a URL or as text. The module is the
+artifact the determinism claim rests on, and carrying a page-layout engine
+inside it would make every Folio release a new engine build.
+
+**The editor's pages are a frame holding the CLI's document.** The obvious
+design was to run Folio's `Previewer` in the editor's own page, and it was
+the plan's. What was built puts the document `nomo_render_paged` returns into
+an `<iframe srcdoc>`, with Folio linked from `folio/`. Folio installs `@page`
+rules and a print stylesheet for the whole document it runs in, which in the
+editor's page would collide with the editor's. A frame prints itself, so what
+prints is what is on screen. And the editor's pages are then byte for byte the
+document `compare-html.mjs` gates. The editor's only addition is a screen-only
+zoom that fits an A4 page to a half-screen pane, added after Folio has
+finished, because the document has to stay the CLI's. Folio is fetched the
+first time pages are asked for and precached for offline use; the
+`about:srcdoc` frame reaches the service worker only because it inherits the
+editor's, which `check-offline.mjs` proves by opening pages for the first time
+with the network off.
+
+#### What only a browser could say
+
+**Folio lays each page out from a clone of the source's `html` and `body`,
+attributes included, and rewrites `:root` to match the clone.** So the marker
+that the print guard keys on was copied into every page, and the guard's
+first version printed every finished page blank but for its margin boxes.
+Neither `:root` nor a child combinator scopes a rule away from the clones; the
+`after` hook clears the attribute from every element that carries it. Found
+by printing a PDF before the first commit, which is the only reason it did not
+ship: the markup was right.
+
+**A frame's keys never reach the window around it.** After a click into the
+pages, Ctrl+P went to the frame's document, and the editor's handler never
+heard it. It is listened for in both. `check-pages.mjs` found this on its
+first run.
+
+**A classic script in the head stops the parser.** The first attempt to check
+an early print held Folio back, and timed out: until the script arrives there
+is no body, so there was nothing to print. Folio waits for fonts before it
+measures, so the check holds back the math font instead. That is the real
+window — the body parsed, Folio running, nothing laid out.
+
+And the risk the plan listed first did not arrive: Folio's MATH-table probe
+accepts the 162 kB subset, so the font is named to Folio as `mathFont` and
+checked before anything is measured.
+
+Pagination cost, measured in Chrome on this machine from navigation start to
+the root being marked, typeset with the font embedded: about 75 ms for a
+one-page worksheet, 200 ms for `functions` (3 pages) and `plots` (7), and
+330 ms for `interlock` (5) and `llc` (6). The editor lays pages out again on a
+600 ms debounce, so a page that reflowed under every keystroke was never the
+risk.
+
+#### Gates
+
+- **The bytes.** The unit tests in `render/paged.rs`, an end-to-end test of
+  the binary (`crates/nomo-cli/tests/paged.rs`), and `compare-html.mjs` across
+  both targets: 87 pages.
+- **The pages.** `check-paged.mjs` runs over every example in two forms, 58
+  documents. It asserts that Folio finished with nothing overflowed; that the
+  worked lines on the pages are the document's, compared by text and in order,
+  once each — a line split across two pages fails this as two half-lines; that
+  the head and foot are right; that nothing is hidden in print; and that the
+  PDF has one A4 sheet per page, counted from its bytes. It checks the early
+  print as above, and leaves the PDFs in `target/paged/`. It was tested by
+  breaking what it guards: the clone bug put back gives 117 problems, and the
+  print guard removed fails the early-print case.
+- **The editor.** `check-pages.mjs` checks that Folio is not fetched before
+  pages are asked for; that a long worksheet takes several pages with the head
+  and foot; that no page runs past the pane; that typeset pages pass the font
+  probe; and that Print and Ctrl+P, in the editor and in the pages, reach the
+  frame's `print()`.
+
+#### Gaps, named rather than fixed
+
+- **Chrome only.** Folio supports Firefox 115 and Safari 16.4, and neither is
+  checked here, because this machine has one browser. That is the same gap
+  `check-mathml.mjs` names.
+- **A4 only, and the logo is text.** Letter paper, and a real logo, are each
+  one declaration away; neither has anyone asking for it yet.
+- **The paged document names the text face rather than carrying it**, as
+  `nomo html` does — and so do the editor's pages. The frame is a document of
+  its own, and the `@font-face` that gives the editor STIX Two Text Subset is
+  in the editor's stylesheet, not the frame's. On a machine without STIX Two
+  Text, both are set in Georgia, and their pages break differently from a
+  machine that has it. That is consistent with the boundary above. The remedy
+  is a `--text-font-url` beside `--font-url`, which the editor would pass the
+  way it passes the math font. It is the first thing worth doing next here.
+- **`fetch-folio.sh` gets the pinned pnpm through corepack.** Node 25 stops
+  bundling corepack, so CI's move past Node 22 will need another way to that
+  pnpm.
+
 ### 8.8 Strategy: corpus-driven
 
 Build the importer as a separate crate emitting the Nomo document format, then run it across every
@@ -3886,6 +4059,16 @@ forcing FP contraction puts 209 `fmadd` instructions in the artifact and changes
 with `scripts/compare-arch.sh`. **Still not verified:** real ARM silicon, since qemu computes
 floating point in software; the `arm64` CI job covers it but has never run, as the repository has no
 remote.
+
+**Verified in a browser (2026-11-12) — the paged output, §8.55.** In headless Chrome 143: that
+Folio paginates every example, plain and typeset, with nothing overflowed and every worked line on
+the pages once, in order; that the PDF has one A4 sheet per page; that an early print is blank and a
+finished one is not; that Folio's MATH-table probe accepts the shipped subset font; and that the
+editor's frame gets Folio from the service worker with the network off. Also verified: that the
+three Folio files used are reproducible from the pinned commit, by two clean builds and one from
+GitHub. **Not verified:** Firefox and Safari, which Folio claims and this machine cannot run; and
+where pages break on a machine with different fonts installed, which this note says is outside the
+guarantee rather than inside it.
 
 **Still asserted from general knowledge and NOT verified — check before relying on any of it:**
 the extent of SMath's built-in symbolic capability, though §8.10 shows how much of it real

@@ -87,6 +87,8 @@ toolchain.
 cargo test --workspace
 cargo run -p nomo-cli -- render examples/beam.nomo
 cargo run -p nomo-cli -- html   examples/beam.nomo   # standalone, offline
+cargo run -p nomo-cli -- html --paged examples/beam.nomo   # as A4 pages; run
+                                                     # ./scripts/fetch-folio.sh first
 cargo run -p nomo-cli -- check  examples/cylinder.nomo  # evaluate, report only diagnostics
 
 # Enforce the determinism invariants

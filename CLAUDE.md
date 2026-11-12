@@ -20,7 +20,8 @@ is the language reference, and the worksheets under `examples/` are drawn from i
 `docs/smath.md` is the SMath import how-to: how to run it, what translates, and
 what is refused and why. `docs/roadmap.md` is what to build next and in what
 order; STATUS's "What is worth doing next" holds the evidence behind that
-ranking.
+ranking. `docs/folio-plan.md` is the paged output's plan and the record of
+what building it found; design note §8.55 is the decision.
 
 ## Layout
 

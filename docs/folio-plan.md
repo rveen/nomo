@@ -259,6 +259,21 @@ print. It runs in `build-web.sh`; all 18 gates pass.
 
 ### 6. Documentation
 
+*Done.* Design note §8.55, and an entry in §12 saying what was verified in a
+browser and what was not. STATUS.md: a summary, a row in "Where things
+stand", the commands, and the two new browser checks. The CHANGELOG has an
+Unreleased section, the README a build line, and CLAUDE.md a pointer here.
+
+Writing it turned up one more gap, recorded in §8.55. The paged document
+names the *text* face and does not carry it, and the editor's pages inherit
+that: the frame is a document of its own, and the `@font-face` that gives the
+editor STIX Two Text Subset is in the editor's stylesheet. So both are set in
+Georgia on a machine without STIX Two Text. The remedy is a
+`--text-font-url` beside `--font-url`, and it is the first thing worth doing
+next on this branch.
+
+The original intent of this phase:
+
 A design-note entry (§8.55). It knowingly revisits two parts of §8.48:
 MathJax was declined partly because typesetting would be asynchronous where
 printing is synchronous, and Folio is asynchronous too — phases 2 and 4 are how

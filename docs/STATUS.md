@@ -44,6 +44,20 @@ of those three arrive. The steps, in order:
    it is now marked `step typeset` and set whole.
 4. **No MathJax.**
 
+**The paged output is built, on the `nomo-folio` branch (2026-11-12).** A
+second typeset output: the worksheet as A4 pages, laid out in the browser by
+[Folio](https://github.com/trukeio/folio), with "Nomo" at the head where a
+logo will go (a placeholder), the title running from page 2 and "Page n of N"
+at the foot. `nomo html --paged` writes it, `nomo_render_paged` returns the
+same bytes, and the editor gained **Pages** and **Print**. Nomo writes the
+document and Folio paginates it, so the numbers stay bit-reproducible and the
+page breaks are presentation — design note §8.55 draws that line, and
+`docs/folio-plan.md` records the six phases and what each one found. Folio is
+built at a pinned commit and hash-verified by `scripts/fetch-folio.sh`, like the
+fonts; `build-web.sh` and `compare-targets.sh` run it. The next thing worth
+doing there is carrying the *text* face into the paged document, which neither
+the standalone file nor the editor's frame does yet (§8.55, "Gaps").
+
 **Where the last session stopped, and what it left.** Everything below is
 committed and pushed, and every gate named here is green. Three things are
 pending, in the order they are worth doing:
@@ -119,9 +133,10 @@ self-contained file. **Second phase:** a name that spells a Greek letter is set 
 | — Strings | **first phase done** | A literal, bindable, choosable by `if`, comparable with `==`. No arithmetic, no order, none inside a collection — which is what the 41 corpus markers for them needed and no more (§8.32) |
 | — Complex numbers | **first phase done** | `i`, arithmetic with units, `Re`/`Im`/`conj`/`arg`/`abs`. Transcendentals of a complex argument and complex collections are not built; see `docs/language.md` |
 | — Figures, pasted | **done** | Ctrl-V with an image on the clipboard writes the reference at the cursor and the base64 block in the trailer, in one transaction, so one undo takes both back. `resource::attach` writes what `Resources::scan` reads — one description of the format, which the SMath emitter now shares — and it decides *where* a reference may go, since everything under the marker is data. Wider than 700 px is scaled to 700 and the file carries the scaled bytes; below that they are carried byte for byte, which is what keeps an animated GIF animated. A clipboard holding a link and no bytes is refused in words rather than fetched. Design note §8.54, `scripts/check-paste.mjs` |
+| — Paged output | **done**, on `nomo-folio` | `nomo html --paged` (and `--folio-url`, `--embed-folio`), `nomo_render_paged`, and the editor's Pages view and Print. The document is `html::body()` with `@page`, margin boxes and Folio's drop-in around it, so no snapshot moved. A4; "Nomo" heads every page but the first as a placeholder for a logo; the title runs from page 2; "Page n of N" at the foot. An early Ctrl-P prints blank rather than unpaginated. The editor's pages are the CLI's document in a frame, fitted to the pane. Gated by `compare-html.mjs` (87 pages, both targets), `check-paged.mjs` (58 documents, one A4 sheet per page) and `check-pages.mjs`. Design note §8.55, `docs/folio-plan.md` |
 | — Prose as Markdown | **done** | A comment's text is Markdown in a closed subset: headings, paragraphs, lists. `crates/nomo-core/src/prose.rs` reads a run of comment lines into blocks and the HTML renderer lays them out; the language, the graph and the file format are untouched. Inline is `` ` `` and `**`, and nothing else: `_` would eat identifiers and a single `*` is the multiplication operator — 61 corpus prose lines pair one and every pair encloses arithmetic. Design note §8.41 and §8.53, `examples/prose.nomo` |
 
-708 tests and 29 golden snapshots. `git log` is one commit per phase, and each
+737 tests and 29 golden snapshots. `git log` is one commit per phase, and each
 commit message records the reasoning behind anything non-obvious in it.
 
 ### Starting a new session here
@@ -158,7 +173,7 @@ does not survive it, and then:
 
 ```bash
 cd /files/work/nomo
-cargo test --workspace                                  # 685 tests
+cargo test --workspace                                  # 737 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ./scripts/check-no-host-math.sh                         # determinism guard
@@ -166,6 +181,9 @@ cargo build -p nomo-core --target wasm32-unknown-unknown
 
 cargo run -p nomo-cli -- render examples/beam.nomo
 cargo run -p nomo-cli -- html   examples/beam.nomo
+cargo run -p nomo-cli -- html --paged examples/beam.nomo   # as pages, laid out by
+                                                        # Folio carried in the file;
+                                                        # needs fetch-folio.sh first
 cargo run -p nomo-cli -- test                          # golden-file suite
 cargo run -p nomo-cli -- packs                         # what `use` can bring in
 cargo run -p nomo-cli -- version                       # build, and the formats it speaks
@@ -174,8 +192,10 @@ cargo run --release -p nomo-cli -- bench               # timings; a report, exit
 ./scripts/compare-arch.sh                               # x86-64 vs aarch64 (needs qemu-user)
 ./scripts/build-gallery.sh                              # the worked examples as a
                                                         # browsable set of pages
-./scripts/build-web.sh                                  # front end; also runs the twelve
+./scripts/build-web.sh                                  # front end; also runs the fourteen
                                                         # browser checks, including
+                                                        # check-pages.mjs,
+                                                        # check-paged.mjs,
                                                         # check-figures.mjs,
                                                         # check-paste.mjs,
                                                         # check-plots.mjs,
@@ -190,6 +210,9 @@ cargo run --release -p nomo-cli -- bench               # timings; a report, exit
 
 ./scripts/fetch-font.sh                                 # the fonts, likewise; run by
                                                         # build-web.sh
+./scripts/fetch-folio.sh                                # Folio, built at a pinned commit
+                                                        # and hash-verified; run by
+                                                        # build-web.sh and compare-targets.sh
 ./scripts/fetch-corpora.sh                              # the corpora are third-party and
                                                         # are not committed; this brings
                                                         # them down and hash-verifies them.
@@ -216,8 +239,10 @@ cargo run -p nomo-smath --bin smath-import -- --json x.sm       # the report as 
 node scripts/compare-import.mjs                         # the importer, native vs
                                                         # WebAssembly; run by
                                                         # compare-targets.sh
-node scripts/compare-html.mjs                           # the typeset page, native
-                                                        # vs nomo_render_html; run
+node scripts/compare-html.mjs                           # the typeset page and the paged
+                                                        # document, native vs
+                                                        # nomo_render_html and
+                                                        # nomo_render_paged; run
                                                         # by compare-targets.sh
 ```
 
@@ -1053,6 +1078,24 @@ it fail, which was checked.
   bytes is refused in words and changes nothing, and that ordinary text still
   pastes, since the handler sees every paste in the application. Confirmed to
   fail when the 700 px limit is changed.
+- `check-pages.mjs` — the editor's Pages view. Folio must not be fetched before
+  pages are asked for; a long worksheet must take several pages, with every
+  worked line on them once, "Nomo" heading every page but the first and the
+  foot counting them; no page may run past the pane; typeset pages must pass
+  Folio's MATH-table probe of the shipped subset font; and Print, and Ctrl+P
+  in the editor *and* in the pages, must reach the frame's `print()`. That is
+  stubbed with a counter, because a headless print dialogue would hang. The
+  Ctrl+P in the pages is there because the first run found it did nothing: a
+  frame's keys never reach the window around it.
+- `check-paged.mjs` — the standalone `nomo html --paged` document, for every
+  example, plain and typeset with the math font embedded: 58 documents. Folio
+  finishes with nothing overflowed; the worked lines on the pages are the
+  document's, by text and in order, once each, which a line split across a
+  page fails; the head and foot are right; nothing is hidden in print; and the
+  PDF has exactly one A4 sheet per page, counted from its bytes. An early print
+  is checked by holding back the math font, which Folio waits for. Leaves the
+  PDFs in `target/paged/`. Confirmed to fail with the print guard removed, and
+  with the bug it was written to catch put back, which gives 117 problems.
 - `check-recovery.mjs` — sabotages the engine so that one `update` throws, as a
   trap would, and asserts the editor replaces the instance and carries on with
   the buffer intact. It exists because the failure it guards against was

@@ -27,7 +27,7 @@
 // own directory. `build.mjs` calls it.
 
 import MarkdownIt from "markdown-it";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -201,5 +201,9 @@ ${body}
   const out = join(dist, "language");
   await mkdir(out, { recursive: true });
   await writeFile(join(out, "index.html"), page);
+  // The reference links to `units.json` relative to itself, as it sits beside
+  // language.md in docs/. Ship the file beside the page too, or the link is a
+  // 404 on every deployment — and an air-gapped one has nowhere else to look.
+  await copyFile(join(here, "..", "docs/units.json"), join(out, "units.json"));
   return { sections: contents.length, bytes: page.length };
 }
